@@ -8,6 +8,14 @@ export const containerClass = 'w-full h-full'
 import AppNavbar from './components/navigation/AppNavbar.vue'
 import AppSidebar from '@/components/navigation/AppSidebar.vue'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { onMounted } from 'vue'
+import { useUserStore } from './stores/userStore'
+
+const userStore = useUserStore()
+
+onMounted(() => {
+    userStore.setDomain()
+})
 </script>
 
 <template>

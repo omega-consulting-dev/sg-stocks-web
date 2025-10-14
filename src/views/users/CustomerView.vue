@@ -2,9 +2,7 @@
 import { Button } from '@/components/ui/button'
 import Input from '@/components/ui/input/Input.vue'
 import Field from '@/components/forms/Fields.vue'
-
 import { Download, Upload, Sheet, FileText, Plus, Search, Edit, Users, User, Phone, Mail, MapPin, Scale } from 'lucide-vue-next'
-
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,7 +19,12 @@ import {
     TableRow,
 } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+
+import { UserServices } from '@/services'
+import { useUserStore } from '@/stores/userStore'
 import { ref } from 'vue'
+
+const userStore = useUserStore()
 
 const customers = [
     {
@@ -109,6 +112,16 @@ function open_search() {
 function edit_customer(customer: CustomerForm) {
     form.value = { ...customer }
     openModal.value = true
+}
+
+async function get_users() {
+    await UserServices.login({email: 'admin@client1.com', password: '123456789'}).then((res) => {
+        userStore.user = res.data
+        userStore.setAccessToken(res.data.accessToken as string)
+        userStore.setRefreshToken(res.data.refreshToken as string)
+    })
+
+    console.log('user', userStore.user)
 }
 </script>
 
@@ -210,7 +223,7 @@ function edit_customer(customer: CustomerForm) {
                 </DialogContent>
             </Dialog>
 
-            <Button> Compte clients </Button>
+            <Button @click="get_users"> Compte clients </Button>
         </div>
     </header>
 
