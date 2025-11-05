@@ -106,7 +106,7 @@ Axios.interceptors.response.use(
                     throw new Error('Aucun refresh token disponible')
                 }
 
-                const res = await Axios.post<{ access: string }>('/refresh/', {
+                const res = await Axios.post<{ access: string }>('/auth/refresh/', {
                     refresh: userStore.refresh_token
                 }, { skipAuthRefresh: true } as CustomAxiosRequestConfig)
                 

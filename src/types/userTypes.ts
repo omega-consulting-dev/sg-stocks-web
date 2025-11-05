@@ -4,6 +4,6 @@ export interface User {
     email: string
     is_staff?: boolean
     is_active: boolean
-    accessToken?: string | null
-    refreshToken?: string | null
+    access?: string | null
+    refresh?: string | null
 }

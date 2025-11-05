@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
-import { UserServices } from '@/services'
+import { UserServices, ProductServices } from '@/services'
 import { useUserStore } from '@/stores/userStore'
 import { ref } from 'vue'
 
@@ -115,13 +115,24 @@ function edit_customer(customer: CustomerForm) {
 }
 
 async function get_users() {
-    await UserServices.login({email: 'admin@client1.com', password: '123456789'}).then((res) => {
-        userStore.user = res.data
-        userStore.setAccessToken(res.data.accessToken as string)
-        userStore.setRefreshToken(res.data.refreshToken as string)
-    })
+    // await UserServices.login({email: 'admin@client1.com', password: '123456789'}).then((res) => {
+    //     userStore.user = res.data
+    //     userStore.setAccessToken(res.data.access as string)
+    //     userStore.setRefreshToken(res.data.refresh as string)
+    // })
 
-    console.log('user', userStore.user)
+    await ProductServices.exportPdf().then((response) => {
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'produits.pdf')
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        })
+        .catch((error) => {
+            console.error('Erreur lors du téléchargement du fichier Excel :', error);
+        })
 }
 </script>
 
