@@ -46,12 +46,12 @@ const data = {
     },
     {
       title: "Familles de produits / Services",
-      url: "#",
+      url: "/familles-produits",
       icon: Blocks,
     },
     {
       title: "Produits",
-      url: "#",
+      url: "/produits",
       icon: ShoppingBag,
     },
     {
