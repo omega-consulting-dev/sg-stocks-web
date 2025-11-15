@@ -16,7 +16,7 @@ import {
   ChartNoAxesColumnIncreasing,
   BookCheck,
   UserCog,
-} from 'lucide-vue-next'
+} from "lucide-vue-next"
 import NavMain from '@/components/navigation/MenuMain.vue'
 
 import {
@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/sidebar'
 
 const props = withDefaults(defineProps<SidebarProps>(), {
-  collapsible: 'icon',
+  collapsible: "icon",
 })
 
 const { open } = useSidebar()
@@ -40,130 +40,130 @@ const { open } = useSidebar()
 const data = {
   menu: [
     {
-      title: 'Dashboard',
-      url: '/',
+      title: "Dashboard",
+      url: "/",
       icon: Gauge,
     },
     {
-      title: 'Familles de produits / Services',
-      url: '#',
+      title: "Familles de produits / Services",
+      url: "/familles-produits",
       icon: Blocks,
     },
     {
-      title: 'Produits',
-      url: '#',
+      title: "Produits",
+      url: "/produits",
       icon: ShoppingBag,
     },
     {
-      title: 'Services',
-      url: '#',
+      title: "Services",
+      url: "#",
       icon: ShoppingBasket,
     },
     {
-      title: 'Entrée en Stock',
-      url: '#',
+      title: "Entrée en Stock",
+      url: "#",
       icon: ScanLine,
     },
     {
-      title: 'Facturation',
-      url: '#',
+      title: "Facturation",
+      url: "#",
       icon: BadgePercent,
     },
     {
-      title: 'Encaissements',
-      url: '#',
+      title: "Encaissements",
+      url: "#",
       icon: BanknoteArrowUp,
     },
     {
-      title: 'Decaissements',
-      url: '#',
+      title: "Decaissements",
+      url: "#",
       icon: BanknoteArrowDown,
     },
     {
-      title: 'Emprunt',
-      url: '#',
+      title: "Emprunt",
+      url: "#",
       icon: Settings,
     },
     {
-      title: 'Mouvement',
+      title: "Mouvement",
       icon: ArrowLeftRight,
       children: [
         {
-          title: 'Entrée',
-          url: '#',
+          title: "Entrée",
+          url: "#",
         },
         {
-          title: 'Sorties',
-          url: '#',
+          title: "Sorties",
+          url: "#",
         },
         {
-          title: 'Entrée / Sortir',
-          url: '#',
+          title: "Entrée / Sortir",
+          url: "#",
         },
         {
           title: "Etat d'inventaire",
-          url: '#',
+          url: "#",
         },
       ],
     },
     {
-      title: 'Statistiques',
+      title: "Statistiques",
       icon: ChartNoAxesColumnIncreasing,
       children: [
         {
-          title: 'Vente Mensuel',
-          url: '#',
+          title: "Vente Mensuel",
+          url: "#",
         },
         {
-          title: 'Charge Mensuel',
-          url: '#',
+          title: "Charge Mensuel",
+          url: "#",
         },
         {
-          title: 'Charge par nature',
-          url: '#',
+          title: "Charge par nature",
+          url: "#",
         },
         {
-          title: 'Suirvie clients',
-          url: '#',
+          title: "Suirvie clients",
+          url: "#",
         },
         {
-          title: 'Suirvie Fournisseurs',
-          url: '#',
+          title: "Suirvie Fournisseurs",
+          url: "#",
         },
       ],
     },
     {
-      title: 'Depense',
-      url: '#',
+      title: "Depense",
+      url: "#",
       icon: HandCoins,
     },
     {
-      title: 'Repporting Mensuel',
-      url: '#',
+      title: "Repporting Mensuel",
+      url: "#",
       icon: BookCheck,
     },
     {
-      title: 'Gestion Utilisateur',
+      title: "Gestion Utilisateur",
       icon: UserCog,
       children: [
         {
-          title: 'Gestion client',
-          url: '/users/customer',
+          title: "Gestion client",
+          url: "#",
         },
         {
-          title: 'Gestion Fournisseur',
-          url: '#',
+          title: "Gestion Fournisseur",
+          url: "#",
         },
       ],
     },
   ],
   footerMenu: [
     {
-      title: 'Parametres',
-      url: '#',
+      title: "Parametres",
+      url: "#",
       icon: Settings,
     },
-  ],
+  ]
 }
 </script>
 
@@ -171,12 +171,7 @@ const data = {
   <Sidebar v-bind="props">
     <SidebarHeader>
       <img v-if="open" src="@/assets/logo.svg" alt="logo de l'application" class="h-10 w-auto" />
-      <img
-        v-else
-        src="@/assets/icon.svg"
-        alt="logo de l'application sans nom"
-        class="h-10 w-auto"
-      />
+      <img v-else src="@/assets/icon.svg" alt="logo de l'application sans nom" class="h-10 w-auto" />
     </SidebarHeader>
     <SidebarContent>
       <NavMain :items="data.menu" />
@@ -185,7 +180,7 @@ const data = {
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton as-child v-for="item in data.footerMenu" :key="item.title">
-            <a :href="item.url">
+            <a :href=item.url>
               <component :is="item.icon" />
               <span>{{ item.title }}</span>
             </a>
