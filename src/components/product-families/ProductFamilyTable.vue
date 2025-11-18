@@ -22,14 +22,20 @@ import { Skeleton } from '@/components/ui/skeleton'
 const props = defineProps<{
   families: ProductFamily[]
   loading?: boolean
+  selectedFamilyId?: number
 }>()
 
 const emit = defineEmits<{
   edit: [family: ProductFamily]
   delete: [family: ProductFamily]
+  select: [family: ProductFamily]
 }>()
 
 const displayedFamilies = computed(() => props.families)
+
+const handleSelect = (family: ProductFamily) => {
+  emit('select', family)
+}
 
 const formatDate = (date: Date) => {
   return new Date(date).toLocaleDateString('fr-FR', {
@@ -74,7 +80,13 @@ const handleDelete = (family: ProductFamily) => {
           <TableRow
             v-for="family in displayedFamilies"
             :key="family.id"
-            class="hover:bg-gray-50"
+            :class="[
+              'cursor-pointer transition-colors',
+              selectedFamilyId === family.id
+                ? 'bg-blue-50 hover:bg-blue-100 border-l-4 border-l-[#003FD8]'
+                : 'hover:bg-gray-50'
+            ]"
+            @click="handleSelect(family)"
           >
             <TableCell class="font-medium">{{ family.code }}</TableCell>
             <TableCell>{{ family.libelle }}</TableCell>
@@ -82,7 +94,7 @@ const handleDelete = (family: ProductFamily) => {
             <TableCell class="text-muted-foreground text-sm">
               {{ formatDate(family.createdAt) }}
             </TableCell>
-            <TableCell class="text-right">
+            <TableCell class="text-right" @click.stop>
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
                   <Button variant="ghost" size="icon" class="h-8 w-8">

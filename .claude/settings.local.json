@@ -1,0 +1,11 @@
+{
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "Framelink MCP for Figma"
+  ],
+  "permissions": {
+    "allow": [
+      "mcp__Framelink_MCP_for_Figma__get_figma_data"
+    ]
+  }
+}

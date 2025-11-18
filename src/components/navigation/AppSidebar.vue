@@ -56,7 +56,7 @@ const data = {
     },
     {
       title: "Services",
-      url: "#",
+      url: "/services",
       icon: ShoppingBasket,
     },
     {

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useProductsStore, type Product } from '@/stores/products'
-import ProductSearchBar from '@/components/ProductSearchBar.vue'
-import ProductTable from '@/components/ProductTable.vue'
-import ProductForm from '@/components/ProductForm.vue'
+import ProductSearchBar from '@/components/products/ProductSearchBar.vue'
+import ProductTable from '@/components/products/ProductTable.vue'
+import ProductForm from '@/components/products/ProductForm.vue'
 import {
   Breadcrumb,
   BreadcrumbList,

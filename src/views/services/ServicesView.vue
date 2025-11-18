@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useProductFamiliesStore, type ProductFamily } from '@/stores/productFamilies'
-import ProductFamilySearchBar from '@/components/ProductFamilySearchBar.vue'
-import ProductFamilyTable from '@/components/ProductFamilyTable.vue'
-import ProductFamilyForm from '@/components/ProductFamilyForm.vue'
+import { useServicesStore, type Service } from '@/stores/services'
+import ServiceSearchBar from '@/components/services/ServiceSearchBar.vue'
+import ServiceTable from '@/components/services/ServiceTable.vue'
+import ServiceForm from '@/components/services/ServiceForm.vue'
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -21,104 +21,135 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 
-const store = useProductFamiliesStore()
+const store = useServicesStore()
 
 // État local
 const searchQuery = ref('')
+const familyFilter = ref('')
+const currentPage = ref(1)
+const pageSize = ref(6)
 const isFormOpen = ref(false)
 const isDeleteDialogOpen = ref(false)
-const selectedFamily = ref<ProductFamily | null>(null)
-const familyToDelete = ref<ProductFamily | null>(null)
+const selectedService = ref<Service | null>(null)
+const serviceToDelete = ref<Service | null>(null)
 
 // Computed
-const filteredFamilies = computed(() => {
-  if (!searchQuery.value) {
-    return store.families
+const filteredServices = computed(() => {
+  let filtered = store.services
+
+  // Filtre par recherche
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(
+      (service) =>
+        service.intitule.toLowerCase().includes(query) ||
+        service.client.toLowerCase().includes(query) ||
+        service.familleLibelle.toLowerCase().includes(query)
+    )
   }
-  const query = searchQuery.value.toLowerCase()
-  return store.families.filter(
-    (family) =>
-      family.code.toLowerCase().includes(query) ||
-      family.libelle.toLowerCase().includes(query) ||
-      family.description.toLowerCase().includes(query)
-  )
+
+  // Filtre par famille
+  if (familyFilter.value) {
+    filtered = filtered.filter(
+      (service) => service.familleLibelle === familyFilter.value
+    )
+  }
+
+  return filtered
+})
+
+const paginatedServices = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredServices.value.slice(start, end)
 })
 
 // Charger les données au montage
 onMounted(() => {
-  store.fetchFamilies()
+  store.fetchServices()
 })
 
 // Gestion de la recherche
 const handleSearch = (query: string) => {
   searchQuery.value = query
+  currentPage.value = 1 // Reset pagination
+}
+
+// Gestion du filtre famille
+const handleFamilyFilter = (family: string) => {
+  familyFilter.value = family
+  currentPage.value = 1 // Reset pagination
 }
 
 // Gestion de l'ajout
 const handleAdd = () => {
-  selectedFamily.value = null
+  selectedService.value = null
   isFormOpen.value = true
 }
 
 // Gestion de l'import
 const handleImport = () => {
-  // TODO: Implémenter l'import de données
   console.log('Import clicked')
+  // TODO: Implémenter l'import de données
 }
 
 // Gestion de l'export PDF
 const handleExportPdf = () => {
-  // TODO: Implémenter l'export PDF
   console.log('Export PDF clicked')
+  // TODO: Implémenter l'export PDF
 }
 
 // Gestion de l'export Excel
 const handleExportExcel = () => {
-  // TODO: Implémenter l'export Excel
   console.log('Export Excel clicked')
+  // TODO: Implémenter l'export Excel
 }
 
 // Gestion de la modification
-const handleEdit = (family: ProductFamily) => {
-  selectedFamily.value = family
+const handleEdit = (service: Service) => {
+  selectedService.value = service
   isFormOpen.value = true
 }
 
 // Gestion de la suppression
-const handleDelete = (family: ProductFamily) => {
-  familyToDelete.value = family
+const handleDelete = (service: Service) => {
+  serviceToDelete.value = service
   isDeleteDialogOpen.value = true
 }
 
 const confirmDelete = async () => {
-  if (!familyToDelete.value) return
+  if (!serviceToDelete.value) return
 
   try {
-    await store.deleteFamily(familyToDelete.value.id)
+    await store.deleteService(serviceToDelete.value.id)
     isDeleteDialogOpen.value = false
-    familyToDelete.value = null
+    serviceToDelete.value = null
   } catch (error) {
     console.error('Erreur lors de la suppression:', error)
   }
 }
 
 // Soumission du formulaire
-const handleFormSubmit = async (data: { code: string; libelle: string; description: string }) => {
+const handleFormSubmit = async (data: Partial<Service>) => {
   try {
-    if (selectedFamily.value) {
+    if (selectedService.value) {
       // Modification
-      await store.updateFamily(selectedFamily.value.id, data)
+      await store.updateService(selectedService.value.id, data)
     } else {
       // Ajout
-      await store.addFamily(data)
+      await store.addService(data as Omit<Service, 'id' | 'createdAt' | 'updatedAt'>)
     }
     isFormOpen.value = false
-    selectedFamily.value = null
+    selectedService.value = null
   } catch (error) {
-    console.error('Erreur lors de l\'enregistrement:', error)
+    console.error("Erreur lors de l'enregistrement:", error)
   }
+}
+
+// Gestion du changement de page
+const handlePageChange = (page: number) => {
+  currentPage.value = page
 }
 </script>
 
@@ -132,45 +163,37 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage>Familles de produits</BreadcrumbPage>
+          <BreadcrumbPage>Services</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
 
-    <!-- Barre de recherche et actions (avec titre intégré) -->
-    <ProductFamilySearchBar
+    <!-- Barre de recherche et actions -->
+    <ServiceSearchBar
       @search="handleSearch"
+      @family-filter="handleFamilyFilter"
       @add="handleAdd"
       @import="handleImport"
       @export-pdf="handleExportPdf"
       @export-excel="handleExportExcel"
     />
 
-    <!-- Tableau des familles -->
-    <Card>
-      <CardContent class="p-0">
-        <ProductFamilyTable
-          :families="filteredFamilies"
-          :loading="store.loading"
-          @edit="handleEdit"
-          @delete="handleDelete"
-        />
-      </CardContent>
-    </Card>
-
-    <!-- Statistiques -->
-    <div class="flex items-center gap-2 text-sm text-muted-foreground">
-      <span>Total:</span>
-      <span class="font-semibold text-[#003FD8]">{{ store.familiesCount }} famille(s)</span>
-      <span v-if="searchQuery" class="ml-2">
-        · {{ filteredFamilies.length }} résultat(s) filtré(s)
-      </span>
-    </div>
+    <!-- Tableau des services -->
+    <ServiceTable
+      :services="paginatedServices"
+      :loading="store.loading"
+      :current-page="currentPage"
+      :page-size="pageSize"
+      :total="filteredServices.length"
+      @edit="handleEdit"
+      @delete="handleDelete"
+      @page-change="handlePageChange"
+    />
 
     <!-- Formulaire d'ajout/modification -->
-    <ProductFamilyForm
+    <ServiceForm
       v-model:open="isFormOpen"
-      :family="selectedFamily"
+      :service="selectedService"
       :loading="store.loading"
       @submit="handleFormSubmit"
     />
@@ -181,8 +204,8 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
         <DialogHeader>
           <DialogTitle>Confirmer la suppression</DialogTitle>
           <DialogDescription>
-            Êtes-vous sûr de vouloir supprimer la famille
-            <span class="font-semibold">{{ familyToDelete?.libelle }}</span> ?
+            Êtes-vous sûr de vouloir supprimer le service
+            <span class="font-semibold">{{ serviceToDelete?.intitule }}</span> ?
             Cette action est irréversible.
           </DialogDescription>
         </DialogHeader>
