@@ -105,9 +105,9 @@ const handleSubmit = () => {
   emit('submit', data)
 }
 
-const handleClose = () => {
-  emit('update:open', false)
-}
+// const handleClose = () => {
+//   emit('update:open', false)
+// }
 </script>
 
 <template>
@@ -118,12 +118,12 @@ const handleClose = () => {
         <div class="absolute left-[33.88px] top-[27px] w-[44px] h-[44px] rounded-full bg-[#FBFBFB] border border-[#BABABA]"></div>
 
         <!-- Bouton X en haut à droite -->
-        <button
+        <!-- <button
           @click="handleClose"
           class="absolute right-[21px] top-[20px] w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded transition-colors"
         >
           <X class="h-4 w-4 text-black" />
-        </button>
+        </button> -->
 
         <!-- Titre -->
         <div class="pt-[36px] pb-6 text-center">

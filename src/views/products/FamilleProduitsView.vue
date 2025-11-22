@@ -32,6 +32,7 @@ const productsStore = useProductsStore()
 const searchQuery = ref('')
 const isFormOpen = ref(false)
 const isDeleteDialogOpen = ref(false)
+const isProductsDialogOpen = ref(false)
 const selectedFamily = ref<ProductFamily | null>(null)
 const familyToDelete = ref<ProductFamily | null>(null)
 const selectedFamilyForProducts = ref<ProductFamily | null>(null)
@@ -95,12 +96,8 @@ const handleExportExcel = () => {
 
 // Gestion de la sélection d'une famille pour voir ses produits
 const handleSelectFamily = (family: ProductFamily) => {
-  if (selectedFamilyForProducts.value?.id === family.id) {
-    // Si on clique sur la même famille, on la désélectionne
-    selectedFamilyForProducts.value = null
-  } else {
-    selectedFamilyForProducts.value = family
-  }
+  selectedFamilyForProducts.value = family
+  isProductsDialogOpen.value = true
 }
 
 // Gestion de la modification
@@ -175,35 +172,12 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
         <ProductFamilyTable
           :families="filteredFamilies"
           :loading="store.loading"
-          :selected-family-id="selectedFamilyForProducts?.id"
           @edit="handleEdit"
           @delete="handleDelete"
           @select="handleSelectFamily"
         />
       </CardContent>
     </Card>
-
-    <!-- Produits de la famille sélectionnée -->
-    <div v-if="selectedFamilyForProducts" class="space-y-4">
-      <div class="flex items-center gap-4">
-        <h3 class="text-xl font-bold text-[#003FD8]">
-          Produits de la famille "{{ selectedFamilyForProducts.libelle }}"
-        </h3>
-        <span class="text-sm text-muted-foreground">
-          {{ familyProducts.length }} produit(s)
-        </span>
-      </div>
-
-      <ProductTable
-        :products="familyProducts"
-        :loading="productsStore.loading"
-        :current-page="1"
-        :page-size="10"
-        :total="familyProducts.length"
-        @edit="() => {}"
-        @delete="() => {}"
-      />
-    </div>
 
     <!-- Statistiques -->
     <div class="flex items-center gap-2 text-sm text-muted-foreground">
@@ -247,6 +221,40 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
             :disabled="store.loading"
           >
             {{ store.loading ? 'Suppression...' : 'Supprimer' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Dialog des produits de la famille -->
+    <Dialog v-model:open="isProductsDialogOpen">
+      <DialogContent class="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle class="text-[#003FD8]">
+            Produits de la famille "{{ selectedFamilyForProducts?.libelle }}"
+          </DialogTitle>
+          <DialogDescription>
+            {{ familyProducts.length }} produit(s) dans cette famille
+          </DialogDescription>
+        </DialogHeader>
+        <div class="flex-1 overflow-auto">
+          <ProductTable
+            v-if="familyProducts.length > 0"
+            :products="familyProducts"
+            :loading="productsStore.loading"
+            :current-page="1"
+            :page-size="familyProducts.length"
+            :total="familyProducts.length"
+            @edit="() => {}"
+            @delete="() => {}"
+          />
+          <div v-else class="py-8 text-center text-muted-foreground">
+            Aucun produit dans cette famille
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="isProductsDialogOpen = false">
+            Fermer
           </Button>
         </DialogFooter>
       </DialogContent>

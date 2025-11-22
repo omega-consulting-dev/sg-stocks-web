@@ -61,17 +61,26 @@ const data = {
     },
     {
       title: "Entrée en Stock",
-      url: "#",
+      url: "/achats/entree-stock",
       icon: ScanLine,
     },
     {
       title: "Facturation",
-      url: "#",
       icon: BadgePercent,
+      children: [
+        {
+          title: "Facturation Produit",
+          url: "/facturation/produit",
+        },
+        {
+          title: "Facturation Service",
+          url: "/facturation/service",
+        },
+      ],
     },
     {
       title: "Encaissements",
-      url: "#",
+      url: "/encaissements",
       icon: BanknoteArrowUp,
     },
     {

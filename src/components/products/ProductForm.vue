@@ -123,13 +123,13 @@ const handleClose = () => {
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent class="max-w-[463px] p-0 gap-0 border border-[#0072C1] rounded-[10px] max-h-[90vh] overflow-y-auto">
       <div class="relative px-[47px] pt-[27px] pb-[20px]">
-        <button
+        <!-- <button
           @click="handleClose"
           class="absolute right-[15px] top-[15px] w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
           type="button"
         >
           <X class="h-4 w-4 text-gray-600" />
-        </button>
+        </button> -->
 
         <div class="flex items-center gap-5 mb-4">
           <div class="w-11 h-11 rounded-full bg-[#FBFBFB] border border-[#BABABA] flex items-center justify-center">

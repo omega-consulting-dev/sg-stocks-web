@@ -65,13 +65,13 @@ const handleClose = () => {
       <!-- En-tête avec avatar et titre -->
       <div class="relative px-[46px] pt-[27px] pb-[20px]">
         <!-- Bouton fermer -->
-        <button
+        <!-- <button
           @click="handleClose"
           class="absolute right-[15px] top-[15px] w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
           type="button"
         >
           <X class="h-4 w-4 text-gray-600" />
-        </button>
+        </button> -->
 
         <!-- Avatar/Icône -->
         <div class="flex items-center gap-5 mb-1">
@@ -140,7 +140,7 @@ const handleClose = () => {
             class="w-full h-[37px] bg-[#0769CF] hover:bg-[#0558b0] text-white rounded-[10px] text-[14.76px] font-bold uppercase tracking-wide"
             style="font-family: Montserrat"
           >
-            {{ loading ? 'ENREGISTREMENT...' : 'SAUVER' }}
+            {{ loading ? 'ENREGISTREMENT...' : 'ENREGISTRER' }}
           </Button>
         </div>
       </form>

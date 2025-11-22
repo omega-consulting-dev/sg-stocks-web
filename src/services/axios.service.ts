@@ -22,7 +22,7 @@ interface FailedRequest {
 
 // Création de l'instance Axios
 const Axios = axios.create({
-    baseURL: "http://localhost:8000/api",
+    baseURL: "http://192.168.100.132:8000/api/v1",
     timeout: 10000,
     withCredentials: true,
     headers: {
@@ -32,10 +32,8 @@ const Axios = axios.create({
 
 // Intercepteur de requête
 Axios.interceptors.request.use(
-    (requete: AxiosRequestConfig) => {
+    (requete) => {
         const user = useUserStore()
-        
-        requete.headers = requete.headers || {}
         
         if (user.access_token) {
             requete.headers.Authorization = `Bearer ${user.access_token}`
@@ -43,7 +41,7 @@ Axios.interceptors.request.use(
         
         return requete
     },
-    (error: AxiosError) => {
+    (error) => {
         return Promise.reject(error)
     }
 )
