@@ -8,10 +8,15 @@ export const containerClass = 'w-full h-full'
 import AppNavbar from './components/navigation/AppNavbar.vue'
 import AppSidebar from '@/components/navigation/AppSidebar.vue'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { onMounted } from 'vue'
-import { useUserStore } from './stores/userStore'
+import { onMounted, computed } from 'vue'
+import { useUserStore } from './stores/user'
+import { useRoute } from 'vue-router'
 
 const userStore = useUserStore()
+const route = useRoute()
+
+// Check if current route is an auth route
+const isAuthRoute = computed(() => route.meta.layout === 'auth')
 
 onMounted(() => {
     userStore.setDomain()
@@ -19,7 +24,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <SidebarProvider>
+  <!-- Auth Layout (no sidebar/navbar) -->
+  <div v-if="isAuthRoute" class="min-h-screen">
+    <RouterView />
+  </div>
+
+  <!-- App Layout (with sidebar/navbar) -->
+  <SidebarProvider v-else>
     <AppSidebar />
     <SidebarInset>
       <AppNavbar />

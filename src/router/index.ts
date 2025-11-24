@@ -8,11 +8,21 @@ import FacturationProduitView from '../views/facturation/FacturationProduitView.
 import FacturationServiceView from '../views/facturation/FacturationServiceView.vue'
 import FacturationProduitNouveauView from '../views/facturation/FacturationProduitNouveauView.vue'
 import EncaissementsView from '../views/encaissements/EncaissementsView.vue'
+import LoginView from '../views/auth/LoginView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
 
   routes: [
+    // Auth routes
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView,
+      meta: { layout: 'auth' }
+    },
+
+    // App routes
     { path: '/', name: 'home', component: HomeView },
 
     {

@@ -1,13 +1,12 @@
 import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios";
-import router from "@/router"; 
-import { useUserStore } from "@/stores/userStore";
-const userStore = useUserStore()
+import router from "@/router";
+import { useUserStore } from "@/stores/user";
 
 /**
  * Interface pour étendre la configuration de la requête Axios.
  * Ceci permet d'ajouter des propriétés personnalisées comme `_retry` et `skipAuthRefresh`.
  */
-interface CustomAxiosRequestConfig extends AxiosRequestConfig {
+export interface CustomAxiosRequestConfig extends AxiosRequestConfig {
     _retry?: boolean;
     skipAuthRefresh?: boolean;
 }
@@ -22,23 +21,26 @@ interface FailedRequest {
 
 // Création de l'instance Axios
 const Axios = axios.create({
-    baseURL: "http://192.168.100.132:8000/api/v1",
-    timeout: 10000,
-    withCredentials: true,
-    headers: {
-        'X-Tenant': userStore.domain
-    }
+    baseURL: import.meta.env.VITE_API_BASE_URL || "http://sgstock.com:8000/api/v1",
+    timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 10000,
+    withCredentials: true
 })
 
 // Intercepteur de requête
 Axios.interceptors.request.use(
     (requete) => {
-        const user = useUserStore()
-        
-        if (user.access_token) {
-            requete.headers.Authorization = `Bearer ${user.access_token}`
+        const userStore = useUserStore()
+
+        // Ajouter le token d'authentification si disponible
+        if (userStore.access_token) {
+            requete.headers.Authorization = `Bearer ${userStore.access_token}`
         }
-        
+
+        // Ajouter le header X-Tenant si disponible
+        if (userStore.domain) {
+            requete.headers['X-Tenant'] = userStore.domain
+        }
+
         return requete
     },
     (error) => {

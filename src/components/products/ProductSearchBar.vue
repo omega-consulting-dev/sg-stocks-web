@@ -46,11 +46,11 @@ const handleExportExcel = () => {
     <div class="flex flex-col gap-0.5">
       <div class="flex items-center gap-3">
         <h1 class="text-[32px] font-bold leading-[1.21] text-[#003FD8]">
-          produits
+          Produits
         </h1>
       </div>
       <p class="text-[20px] font-normal leading-[1.21] text-[#85878D]">
-        listes des produits
+        Listes des produits
       </p>
     </div>
 

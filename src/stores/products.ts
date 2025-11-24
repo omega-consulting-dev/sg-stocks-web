@@ -1,5 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { productsApi } from '@/services/api/products.api'
+import type { CreateProductDto, UpdateProductDto, ProductFilters } from '@/services/api/products.api'
 
 export interface Product {
   id: number
@@ -13,8 +15,8 @@ export interface Product {
   seuilAlerte: number
   image?: string
   description: string
-  createdAt: Date
-  updatedAt: Date
+  createdAt: Date | string
+  updatedAt: Date | string
 }
 
 export const useProductsStore = defineStore('products', () => {
@@ -154,13 +156,12 @@ export const useProductsStore = defineStore('products', () => {
   )
 
   // Actions
-  const fetchProducts = async () => {
+  const fetchProducts = async (filters?: ProductFilters) => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      products.value = mockProducts
+      const data = await productsApi.fetchAll(filters)
+      products.value = data
     } catch (e) {
       error.value = 'Erreur lors du chargement des produits'
       console.error(e)
@@ -169,22 +170,11 @@ export const useProductsStore = defineStore('products', () => {
     }
   }
 
-  const addProduct = async (
-    product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
-  ) => {
+  const addProduct = async (product: CreateProductDto) => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
-      const newProduct: Product = {
-        ...product,
-        id: Math.max(...products.value.map((p) => p.id), 0) + 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-
+      const newProduct = await productsApi.create(product)
       products.value.push(newProduct)
       return newProduct
     } catch (e) {
@@ -196,26 +186,16 @@ export const useProductsStore = defineStore('products', () => {
     }
   }
 
-  const updateProduct = async (
-    id: number,
-    updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>
-  ) => {
+  const updateProduct = async (id: number, updates: UpdateProductDto) => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
+      const updatedProduct = await productsApi.update(id, updates)
       const index = products.value.findIndex((p) => p.id === id)
       if (index !== -1) {
-        products.value[index] = {
-          ...products.value[index],
-          ...updates,
-          updatedAt: new Date(),
-        }
-        return products.value[index]
+        products.value[index] = updatedProduct
       }
-      throw new Error('Produit non trouvé')
+      return updatedProduct
     } catch (e) {
       error.value = 'Erreur lors de la modification du produit'
       console.error(e)
@@ -229,15 +209,12 @@ export const useProductsStore = defineStore('products', () => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
+      await productsApi.remove(id)
       const index = products.value.findIndex((p) => p.id === id)
       if (index !== -1) {
         products.value.splice(index, 1)
-        return true
       }
-      throw new Error('Produit non trouvé')
+      return true
     } catch (e) {
       error.value = 'Erreur lors de la suppression du produit'
       console.error(e)

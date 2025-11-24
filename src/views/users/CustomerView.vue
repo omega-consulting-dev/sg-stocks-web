@@ -21,7 +21,7 @@ import {
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 import { UserServices, ProductServices } from '@/services'
-import { useUserStore } from '@/stores/userStore'
+import { useUserStore } from '@/stores/user'
 import { ref } from 'vue'
 
 const userStore = useUserStore()

@@ -66,17 +66,8 @@ const handleExportExcel = () => {
     <div class="flex flex-col gap-6">
       <!-- Boutons d'action -->
       <div class="flex items-center gap-8">
-        <!-- Bouton Importer -->
-        <Button
-          variant="outline"
-          class="gap-2 rounded-[10px] border-[rgba(7,105,207,0.23)] px-[10.64px] py-[7.09px] text-[#0769CF] hover:bg-[#0769CF]/5"
-          @click="handleImport"
-        >
-          <Upload class="h-[14.19px] w-[14.19px]" />
-          <span class="text-[18.41px] font-medium leading-[1.5]">Importer</span>
-        </Button>
 
-        <!-- Bouton Exporter avec menu déroulant -->
+    <!-- Bouton Importer avec menu déroulant -->
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
             <Button
@@ -84,7 +75,7 @@ const handleExportExcel = () => {
               class="gap-2 rounded-[10px] border-[rgba(7,105,207,0.23)] px-[10.64px] py-[7.09px] text-[#0769CF] hover:bg-[#0769CF]/5"
             >
               <Download class="h-[14.19px] w-[14.19px]" />
-              <span class="text-[18.41px] font-medium leading-[1.5]">Exporter</span>
+              <span class="text-[18.41px] font-medium leading-[1.5]">Importer</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -113,6 +104,18 @@ const handleExportExcel = () => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <!-- Bouton Exporter -->
+        <Button
+          variant="outline"
+          class="gap-2 rounded-[10px] border-[rgba(7,105,207,0.23)] px-[10.64px] py-[7.09px] text-[#0769CF] hover:bg-[#0769CF]/5"
+          @click="handleImport"
+        >
+          <Upload class="h-[14.19px] w-[14.19px]" />
+          <span class="text-[18.41px] font-medium leading-[1.5]">Exporter</span>
+        </Button>
+
+
 
         <!-- Bouton Nouveau -->
         <Button

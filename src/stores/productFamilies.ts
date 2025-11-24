@@ -1,13 +1,15 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { productFamiliesApi } from '@/services/api/productFamilies.api'
+import type { CreateProductFamilyDto, UpdateProductFamilyDto } from '@/services/api/productFamilies.api'
 
 export interface ProductFamily {
   id: number
   code: string
   libelle: string
   description: string
-  createdAt: Date
-  updatedAt: Date
+  createdAt: Date | string
+  updatedAt: Date | string
 }
 
 export const useProductFamiliesStore = defineStore('productFamilies', () => {
@@ -68,9 +70,8 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise(resolve => setTimeout(resolve, 500))
-      families.value = mockFamilies
+      const data = await productFamiliesApi.fetchAll()
+      families.value = data
     } catch (e) {
       error.value = 'Erreur lors du chargement des familles de produits'
       console.error(e)
@@ -79,20 +80,11 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
     }
   }
 
-  const addFamily = async (family: Omit<ProductFamily, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addFamily = async (family: CreateProductFamilyDto) => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise(resolve => setTimeout(resolve, 300))
-
-      const newFamily: ProductFamily = {
-        ...family,
-        id: Math.max(...families.value.map(f => f.id), 0) + 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-
+      const newFamily = await productFamiliesApi.create(family)
       families.value.push(newFamily)
       return newFamily
     } catch (e) {
@@ -104,23 +96,16 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
     }
   }
 
-  const updateFamily = async (id: number, updates: Partial<Omit<ProductFamily, 'id' | 'createdAt' | 'updatedAt'>>) => {
+  const updateFamily = async (id: number, updates: UpdateProductFamilyDto) => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise(resolve => setTimeout(resolve, 300))
-
+      const updatedFamily = await productFamiliesApi.update(id, updates)
       const index = families.value.findIndex(f => f.id === id)
       if (index !== -1) {
-        families.value[index] = {
-          ...families.value[index],
-          ...updates,
-          updatedAt: new Date(),
-        }
-        return families.value[index]
+        families.value[index] = updatedFamily
       }
-      throw new Error('Famille non trouvée')
+      return updatedFamily
     } catch (e) {
       error.value = 'Erreur lors de la modification de la famille'
       console.error(e)
@@ -134,15 +119,12 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise(resolve => setTimeout(resolve, 300))
-
+      await productFamiliesApi.remove(id)
       const index = families.value.findIndex(f => f.id === id)
       if (index !== -1) {
         families.value.splice(index, 1)
-        return true
       }
-      throw new Error('Famille non trouvée')
+      return true
     } catch (e) {
       error.value = 'Erreur lors de la suppression de la famille'
       console.error(e)

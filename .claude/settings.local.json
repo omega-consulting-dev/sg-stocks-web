@@ -1,11 +1,17 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__Framelink_MCP_for_Figma__get_figma_data",
+      "Bash(npx shadcn-vue@latest add:*)",
+      "WebFetch(domain:www.figma.com)",
+      "mcp__Framelink_MCP_for_Figma__download_figma_images",
+      "Bash(npm run type-check:*)",
+      "Bash(tree:*)",
+      "Bash(mkdir:*)"
+    ]
+  },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "Framelink MCP for Figma"
-  ],
-  "permissions": {
-    "allow": [
-      "mcp__Framelink_MCP_for_Figma__get_figma_data"
-    ]
-  }
+  ]
 }

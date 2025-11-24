@@ -50,7 +50,7 @@ const handleExportExcel = () => {
         </h1>
       </div>
       <p class="text-[20px] font-normal leading-[1.21] text-[#85878D]">
-        categorisation des produits
+        Categorisation des produits
       </p>
     </div>
 
