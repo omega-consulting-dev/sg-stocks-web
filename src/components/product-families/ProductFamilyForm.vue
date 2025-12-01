@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { X, FileText, Camera } from 'lucide-vue-next'
+import { FileText, Camera } from 'lucide-vue-next'
 import type { ProductFamily } from '@/stores/productFamilies'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -15,12 +15,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  submit: [data: { code: string; libelle: string; description: string }]
+  submit: [data: { name: string; description: string }]
 }>()
 
 const formData = ref({
-  code: '',
-  libelle: '',
+  name: '',
   description: '',
 })
 
@@ -32,15 +31,13 @@ watch(() => props.open, (newValue) => {
     if (props.family) {
       isEditing.value = true
       formData.value = {
-        code: props.family.code,
-        libelle: props.family.libelle,
-        description: props.family.description,
+        name: props.family.name,
+        description: props.family.description || '',
       }
     } else {
       isEditing.value = false
       formData.value = {
-        code: '',
-        libelle: '',
+        name: '',
         description: '',
       }
     }
@@ -48,7 +45,7 @@ watch(() => props.open, (newValue) => {
 })
 
 const handleSubmit = () => {
-  if (!formData.value.code || !formData.value.libelle) {
+  if (!formData.value.name) {
     return
   }
   emit('submit', { ...formData.value })
@@ -88,21 +85,21 @@ const handleClose = () => {
 
       <!-- Formulaire -->
       <form @submit.prevent="handleSubmit" class="px-[46px]">
-        <!-- Champ Designation -->
+        <!-- Champ Nom -->
         <div class="mb-[13px]">
           <label
-            for="designation"
+            for="name"
             class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]"
             style="font-family: 'Palanquin Dark'"
           >
-            Designation :
+            Désignation :
           </label>
           <div class="relative">
             <FileText class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
             <Input
-              id="designation"
-              v-model="formData.libelle"
-              placeholder="Ex : Eletroménager"
+              id="name"
+              v-model="formData.name"
+              placeholder="Ex : Électroménager"
               required
               :disabled="loading"
               class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
@@ -136,7 +133,7 @@ const handleClose = () => {
         <div class="pb-[39px]">
           <Button
             type="submit"
-            :disabled="loading || !formData.libelle"
+            :disabled="loading || !formData.name"
             class="w-full h-[37px] bg-[#0769CF] hover:bg-[#0558b0] text-white rounded-[10px] text-[14.76px] font-bold uppercase tracking-wide"
             style="font-family: Montserrat"
           >

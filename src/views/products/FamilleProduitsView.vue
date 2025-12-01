@@ -45,9 +45,9 @@ const filteredFamilies = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return store.families.filter(
     (family) =>
-      family.code.toLowerCase().includes(query) ||
-      family.libelle.toLowerCase().includes(query) ||
-      family.description.toLowerCase().includes(query)
+      String(family.id).includes(query) ||
+      family.name.toLowerCase().includes(query) ||
+      (family.description || '').toLowerCase().includes(query)
   )
 })
 
@@ -78,20 +78,43 @@ const handleAdd = () => {
 
 // Gestion de l'import
 const handleImport = () => {
-  // TODO: Implémenter l'import de données
-  console.log('Import clicked')
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.xlsx,.xls'
+  input.onchange = async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (file) {
+      try {
+        const result = await store.importExcel(file)
+        console.log('Import réussi:', result)
+        alert(`Import terminé: ${result.created} créées, ${result.updated} mises à jour`)
+      } catch (error) {
+        console.error('Erreur lors de l\'import:', error)
+        alert('Erreur lors de l\'import du fichier')
+      }
+    }
+  }
+  input.click()
 }
 
 // Gestion de l'export PDF
-const handleExportPdf = () => {
-  // TODO: Implémenter l'export PDF
-  console.log('Export PDF clicked')
+const handleExportPdf = async () => {
+  try {
+    await store.exportPdf()
+  } catch (error) {
+    console.error('Erreur lors de l\'export PDF:', error)
+    alert('Erreur lors de l\'export PDF')
+  }
 }
 
 // Gestion de l'export Excel
-const handleExportExcel = () => {
-  // TODO: Implémenter l'export Excel
-  console.log('Export Excel clicked')
+const handleExportExcel = async () => {
+  try {
+    await store.exportExcel()
+  } catch (error) {
+    console.error('Erreur lors de l\'export Excel:', error)
+    alert('Erreur lors de l\'export Excel')
+  }
 }
 
 // Gestion de la sélection d'une famille pour voir ses produits
@@ -125,7 +148,7 @@ const confirmDelete = async () => {
 }
 
 // Soumission du formulaire
-const handleFormSubmit = async (data: { code: string; libelle: string; description: string }) => {
+const handleFormSubmit = async (data: { name: string; description: string }) => {
   try {
     if (selectedFamily.value) {
       // Modification
@@ -203,7 +226,7 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
           <DialogTitle>Confirmer la suppression</DialogTitle>
           <DialogDescription>
             Êtes-vous sûr de vouloir supprimer la famille
-            <span class="font-semibold">{{ familyToDelete?.libelle }}</span> ?
+            <span class="font-semibold">{{ familyToDelete?.name }}</span> ?
             Cette action est irréversible.
           </DialogDescription>
         </DialogHeader>
@@ -231,7 +254,7 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
       <DialogContent class="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle class="text-[#003FD8]">
-            Produits de la famille "{{ selectedFamilyForProducts?.libelle }}"
+            Produits de la famille "{{ selectedFamilyForProducts?.name }}"
           </DialogTitle>
           <DialogDescription>
             {{ familyProducts.length }} produit(s) dans cette famille

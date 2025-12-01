@@ -59,8 +59,8 @@ const handleDelete = (family: ProductFamily) => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead class="w-[120px] font-semibold">Code</TableHead>
-          <TableHead class="font-semibold">Libellé</TableHead>
+          <TableHead class="w-[80px] font-semibold">Code</TableHead>
+          <TableHead class="font-semibold">Désignation</TableHead>
           <TableHead class="font-semibold">Description</TableHead>
           <TableHead class="w-[180px] font-semibold">Date de création</TableHead>
           <TableHead class="w-[80px] text-right font-semibold">Actions</TableHead>
@@ -89,10 +89,10 @@ const handleDelete = (family: ProductFamily) => {
             @click="handleSelect(family)"
           >
             <TableCell class="font-medium">{{ family.id }}</TableCell>
-            <TableCell>{{ family.libelle }}</TableCell>
+            <TableCell>{{ family.name }}</TableCell>
             <TableCell class="text-muted-foreground">{{ family.description }}</TableCell>
             <TableCell class="text-muted-foreground text-sm">
-              {{ formatDate(family.createdAt) }}
+              {{ formatDate(family.created_at) }}
             </TableCell>
             <TableCell class="text-right" @click.stop>
               <DropdownMenu>

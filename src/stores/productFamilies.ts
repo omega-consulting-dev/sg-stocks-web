@@ -1,17 +1,14 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { productFamiliesApi } from '@/services/api/productFamilies.api'
-import type { CreateProductFamilyDto, UpdateProductFamilyDto } from '@/services/api/productFamilies.api'
+import type {
+  ProductFamily,
+  CreateProductFamilyDto,
+  UpdateProductFamilyDto
+} from '@/services/api/productFamilies.api'
 
-export interface ProductFamily {
-  id: number
-  code: string
-  libelle: string
-  description: string
-  createdAt: Date | string
-  updatedAt: Date | string
-}
-
+// Réexporter le type pour les composants
+export type { ProductFamily }
 export const useProductFamiliesStore = defineStore('productFamilies', () => {
   // État
   const families = ref<ProductFamily[]>([])
@@ -19,48 +16,48 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
   const error = ref<string | null>(null)
 
   // Données mock pour le développement
-  const mockFamilies: ProductFamily[] = [
-    {
-      id: 1,
-      code: 'ELEC',
-      libelle: 'Électronique',
-      description: 'Produits électroniques et accessoires',
-      createdAt: new Date('2024-01-15'),
-      updatedAt: new Date('2024-01-15'),
-    },
-    {
-      id: 2,
-      code: 'ALIM',
-      libelle: 'Alimentation',
-      description: 'Produits alimentaires et boissons',
-      createdAt: new Date('2024-01-20'),
-      updatedAt: new Date('2024-02-10'),
-    },
-    {
-      id: 3,
-      code: 'VEST',
-      libelle: 'Vêtements',
-      description: 'Vêtements et accessoires de mode',
-      createdAt: new Date('2024-02-01'),
-      updatedAt: new Date('2024-02-01'),
-    },
-    {
-      id: 4,
-      code: 'MEUBL',
-      libelle: 'Meubles',
-      description: 'Mobilier pour la maison et le bureau',
-      createdAt: new Date('2024-02-15'),
-      updatedAt: new Date('2024-03-01'),
-    },
-    {
-      id: 5,
-      code: 'SPORT',
-      libelle: 'Sport',
-      description: 'Équipements sportifs et accessoires',
-      createdAt: new Date('2024-03-01'),
-      updatedAt: new Date('2024-03-01'),
-    },
-  ]
+  // const mockFamilies: ProductFamily[] = [
+  //   {
+  //     id: 1,
+  //     code: 'ELEC',
+  //     libelle: 'Électronique',
+  //     description: 'Produits électroniques et accessoires',
+  //     createdAt: new Date('2024-01-15'),
+  //     updatedAt: new Date('2024-01-15'),
+  //   },
+  //   {
+  //     id: 2,
+  //     code: 'ALIM',
+  //     libelle: 'Alimentation',
+  //     description: 'Produits alimentaires et boissons',
+  //     createdAt: new Date('2024-01-20'),
+  //     updatedAt: new Date('2024-02-10'),
+  //   },
+  //   {
+  //     id: 3,
+  //     code: 'VEST',
+  //     libelle: 'Vêtements',
+  //     description: 'Vêtements et accessoires de mode',
+  //     createdAt: new Date('2024-02-01'),
+  //     updatedAt: new Date('2024-02-01'),
+  //   },
+  //   {
+  //     id: 4,
+  //     code: 'MEUBL',
+  //     libelle: 'Meubles',
+  //     description: 'Mobilier pour la maison et le bureau',
+  //     createdAt: new Date('2024-02-15'),
+  //     updatedAt: new Date('2024-03-01'),
+  //   },
+  //   {
+  //     id: 5,
+  //     code: 'SPORT',
+  //     libelle: 'Sport',
+  //     description: 'Équipements sportifs et accessoires',
+  //     createdAt: new Date('2024-03-01'),
+  //     updatedAt: new Date('2024-03-01'),
+  //   },
+  // ]
 
   // Computed
   const familiesCount = computed(() => families.value.length)
@@ -138,6 +135,63 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
     return families.value.find(f => f.id === id)
   }
 
+  const exportExcel = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const blob = await productFamiliesApi.exportExcel()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `familles_produits_${new Date().toISOString().slice(0, 10)}.xlsx`
+      link.click()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      error.value = 'Erreur lors de l\'export Excel'
+      console.error(e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const exportPdf = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const blob = await productFamiliesApi.exportPdf()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `familles_produits_${new Date().toISOString().slice(0, 10)}.pdf`
+      link.click()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      error.value = 'Erreur lors de l\'export PDF'
+      console.error(e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const importExcel = async (file: File) => {
+    loading.value = true
+    error.value = null
+    try {
+      const result = await productFamiliesApi.importExcel(file)
+      // Recharger les familles après import
+      await fetchFamilies()
+      return result
+    } catch (e) {
+      error.value = 'Erreur lors de l\'import Excel'
+      console.error(e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // État
     families,
@@ -151,5 +205,8 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
     updateFamily,
     deleteFamily,
     getFamilyById,
+    exportExcel,
+    exportPdf,
+    importExcel,
   }
 })
