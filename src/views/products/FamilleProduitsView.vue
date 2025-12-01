@@ -184,7 +184,7 @@ const handleFormSubmit = async (data: { name: string; description: string }) => 
     <ProductFamilySearchBar
       @search="handleSearch"
       @add="handleAdd"
-      @import="handleImport"
+      @import-excel="handleImport"
       @export-pdf="handleExportPdf"
       @export-excel="handleExportExcel"
     />

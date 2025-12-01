@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { X, FileText, Camera, ChevronDown } from 'lucide-vue-next'
+import { ref, watch, onMounted } from 'vue'
+import { FileText, Camera } from 'lucide-vue-next'
 import type { Product } from '@/stores/products'
+import type { CreateProductDto } from '@/services/api/products.api'
+import { useProductFamiliesStore } from '@/stores/productFamilies'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,53 +24,56 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  submit: [data: Partial<Product>]
+  submit: [data: CreateProductDto]
 }>()
 
+// Store des catégories
+const categoriesStore = useProductFamiliesStore()
+
 const formData = ref({
-  designation: '',
-  familleId: 1,
-  familleLibelle: 'Électronique',
-  prixVente: 0,
-  image: '',
+  reference: '',
+  name: '',
+  category: 0,
+  cost_price: 0,
+  selling_price: 0,
 })
 
 const imagePreview = ref<string>('')
+const imageFile = ref<File | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const isEditing = ref(false)
 
-// Liste des familles disponibles (à terme, cela viendra du store des familles)
-const famillesDisponibles = [
-  { id: 1, libelle: 'Électronique' },
-  { id: 2, libelle: 'Vêtements' },
-  { id: 3, libelle: 'Alimentation' },
-  { id: 4, libelle: 'Meubles' },
-  { id: 5, libelle: 'Livres' },
-]
+// Charger les catégories au montage
+onMounted(() => {
+  if (categoriesStore.families.length === 0) {
+    categoriesStore.fetchFamilies()
+  }
+})
 
 watch(() => props.open, (newValue) => {
   if (newValue) {
     if (props.product) {
       isEditing.value = true
       formData.value = {
-        designation: props.product.designation,
-        familleId: props.product.familleId,
-        familleLibelle: props.product.familleLibelle,
-        prixVente: props.product.prixVente,
-        image: props.product.image || '',
+        reference: props.product.reference,
+        name: props.product.name,
+        category: props.product.category,
+        cost_price: props.product.cost_price,
+        selling_price: props.product.selling_price,
       }
-      imagePreview.value = props.product.image || ''
+      imagePreview.value = props.product.primary_image || ''
     } else {
       isEditing.value = false
       formData.value = {
-        designation: '',
-        familleId: 1,
-        familleLibelle: 'Électronique',
-        prixVente: 0,
-        image: '',
+        reference: '',
+        name: '',
+        category: categoriesStore.families[0]?.id || 0,
+        cost_price: 0,
+        selling_price: 0,
       }
       imagePreview.value = ''
+      imageFile.value = null
     }
   }
 })
@@ -81,37 +86,33 @@ const handleImageChange = (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (file) {
+    imageFile.value = file
     const reader = new FileReader()
     reader.onload = (e) => {
-      const result = e.target?.result as string
-      imagePreview.value = result
-      formData.value.image = result
+      imagePreview.value = e.target?.result as string
     }
     reader.readAsDataURL(file)
   }
 }
 
-const handleFamilleChange = (value: string) => {
-  const famille = famillesDisponibles.find(f => f.id === parseInt(value))
-  if (famille) {
-    formData.value.familleId = famille.id
-    formData.value.familleLibelle = famille.libelle
-  }
+const handleCategoryChange = (value: string) => {
+  formData.value.category = parseInt(value)
 }
 
 const handleSubmit = () => {
-  if (!formData.value.designation || !formData.value.prixVente) {
+  if (!formData.value.name || !formData.value.selling_price || !formData.value.category) {
     return
   }
-  emit('submit', {
-    ...formData.value,
-    // Ajouter des valeurs par défaut pour les champs manquants
-    code: `PROD${Date.now()}`,
-    prixAchat: 0,
-    quantiteStock: 0,
-    seuilAlerte: 5,
-    description: '',
-  })
+
+  const data: CreateProductDto = {
+    reference: formData.value.reference || `PROD${Date.now()}`,
+    name: formData.value.name,
+    category: formData.value.category,
+    cost_price: formData.value.cost_price || 0,
+    selling_price: formData.value.selling_price,
+  }
+
+  emit('submit', data)
 }
 
 const handleClose = () => {
@@ -171,45 +172,65 @@ const handleClose = () => {
       </div>
 
       <form @submit.prevent="handleSubmit" class="px-4 sm:px-[47px]">
-        <!-- Famille produit -->
+        <!-- Catégorie produit -->
         <div class="mb-[10px]">
-          <label for="famille" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
-            Famille produit :
+          <label for="category" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Catégorie :
           </label>
           <Select
-            :model-value="formData.familleId.toString()"
-            @update:model-value="handleFamilleChange"
-            :disabled="loading"
+            :model-value="formData.category.toString()"
+            @update:model-value="handleCategoryChange"
+            :disabled="loading || categoriesStore.loading"
           >
             <SelectTrigger class="h-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px]" style="font-family: 'Palanquin Dark'">
-              <SelectValue placeholder="selectionner la famille" />
+              <SelectValue placeholder="Sélectionner la catégorie" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectItem
-                  v-for="famille in famillesDisponibles"
-                  :key="famille.id"
-                  :value="famille.id.toString()"
+                  v-for="category in categoriesStore.families"
+                  :key="category.id"
+                  :value="category.id.toString()"
                 >
-                  {{ famille.libelle }}
+                  {{ category.name }}
                 </SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
         </div>
 
-        <!-- Désignation -->
+        <!-- Nom du produit -->
         <div class="mb-[10px]">
-          <label for="designation" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
-            Designation :
+          <label for="name" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Désignation :
           </label>
           <div class="relative">
             <FileText class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
             <Input
-              id="designation"
-              v-model="formData.designation"
-              placeholder="Ex : Eletroménager"
+              id="name"
+              v-model="formData.name"
+              placeholder="Ex : Samsung Galaxy S24"
               required
+              :disabled="loading"
+              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
+              style="font-family: 'Palanquin Dark'"
+            />
+          </div>
+        </div>
+
+        <!-- Prix d'achat -->
+        <div class="mb-[10px]">
+          <label for="cost_price" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Prix d'achat :
+          </label>
+          <div class="relative">
+            <FileText class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
+            <Input
+              id="cost_price"
+              v-model.number="formData.cost_price"
+              type="number"
+              step="1"
+              placeholder="Ex : 20 000"
               :disabled="loading"
               class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
               style="font-family: 'Palanquin Dark'"
@@ -219,16 +240,16 @@ const handleClose = () => {
 
         <!-- Prix de vente -->
         <div class="mb-[15px]">
-          <label for="prixVente" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+          <label for="selling_price" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
             Prix de vente :
           </label>
           <div class="relative">
             <FileText class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
             <Input
-              id="prixVente"
-              v-model.number="formData.prixVente"
+              id="selling_price"
+              v-model.number="formData.selling_price"
               type="number"
-              step="0.01"
+              step="1"
               placeholder="Ex : 25 000"
               required
               :disabled="loading"
@@ -242,7 +263,7 @@ const handleClose = () => {
         <div class="pb-[37px]">
           <Button
             type="submit"
-            :disabled="loading || !formData.designation || !formData.prixVente"
+            :disabled="loading || !formData.name || !formData.selling_price || !formData.category"
             class="w-full h-[37px] bg-[#0769CF] hover:bg-[#0558b0] text-white rounded-[10px] text-[14.76px] font-bold uppercase"
             style="font-family: Montserrat"
           >

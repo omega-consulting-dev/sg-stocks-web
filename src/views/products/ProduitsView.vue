@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useProductsStore, type Product } from '@/stores/products'
+import type { CreateProductDto } from '@/services/api/products.api'
 import ProductSearchBar from '@/components/products/ProductSearchBar.vue'
 import ProductTable from '@/components/products/ProductTable.vue'
 import ProductForm from '@/components/products/ProductForm.vue'
@@ -39,10 +40,10 @@ const filteredProducts = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return store.products.filter(
     (product) =>
-      product.code.toLowerCase().includes(query) ||
-      product.designation.toLowerCase().includes(query) ||
-      product.familleLibelle.toLowerCase().includes(query) ||
-      product.description.toLowerCase().includes(query)
+      product.reference.toLowerCase().includes(query) ||
+      product.name.toLowerCase().includes(query) ||
+      product.category_name.toLowerCase().includes(query) ||
+      (product.description || '').toLowerCase().includes(query)
   )
 })
 
@@ -64,17 +65,43 @@ const handleAdd = () => {
 
 // Gestion de l'import
 const handleImport = () => {
-  console.log('Import clicked')
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.xlsx,.xls'
+  input.onchange = async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (file) {
+      try {
+        const result = await store.importExcel(file)
+        console.log('Import réussi:', result)
+        alert(`Import terminé: ${result.created} créés, ${result.updated} mis à jour`)
+      } catch (error) {
+        console.error("Erreur lors de l'import:", error)
+        alert("Erreur lors de l'import du fichier")
+      }
+    }
+  }
+  input.click()
 }
 
 // Gestion de l'export PDF
-const handleExportPdf = () => {
-  console.log('Export PDF clicked')
+const handleExportPdf = async () => {
+  try {
+    await store.exportPdf()
+  } catch (error) {
+    console.error("Erreur lors de l'export PDF:", error)
+    alert("Erreur lors de l'export PDF")
+  }
 }
 
 // Gestion de l'export Excel
-const handleExportExcel = () => {
-  console.log('Export Excel clicked')
+const handleExportExcel = async () => {
+  try {
+    await store.exportExcel()
+  } catch (error) {
+    console.error("Erreur lors de l'export Excel:", error)
+    alert("Erreur lors de l'export Excel")
+  }
 }
 
 // Gestion de la modification
@@ -102,14 +129,14 @@ const confirmDelete = async () => {
 }
 
 // Soumission du formulaire
-const handleFormSubmit = async (data: Partial<Product>) => {
+const handleFormSubmit = async (data: CreateProductDto) => {
   try {
     if (selectedProduct.value) {
       // Modification
       await store.updateProduct(selectedProduct.value.id, data)
     } else {
       // Ajout
-      await store.addProduct(data as Omit<Product, 'id' | 'createdAt' | 'updatedAt'>)
+      await store.addProduct(data)
     }
     isFormOpen.value = false
     selectedProduct.value = null
@@ -138,7 +165,7 @@ const handleFormSubmit = async (data: Partial<Product>) => {
     <ProductSearchBar
       @search="handleSearch"
       @add="handleAdd"
-      @import="handleImport"
+      @import-excel="handleImport"
       @export-pdf="handleExportPdf"
       @export-excel="handleExportExcel"
     />
@@ -169,7 +196,7 @@ const handleFormSubmit = async (data: Partial<Product>) => {
           <DialogTitle>Confirmer la suppression</DialogTitle>
           <DialogDescription>
             Êtes-vous sûr de vouloir supprimer le produit
-            <span class="font-semibold">{{ productToDelete?.designation }}</span> ?
+            <span class="font-semibold">{{ productToDelete?.name }}</span> ?
             Cette action est irréversible.
           </DialogDescription>
         </DialogHeader>

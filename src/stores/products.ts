@@ -1,23 +1,15 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { productsApi } from '@/services/api/products.api'
-import type { CreateProductDto, UpdateProductDto, ProductFilters } from '@/services/api/products.api'
+import type {
+  Product,
+  CreateProductDto,
+  UpdateProductDto,
+  ProductFilters
+} from '@/services/api/products.api'
 
-export interface Product {
-  id: number
-  code: string
-  designation: string
-  familleId: number
-  familleLibelle: string
-  prixAchat: number
-  prixVente: number
-  quantiteStock: number
-  seuilAlerte: number
-  image?: string
-  description: string
-  createdAt: Date | string
-  updatedAt: Date | string
-}
+// Réexporter le type pour les composants
+export type { Product }
 
 export const useProductsStore = defineStore('products', () => {
   // État
@@ -25,134 +17,10 @@ export const useProductsStore = defineStore('products', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // Données mock pour le développement
-  const mockProducts: Product[] = [
-    {
-      id: 1,
-      code: 'PROD001',
-      designation: 'MacBook Pro 16"',
-      familleId: 1,
-      familleLibelle: 'Électronique',
-      prixAchat: 2000,
-      prixVente: 2500,
-      quantiteStock: 15,
-      seuilAlerte: 5,
-      image: 'https://picsum.photos/seed/macbook/100/100',
-      description: 'MacBook Pro 16 pouces avec processeur M3',
-      createdAt: new Date('2024-01-15'),
-      updatedAt: new Date('2024-01-15'),
-    },
-    {
-      id: 2,
-      code: 'PROD002',
-      designation: 'iPhone 15 Pro',
-      familleId: 1,
-      familleLibelle: 'Électronique',
-      prixAchat: 900,
-      prixVente: 1200,
-      quantiteStock: 30,
-      seuilAlerte: 10,
-      image: 'https://picsum.photos/seed/iphone/100/100',
-      description: 'iPhone 15 Pro 256GB',
-      createdAt: new Date('2024-01-20'),
-      updatedAt: new Date('2024-02-10'),
-    },
-    {
-      id: 3,
-      code: 'PROD003',
-      designation: 'AirPods Pro',
-      familleId: 1,
-      familleLibelle: 'Électronique',
-      prixAchat: 180,
-      prixVente: 250,
-      quantiteStock: 50,
-      seuilAlerte: 15,
-      image: 'https://picsum.photos/seed/airpods/100/100',
-      description: 'AirPods Pro 2ème génération',
-      createdAt: new Date('2024-02-01'),
-      updatedAt: new Date('2024-02-01'),
-    },
-    {
-      id: 4,
-      code: 'PROD004',
-      designation: 'Table en Chêne',
-      familleId: 4,
-      familleLibelle: 'Meubles',
-      prixAchat: 300,
-      prixVente: 450,
-      quantiteStock: 8,
-      seuilAlerte: 3,
-      image: 'https://picsum.photos/seed/table/100/100',
-      description: 'Table en chêne massif 180x90cm',
-      createdAt: new Date('2024-02-15'),
-      updatedAt: new Date('2024-03-01'),
-    },
-    {
-      id: 5,
-      code: 'PROD005',
-      designation: 'Chaise de Bureau',
-      familleId: 4,
-      familleLibelle: 'Meubles',
-      prixAchat: 120,
-      prixVente: 180,
-      quantiteStock: 25,
-      seuilAlerte: 5,
-      image: 'https://picsum.photos/seed/chair/100/100',
-      description: 'Chaise ergonomique avec support lombaire',
-      createdAt: new Date('2024-03-01'),
-      updatedAt: new Date('2024-03-01'),
-    },
-    {
-      id: 6,
-      code: 'PROD006',
-      designation: 'T-Shirt Coton',
-      familleId: 3,
-      familleLibelle: 'Vêtements',
-      prixAchat: 8,
-      prixVente: 15,
-      quantiteStock: 100,
-      seuilAlerte: 20,
-      image: 'https://picsum.photos/seed/tshirt/100/100',
-      description: 'T-shirt en coton bio disponible en plusieurs couleurs',
-      createdAt: new Date('2024-03-05'),
-      updatedAt: new Date('2024-03-10'),
-    },
-    {
-      id: 7,
-      code: 'PROD007',
-      designation: 'Jean Slim',
-      familleId: 3,
-      familleLibelle: 'Vêtements',
-      prixAchat: 25,
-      prixVente: 45,
-      quantiteStock: 60,
-      seuilAlerte: 15,
-      image: 'https://picsum.photos/seed/jeans/100/100',
-      description: 'Jean slim fit en denim stretch',
-      createdAt: new Date('2024-03-08'),
-      updatedAt: new Date('2024-03-12'),
-    },
-    {
-      id: 8,
-      code: 'PROD008',
-      designation: 'Ballon de Football',
-      familleId: 5,
-      familleLibelle: 'Sport',
-      prixAchat: 15,
-      prixVente: 25,
-      quantiteStock: 40,
-      seuilAlerte: 10,
-      image: 'https://picsum.photos/seed/football/100/100',
-      description: 'Ballon de football taille 5 officiel',
-      createdAt: new Date('2024-03-10'),
-      updatedAt: new Date('2024-03-10'),
-    },
-  ]
-
   // Computed
   const productsCount = computed(() => products.value.length)
   const lowStockProducts = computed(() =>
-    products.value.filter((p) => p.quantiteStock <= p.seuilAlerte)
+    products.value.filter((p) => p.is_low_stock || p.current_stock <= p.minimum_stock)
   )
 
   // Actions
@@ -228,6 +96,63 @@ export const useProductsStore = defineStore('products', () => {
     return products.value.find((p) => p.id === id)
   }
 
+  const exportExcel = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const blob = await productsApi.exportExcel()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `produits_${new Date().toISOString().slice(0, 10)}.xlsx`
+      link.click()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      error.value = "Erreur lors de l'export Excel"
+      console.error(e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const exportPdf = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const blob = await productsApi.exportPdf()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `produits_${new Date().toISOString().slice(0, 10)}.pdf`
+      link.click()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      error.value = "Erreur lors de l'export PDF"
+      console.error(e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const importExcel = async (file: File) => {
+    loading.value = true
+    error.value = null
+    try {
+      const result = await productsApi.importExcel(file)
+      // Recharger les produits après import
+      await fetchProducts()
+      return result
+    } catch (e) {
+      error.value = "Erreur lors de l'import Excel"
+      console.error(e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // État
     products,
@@ -242,5 +167,8 @@ export const useProductsStore = defineStore('products', () => {
     updateProduct,
     deleteProduct,
     getProductById,
+    exportExcel,
+    exportPdf,
+    importExcel,
   }
 })

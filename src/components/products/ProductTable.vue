@@ -37,7 +37,8 @@ const displayedProducts = computed(() => props.products)
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
-    currency: 'EUR',
+    currency: 'XAF',
+    minimumFractionDigits: 0,
   }).format(price)
 }
 
@@ -94,9 +95,9 @@ const paginationInfo = computed(() => {
             <TableCell>
               <div class="flex items-center justify-center">
                 <img
-                  v-if="product.image"
-                  :src="product.image"
-                  :alt="product.designation"
+                  v-if="product.primary_image"
+                  :src="product.primary_image"
+                  :alt="product.name"
                   class="h-[32px] w-[32px] rounded object-cover"
                 />
                 <div
@@ -107,25 +108,25 @@ const paginationInfo = computed(() => {
                 </div>
               </div>
             </TableCell>
-            <TableCell class="font-medium">{{ product.code }}</TableCell>
-            <TableCell>{{ product.designation }}</TableCell>
-            <TableCell class="text-muted-foreground">{{ product.familleLibelle }}</TableCell>
+            <TableCell class="font-medium">{{ product.reference }}</TableCell>
+            <TableCell>{{ product.name }}</TableCell>
+            <TableCell class="text-muted-foreground">{{ product.category_name }}</TableCell>
             <TableCell class="text-right text-muted-foreground text-sm">
-              {{ formatPrice(product.prixAchat) }}
+              {{ formatPrice(product.cost_price) }}
             </TableCell>
             <TableCell class="text-right font-medium">
-              {{ formatPrice(product.prixVente) }}
+              {{ formatPrice(product.selling_price) }}
             </TableCell>
             <TableCell class="text-right">
               <span
                 :class="[
                   'font-medium',
-                  product.quantiteStock <= product.seuilAlerte
+                  product.is_low_stock || product.current_stock <= product.minimum_stock
                     ? 'text-red-600'
                     : 'text-green-600',
                 ]"
               >
-                {{ product.quantiteStock }}
+                {{ product.current_stock }}
               </span>
             </TableCell>
             <TableCell class="text-center">
