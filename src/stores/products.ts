@@ -78,10 +78,8 @@ export const useProductsStore = defineStore('products', () => {
     error.value = null
     try {
       await productsApi.remove(id)
-      const index = products.value.findIndex((p) => p.id === id)
-      if (index !== -1) {
-        products.value.splice(index, 1)
-      }
+      // Retirer immédiatement le produit de la liste locale
+      products.value = products.value.filter((p) => p.id !== id)
       return true
     } catch (e) {
       error.value = 'Erreur lors de la suppression du produit'

@@ -84,11 +84,13 @@ export interface ProductFilters {
 export const productsApi = {
   /**
    * Récupérer tous les produits avec filtres optionnels
+   * Par défaut, ne récupère que les produits actifs
    */
   async fetchAll(filters?: ProductFilters): Promise<Product[]> {
+    const params = { is_active: true, ...filters }
     const response: AxiosResponse<Product[] | PaginatedResponse<Product>> = await Axios.get(
       '/products/products/',
-      { params: filters }
+      { params }
     )
 
     // Gérer réponse paginée ou non

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { FileText, Camera } from 'lucide-vue-next'
 import type { Product } from '@/stores/products'
+import { useProductsStore } from '@/stores/products'
 import type { CreateProductDto } from '@/services/api/products.api'
 import { useProductFamiliesStore } from '@/stores/productFamilies'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -27,15 +28,33 @@ const emit = defineEmits<{
   submit: [data: CreateProductDto]
 }>()
 
-// Store des catégories
+// Stores
 const categoriesStore = useProductFamiliesStore()
+const productsStore = useProductsStore()
 
 const formData = ref({
   reference: '',
   name: '',
   category: 0,
-  cost_price: 0,
   selling_price: 0,
+})
+
+// Générer le prochain code séquentiel (PROD001, PROD002, etc.)
+const generateNextCode = (): string => {
+  const existingCodes = productsStore.products
+    .map(p => p.reference)
+    .filter(ref => ref && ref.startsWith('PROD'))
+    .map(ref => parseInt(ref.replace('PROD', '')) || 0)
+
+  const maxCode = existingCodes.length > 0 ? Math.max(...existingCodes) : 0
+  const nextNumber = maxCode + 1
+  return `PROD${nextNumber.toString().padStart(3, '0')}`
+}
+
+// Obtenir le nom de la catégorie sélectionnée
+const selectedCategoryName = computed(() => {
+  const category = categoriesStore.families.find(c => c.id === formData.value.category)
+  return category?.name || ''
 })
 
 const imagePreview = ref<string>('')
@@ -59,17 +78,15 @@ watch(() => props.open, (newValue) => {
         reference: props.product.reference,
         name: props.product.name,
         category: props.product.category,
-        cost_price: props.product.cost_price,
         selling_price: props.product.selling_price,
       }
       imagePreview.value = props.product.primary_image || ''
     } else {
       isEditing.value = false
       formData.value = {
-        reference: '',
+        reference: generateNextCode(),
         name: '',
         category: categoriesStore.families[0]?.id || 0,
-        cost_price: 0,
         selling_price: 0,
       }
       imagePreview.value = ''
@@ -105,10 +122,10 @@ const handleSubmit = () => {
   }
 
   const data: CreateProductDto = {
-    reference: formData.value.reference || `PROD${Date.now()}`,
+    reference: formData.value.reference,
     name: formData.value.name,
     category: formData.value.category,
-    cost_price: formData.value.cost_price || 0,
+    cost_price: 0,
     selling_price: formData.value.selling_price,
   }
 
@@ -122,7 +139,7 @@ const handleClose = () => {
 
 <template>
   <Dialog :open="open" @update:open="handleClose">
-    <DialogContent class="w-[95vw] sm:w-auto max-w-[463px] p-0 gap-0 border border-[#0072C1] rounded-[10px] max-h-[90vh] overflow-y-auto">
+    <DialogContent class="w-[95vw] sm:w-auto max-w-[600px] p-0 gap-0 border border-[#0072C1] rounded-[10px] max-h-[90vh] overflow-y-auto">
       <div class="relative px-4 sm:px-[47px] pt-[27px] pb-[20px]">
         <!-- <button
           @click="handleClose"
@@ -172,6 +189,23 @@ const handleClose = () => {
       </div>
 
       <form @submit.prevent="handleSubmit" class="px-4 sm:px-[47px]">
+        <!-- Code produit (auto-généré) -->
+        <div class="mb-[10px]">
+          <label for="reference" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Code :
+          </label>
+          <div class="relative">
+            <FileText class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
+            <Input
+              id="reference"
+              v-model="formData.reference"
+              :disabled="true"
+              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] bg-gray-100 font-semibold"
+              style="font-family: 'Palanquin Dark'"
+            />
+          </div>
+        </div>
+
         <!-- Catégorie produit -->
         <div class="mb-[10px]">
           <label for="category" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
@@ -197,6 +231,9 @@ const handleClose = () => {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <p v-if="selectedCategoryName" class="text-sm text-muted-foreground mt-1">
+            Famille : <span class="font-medium text-[#0769CF]">{{ selectedCategoryName }}</span>
+          </p>
         </div>
 
         <!-- Nom du produit -->
@@ -211,26 +248,6 @@ const handleClose = () => {
               v-model="formData.name"
               placeholder="Ex : Samsung Galaxy S24"
               required
-              :disabled="loading"
-              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
-              style="font-family: 'Palanquin Dark'"
-            />
-          </div>
-        </div>
-
-        <!-- Prix d'achat -->
-        <div class="mb-[10px]">
-          <label for="cost_price" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
-            Prix d'achat :
-          </label>
-          <div class="relative">
-            <FileText class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
-            <Input
-              id="cost_price"
-              v-model.number="formData.cost_price"
-              type="number"
-              step="1"
-              placeholder="Ex : 20 000"
               :disabled="loading"
               class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
               style="font-family: 'Palanquin Dark'"
