@@ -19,26 +19,74 @@ interface FailedRequest {
     reject: (reason?: any) => void;
 }
 
-// Création de l'instance Axios
+/**
+ * Extrait le nom du tenant depuis le hostname
+ * Ex: santa.localhost:5174 → "santa"
+ *     localhost:5174 → null (super admin)
+ */
+function getTenantFromHostname(): string | null {
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+
+    // Si on a un sous-domaine (ex: santa.localhost)
+    if (parts.length > 1 && parts[0] !== 'www') {
+        return parts[0];
+    }
+
+    // Pas de sous-domaine (localhost ou IP) → super admin
+    return null;
+}
+
+/**
+ * Construit la baseURL dynamiquement en fonction du tenant
+ */
+function getBaseURL(): string {
+    const tenant = getTenantFromHostname();
+    const port = import.meta.env.VITE_API_PORT || '8000';
+    const baseDomain = import.meta.env.VITE_API_BASE_DOMAIN || 'localhost';
+
+    if (tenant) {
+        // Tenant spécifique : http://santa.localhost:8000/api/v1/
+        return `http://${tenant}.${baseDomain}:${port}/api/v1`;
+    } else {
+        // Super admin : http://localhost:8000/api/v1/
+        return `http://${baseDomain}:${port}/api/v1`;
+    }
+}
+
+// Création de l'instance Axios SANS baseURL statique
 const Axios = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || "http://sgstock.com:8000/api/v1",
     timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 10000,
     withCredentials: true
 })
 
-// Intercepteur de requête
+// Intercepteur de requête - Construit l'URL dynamiquement à CHAQUE requête
 Axios.interceptors.request.use(
     (requete) => {
         const userStore = useUserStore()
+
+        // 🔥 CRITIQUE : Recalculer la baseURL dynamiquement selon le hostname actuel
+        const dynamicBaseURL = getBaseURL()
+
+        // Si l'URL est relative, la préfixer avec la baseURL dynamique
+        if (requete.url && !requete.url.startsWith('http')) {
+            requete.url = dynamicBaseURL + requete.url
+        }
+
+        // Détecter automatiquement le tenant depuis l'URL
+        const tenant = getTenantFromHostname()
+        if (tenant && userStore.domain !== tenant) {
+            userStore.setDomain(tenant)
+        }
 
         // Ajouter le token d'authentification si disponible
         if (userStore.access_token) {
             requete.headers.Authorization = `Bearer ${userStore.access_token}`
         }
 
-        // Ajouter le header X-Tenant si disponible
-        if (userStore.domain) {
-            requete.headers['X-Tenant'] = userStore.domain
+        // Ajouter le header X-Tenant (défense en profondeur)
+        if (tenant) {
+            requete.headers['X-Tenant'] = tenant
         }
 
         return requete

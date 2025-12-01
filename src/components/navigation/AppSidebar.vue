@@ -45,9 +45,18 @@ const data = {
       icon: Gauge,
     },
     {
-      title: "Familles de produits / Services",
-      url: "/familles-produits",
+      title: "Categories",
       icon: Blocks,
+      children: [
+        {
+          title: "Famille de produits",
+          url: "/categories/produits",
+        },
+        {
+          title: "Famille de services",
+          url: "/categories/services",
+        },
+      ],
     },
     {
       title: "Produits",

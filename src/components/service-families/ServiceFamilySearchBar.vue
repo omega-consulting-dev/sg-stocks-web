@@ -28,7 +28,7 @@ watch(searchQuery, (newValue) => {
 const openSearch = () => {
   isSearchOpen.value = true
   setTimeout(() => {
-    const input = document.querySelector('#productSearchInput') as HTMLInputElement
+    const input = document.querySelector('#serviceFamilySearchInput') as HTMLInputElement
     input?.focus()
   }, 100)
 }
@@ -41,17 +41,17 @@ const handleFocusOut = () => {
 </script>
 
 <template>
-  <header class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+  <header class="flex justify-between items-center">
     <div>
-      <h1 class="text-2xl sm:text-3xl font-bold text-primary">Produits</h1>
-      <p class="opacity-60 text-xs sm:text-sm">Liste des produits</p>
+      <h1 class="text-3xl font-bold text-primary">Famille de services</h1>
+      <p class="opacity-60 text-sm">Categorisation des services</p>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+    <div class="flex items-center gap-4">
       <!-- Barre de recherche -->
       <div
         class="relative flex items-center gap-1 transition-all duration-500 w-11 overflow-hidden"
-        :class="{ 'w-48 sm:w-64 overflow-visible': isSearchOpen }"
+        :class="{ 'w-64 overflow-visible': isSearchOpen }"
       >
         <Button
           variant="outline"
@@ -61,21 +61,21 @@ const handleFocusOut = () => {
           <Search />
         </Button>
         <Input
-          id="productSearchInput"
+          id="serviceFamilySearchInput"
           v-model="searchQuery"
-          placeholder="Rechercher un produit..."
+          placeholder="Rechercher une categorie..."
           :class="{ 'pl-9': isSearchOpen }"
           @focusout="handleFocusOut"
           @focusin="openSearch"
         />
       </div>
 
-      <!-- Bouton Importer (icon Download = fleche vers le bas = recevoir) -->
+      <!-- Bouton Importer -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <Button variant="outline" class="px-2 sm:px-4">
+          <Button variant="outline">
             <Download />
-            <span class="hidden sm:inline">Importer</span>
+            Importer
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent class="rounded-lg" align="end">
@@ -86,12 +86,12 @@ const handleFocusOut = () => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <!-- Bouton Exporter (icon Upload = fleche vers le haut = envoyer) -->
+      <!-- Bouton Exporter -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <Button variant="outline" class="px-2 sm:px-4">
+          <Button variant="outline">
             <Upload />
-            <span class="hidden sm:inline">Exporter</span>
+            Exporter
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent class="rounded-lg" align="end">
@@ -107,9 +107,9 @@ const handleFocusOut = () => {
       </DropdownMenu>
 
       <!-- Bouton Nouveau -->
-      <Button @click="emit('add')" class="px-2 sm:px-4">
+      <Button @click="emit('add')">
         <Plus />
-        <span class="hidden sm:inline">Nouveau</span>
+        Nouveau
       </Button>
     </div>
   </header>

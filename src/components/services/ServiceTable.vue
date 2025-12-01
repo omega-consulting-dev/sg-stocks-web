@@ -35,14 +35,6 @@ const emit = defineEmits<{
 
 const displayedServices = computed(() => props.services)
 
-const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(date))
-}
-
 const formatAmount = (amount: number) => {
   return new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: 0,
@@ -59,10 +51,11 @@ const handleDelete = (service: Service) => {
 }
 
 const paginationInfo = computed(() => {
+  const total = props.total || props.services.length
+  if (total === 0) return 'Aucune entrée'
   const start = ((props.currentPage || 1) - 1) * (props.pageSize || 8) + 1
-  const end = Math.min(start + (props.pageSize || 8) - 1, props.total || props.services.length)
-  const total = (props.total || props.services.length).toLocaleString('en-US')
-  return `Showing data ${start} to ${end} of  ${total}K entries`
+  const end = Math.min(start + (props.pageSize || 8) - 1, total)
+  return `Affichage de ${start} à ${end} sur ${total} entrées`
 })
 
 // Pagination
@@ -75,10 +68,10 @@ const paginationPages = computed(() => {
   const total = totalPages.value
   const pages: (number | string)[] = []
 
-  // Toujours afficher la première page
+  if (total === 0) return pages
+
   pages.push(1)
 
-  // Si on a plus de 5 pages
   if (total > 5) {
     if (currentPage <= 3) {
       pages.push(2, 3, 4, '...', total)
@@ -88,7 +81,6 @@ const paginationPages = computed(() => {
       pages.push('...', currentPage - 1, currentPage, currentPage + 1, '...', total)
     }
   } else {
-    // Afficher toutes les pages
     for (let i = 2; i <= total; i++) {
       pages.push(i)
     }
@@ -117,24 +109,25 @@ const goToNextPage = () => {
 </script>
 
 <template>
-  <div class="rounded-[30px] bg-white shadow-[0px_10px_60px_0px_rgba(226,236,249,0.5)]">
-    <Table>
+  <div class="rounded-xl sm:rounded-[30px] bg-white shadow-[0px_10px_60px_0px_rgba(226,236,249,0.5)] overflow-hidden">
+    <div class="overflow-x-auto">
+    <Table class="min-w-[700px]">
       <TableHeader>
         <TableRow class="border-b border-[#EEEEEE]">
           <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
-            Date Opération
+            Référence
           </TableHead>
           <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
-            Intitulé de l'operation
+            Nom du service
           </TableHead>
           <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
-            Client
+            Catégorie
           </TableHead>
-          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
-            Quantité
+          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-right" style="font-family: Inter">
+            Prix unitaire
           </TableHead>
-          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-left" style="font-family: Inter">
-            Montant<br />facture
+          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+            Statut
           </TableHead>
           <TableHead class="w-[80px] text-center font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
             Action
@@ -144,11 +137,11 @@ const goToNextPage = () => {
       <TableBody>
         <template v-if="loading">
           <TableRow v-for="i in (pageSize || 8)" :key="i">
-            <TableCell><Skeleton class="h-4 w-24" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-40" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-32" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-12" /></TableCell>
             <TableCell><Skeleton class="h-4 w-20" /></TableCell>
+            <TableCell><Skeleton class="h-4 w-40" /></TableCell>
+            <TableCell><Skeleton class="h-4 w-24" /></TableCell>
+            <TableCell><Skeleton class="h-4 w-24 ml-auto" /></TableCell>
+            <TableCell><Skeleton class="h-4 w-16 mx-auto" /></TableCell>
             <TableCell><Skeleton class="h-8 w-8 mx-auto" /></TableCell>
           </TableRow>
         </template>
@@ -158,20 +151,29 @@ const goToNextPage = () => {
             :key="service.id"
             class="border-b border-[#EEEEEE] hover:bg-gray-50"
           >
-            <TableCell class="text-[14px] font-medium text-[#292D32]" style="font-family: Poppins">
-              {{ formatDate(service.dateOperation) }}
+            <TableCell class="text-[14px] font-medium text-[#5932EA]" style="font-family: Poppins">
+              {{ service.reference }}
             </TableCell>
             <TableCell class="text-[14px] font-medium text-[#292D32]" style="font-family: Poppins">
-              {{ service.intitule }}
+              {{ service.name }}
             </TableCell>
             <TableCell class="text-[14px] font-medium text-[#292D32]" style="font-family: Poppins">
-              {{ service.client }}
+              {{ service.category_name }}
             </TableCell>
-            <TableCell class="text-[14px] font-medium text-[#4D4D4D]" style="font-family: Poppins">
-              {{ service.quantite }}
+            <TableCell class="text-[14px] font-medium text-[#292D32] text-right" style="font-family: Poppins">
+              {{ formatAmount(service.unit_price) }} FCFA
             </TableCell>
-            <TableCell class="text-[14px] font-medium text-[#292D32]" style="font-family: Poppins">
-              {{ formatAmount(service.montantFacture) }}
+            <TableCell class="text-center">
+              <span
+                :class="[
+                  'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                  service.is_active
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                ]"
+              >
+                {{ service.is_active ? 'Actif' : 'Inactif' }}
+              </span>
             </TableCell>
             <TableCell class="text-center">
               <DropdownMenu>
@@ -207,37 +209,29 @@ const goToNextPage = () => {
         </template>
       </TableBody>
     </Table>
+    </div>
 
     <!-- Pagination info et contrôles -->
-    <div class="flex items-center justify-between px-[38px] py-[30px] border-t border-[#EEEEEE]">
+    <div v-if="displayedServices.length > 0" class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 sm:px-[38px] py-4 sm:py-[30px] border-t border-[#EEEEEE]">
       <!-- Info pagination -->
-      <p class="text-[14px] font-medium text-[#B5B7C0]" style="font-family: Poppins">
+      <p class="text-xs sm:text-[14px] font-medium text-[#B5B7C0]" style="font-family: Poppins">
         {{ paginationInfo }}
       </p>
 
       <!-- Contrôles pagination -->
-      <div class="flex items-center gap-3">
-        <!-- Bouton Précédent -->
+      <div class="flex items-center gap-2 sm:gap-3">
         <Button
           variant="outline"
           size="sm"
           class="h-6 px-2 rounded border-[#EEEEEE] bg-[#F5F5F5] text-[12px] font-medium text-[#404B52]"
-          style="font-family: Poppins"
           :disabled="(currentPage || 1) === 1"
           @click="goToPreviousPage"
         >
           &lt;
         </Button>
 
-        <!-- Numéros de pages -->
         <template v-for="page in paginationPages" :key="page">
-          <span
-            v-if="page === '...'"
-            class="text-[12px] font-medium text-[#000000]"
-            style="font-family: Poppins"
-          >
-            ...
-          </span>
+          <span v-if="page === '...'" class="text-[12px] font-medium text-[#000000]">...</span>
           <Button
             v-else
             variant="outline"
@@ -248,19 +242,16 @@ const goToNextPage = () => {
                 ? 'bg-[#5932EA] border-[#5932EA] text-white'
                 : 'bg-[#F5F5F5] border-[#EEEEEE] text-[#404B52]'
             ]"
-            style="font-family: Poppins"
             @click="changePage(page)"
           >
             {{ page }}
           </Button>
         </template>
 
-        <!-- Bouton Suivant -->
         <Button
           variant="outline"
           size="sm"
           class="h-6 px-2 rounded border-[#EEEEEE] bg-[#F5F5F5] text-[12px] font-medium text-[#404B52]"
-          style="font-family: Poppins"
           :disabled="(currentPage || 1) === totalPages"
           @click="goToNextPage"
         >

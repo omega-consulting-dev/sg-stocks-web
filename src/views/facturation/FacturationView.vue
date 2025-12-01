@@ -111,7 +111,7 @@ function handleNew() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 p-8">
+  <div class="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 lg:p-8">
     <!-- Breadcrumb -->
     <Breadcrumb>
       <BreadcrumbList>
@@ -127,10 +127,10 @@ function handleNew() {
 
     <!-- Header -->
     <div class="space-y-1">
-      <h1 class="text-[32px] font-bold text-[#003FD8] font-inter tracking-[-0.01em]">
+      <h1 class="text-2xl sm:text-[32px] font-bold text-[#003FD8] font-inter tracking-[-0.01em]">
         Facturations
       </h1>
-      <p class="text-xl text-[#85878D] font-inter">Vos operation de vente</p>
+      <p class="text-base sm:text-xl text-[#85878D] font-inter">Vos operation de vente</p>
     </div>
 
     <!-- Tabs -->

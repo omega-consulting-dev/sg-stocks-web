@@ -104,7 +104,7 @@ const handlePageChange = (page: number) => {
 </script>
 
 <template>
-  <div class="flex-1 space-y-6 p-8">
+  <div class="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8">
     <!-- Barre de recherche et filtres -->
     <AchatSearchBar
       @search="handleSearch"

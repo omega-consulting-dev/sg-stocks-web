@@ -51,7 +51,7 @@ const handleSubmit = async () => {
   ></div>
 
   <!-- Rectangle 2: CONTENU de la page (au-dessus du dégradé) -->
-  <div class="relative z-10 flex h-[80vh] max-w-[85vw] mx-auto my-[10vh] rounded-2xl overflow-hidden shadow-2xl">
+  <div class="relative z-10 flex flex-col lg:flex-row min-h-screen lg:min-h-[80vh] lg:max-h-[90vh] w-full px-4 sm:px-0 sm:max-w-[95vw] lg:max-w-[85vw] mx-auto lg:my-[5vh] rounded-none sm:rounded-2xl overflow-y-auto shadow-2xl">
     <!-- COLONNE GAUCHE - Section de présentation -->
     <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden">
       <!-- Image de fond (bureau professionnel) - optionnelle, peut être remplacée -->
@@ -64,25 +64,25 @@ const handleSubmit = async () => {
       <div class="absolute inset-0 bg-black/35 z-10"></div>
 
       <!-- Contenu -->
-      <div class="relative z-20 flex flex-col p-12 lg:p-14 w-full">
+      <div class="relative z-20 flex flex-col p-8 lg:p-14 w-full">
         <!-- Logo SG-Stocks centré horizontalement -->
         <div class="mb-auto flex justify-center">
-          <img :src="logoSvg" alt="SG-Stocks" class="h-16 w-auto" />
+          <img :src="logoSvg" alt="SG-Stocks" class="h-12 lg:h-16 w-auto" />
         </div>
 
         <!-- Bloc de texte centré verticalement -->
         <div class="flex-1 flex items-center justify-center">
-          <div class="max-w-[85%] space-y-6">
+          <div class="max-w-[90%] lg:max-w-[85%] space-y-4 lg:space-y-6">
             <!-- Titre principal -->
             <h1
-              class="text-white text-4xl lg:text-[38px] font-bold leading-[1.3] tracking-tight"
+              class="text-white text-2xl md:text-3xl lg:text-4xl xl:text-[38px] font-bold leading-[1.3] tracking-tight"
             >
               Gérer votre entreprise comme un expert comptable grâce à notre logiciel.
             </h1>
 
             <!-- Sous-titre/Description -->
             <p
-              class="text-white/85 text-base lg:text-[17px] font-light leading-[1.65] max-w-[90%]"
+              class="text-white/85 text-sm md:text-base lg:text-[17px] font-light leading-[1.65] max-w-[95%] lg:max-w-[90%]"
             >
               Une gestion efficace commence par une responsabilité exemplaire : maîtrisez vos
               stocks et optimisez vos entrées et sorties comme un expert en comptabilité.
@@ -93,86 +93,84 @@ const handleSubmit = async () => {
     </div>
 
     <!-- COLONNE DROITE - Formulaire de connexion -->
-    <div class="flex-1 bg-white flex items-center justify-center px-8 lg:px-12">
+    <div class="flex-1 bg-white flex items-center justify-center px-4 sm:px-8 lg:px-12 py-8 lg:py-0">
       <div class="w-full max-w-[420px]">
         <!-- Icône d'application -->
-        <div class="flex justify-center mb-5">
+        <div class="flex justify-center mb-4 sm:mb-5">
           <div
-            class="w-14 h-14 bg-[#3B82F6] rounded-[14px] flex items-center justify-center shadow-lg"
+            class="w-12 h-12 sm:w-14 sm:h-14 bg-[#3B82F6] rounded-xl sm:rounded-[14px] flex items-center justify-center shadow-lg"
             style="box-shadow: 0 4px 6px rgba(59, 130, 246, 0.15)"
           >
           </div>
         </div>
 
         <!-- Titre -->
-        <h2 class="text-center text-[28px] font-bold text-[#111827] tracking-tight mb-2">
+        <h2 class="text-center text-2xl sm:text-[28px] font-bold text-[#111827] tracking-tight mb-2">
           Connexion
         </h2>
 
         <!-- Sous-titre -->
-        <p class="text-center text-sm text-[#9CA3AF] mb-10">
+        <p class="text-center text-xs sm:text-sm text-[#9CA3AF] mb-6 sm:mb-10">
           Start your 30-day free trial.
         </p>
 
         <!-- Message d'erreur -->
         <div
           v-if="userStore.error"
-          class="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"
+          class="mb-4 sm:mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"
         >
           {{ userStore.error }}
         </div>
 
         <!-- Formulaire -->
-        <form @submit.prevent="handleSubmit" class="space-y-5">
+        <form @submit.prevent="handleSubmit" class="space-y-4 sm:space-y-5">
           <!-- Champ Name -->
           <div>
-            <Label class="block text-sm font-semibold text-[#374151] mb-2">Name*</Label>
+            <Label class="block text-sm font-semibold text-[#374151] mb-1.5 sm:mb-2">Name*</Label>
             <Input
               v-model="formData.name"
               type="text"
               placeholder="Enter your name"
-              class="w-full h-12 px-4 text-base text-[#111827] placeholder:text-[#D1D5DB] bg-white border border-[#D1D5DB] rounded-lg transition-all duration-200 focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/10 focus:outline-none"
+              class="w-full h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base text-[#111827] placeholder:text-[#D1D5DB] bg-white border border-[#D1D5DB] rounded-lg transition-all duration-200 focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/10 focus:outline-none"
               :disabled="userStore.loading"
             />
           </div>
 
           <!-- Champ Email -->
           <div>
-            <Label class="block text-sm font-semibold text-[#374151] mb-2">Email*</Label>
+            <Label class="block text-sm font-semibold text-[#374151] mb-1.5 sm:mb-2">Email*</Label>
             <Input
               v-model="formData.email"
               type="email"
               placeholder="Enter your email"
-              class="w-full h-12 px-4 text-base text-[#111827] placeholder:text-[#D1D5DB] bg-white border border-[#D1D5DB] rounded-lg transition-all duration-200 focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/10 focus:outline-none"
+              class="w-full h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base text-[#111827] placeholder:text-[#D1D5DB] bg-white border border-[#D1D5DB] rounded-lg transition-all duration-200 focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/10 focus:outline-none"
               :disabled="userStore.loading"
             />
           </div>
 
           <!-- Champ Password -->
           <div>
-            <Label class="block text-sm font-semibold text-[#374151] mb-2">Password*</Label>
+            <Label class="block text-sm font-semibold text-[#374151] mb-1.5 sm:mb-2">Password*</Label>
             <Input
               v-model="formData.password"
               type="password"
               placeholder="Create a password"
-              class="w-full h-12 px-4 text-base text-[#111827] placeholder:text-[#D1D5DB] bg-white border border-[#D1D5DB] rounded-lg transition-all duration-200 focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/10 focus:outline-none"
+              class="w-full h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base text-[#111827] placeholder:text-[#D1D5DB] bg-white border border-[#D1D5DB] rounded-lg transition-all duration-200 focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/10 focus:outline-none"
               :disabled="userStore.loading"
             />
-            <p class="mt-2 text-xs text-[#6B7280] italic">Must be at least 8 characters.</p>
+            <p class="mt-1.5 sm:mt-2 text-xs text-[#6B7280] italic">Must be at least 8 characters.</p>
           </div>
 
           <!-- Bouton Connexion -->
           <Button
             type="submit"
-            class="w-full h-12 bg-[#3B82F6] hover:bg-[#2563EB] active:bg-[#1D4ED8] text-white text-base font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 mt-7"
+            class="w-full h-11 sm:h-12 bg-[#3B82F6] hover:bg-[#2563EB] active:bg-[#1D4ED8] text-white text-sm sm:text-base font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 mt-5 sm:mt-7"
             style="box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2)"
             :disabled="userStore.loading"
           >
             {{ userStore.loading ? 'Chargement...' : 'Connexion' }}
           </Button>
 
-          <!-- Bouton Google -->
-          <!--  -->
         </form>
       </div>
     </div>

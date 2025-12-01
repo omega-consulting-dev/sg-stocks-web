@@ -63,15 +63,15 @@ timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 10000
 
 ## 🎯 Endpoints Backend Attendus
 
-### Product Families
+### Product Families (Categories)
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| GET | `/product-families` | Liste toutes les familles |
-| GET | `/product-families/:id` | Détail d'une famille |
-| POST | `/product-families` | Créer une famille |
-| PUT | `/product-families/:id` | Modifier une famille |
-| DELETE | `/product-families/:id` | Supprimer une famille |
+| GET | `/products/categories/` | Liste toutes les familles |
+| GET | `/products/categories/:id/` | Détail d'une famille |
+| POST | `/products/categories/` | Créer une famille |
+| PUT | `/products/categories/:id/` | Modifier une famille |
+| DELETE | `/products/categories/:id/` | Supprimer une famille |
 
 **Format de requête (POST/PUT) :**
 ```json
@@ -98,15 +98,15 @@ timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 10000
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| GET | `/products` | Liste tous les produits (avec filtres) |
-| GET | `/products/:id` | Détail d'un produit |
-| GET | `/product-families/:id/products` | Produits d'une famille |
-| GET | `/products/low-stock` | Produits en rupture |
-| POST | `/products` | Créer un produit |
-| PUT | `/products/:id` | Modifier un produit |
-| PATCH | `/products/:id/stock` | Mettre à jour le stock |
-| DELETE | `/products/:id` | Supprimer un produit |
-| POST | `/products/:id/image` | Upload image |
+| GET | `/products/products/` | Liste tous les produits (avec filtres) |
+| GET | `/products/products/:id/` | Détail d'un produit |
+| GET | `/products/products/?category=:id` | Produits d'une famille (via filtrage) |
+| GET | `/products/products/low-stock/` | Produits en rupture |
+| POST | `/products/products/` | Créer un produit |
+| PUT | `/products/products/:id/` | Modifier un produit |
+| PATCH | `/products/products/:id/stock/` | Mettre à jour le stock |
+| DELETE | `/products/products/:id/` | Supprimer un produit |
+| POST | `/products/products/:id/image/` | Upload image |
 
 **Filtres disponibles (query params) :**
 - `familleId` - Filtrer par famille

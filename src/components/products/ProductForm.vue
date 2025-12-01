@@ -121,8 +121,8 @@ const handleClose = () => {
 
 <template>
   <Dialog :open="open" @update:open="handleClose">
-    <DialogContent class="max-w-[463px] p-0 gap-0 border border-[#0072C1] rounded-[10px] max-h-[90vh] overflow-y-auto">
-      <div class="relative px-[47px] pt-[27px] pb-[20px]">
+    <DialogContent class="w-[95vw] sm:w-auto max-w-[463px] p-0 gap-0 border border-[#0072C1] rounded-[10px] max-h-[90vh] overflow-y-auto">
+      <div class="relative px-4 sm:px-[47px] pt-[27px] pb-[20px]">
         <!-- <button
           @click="handleClose"
           class="absolute right-[15px] top-[15px] w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
@@ -131,11 +131,11 @@ const handleClose = () => {
           <X class="h-4 w-4 text-gray-600" />
         </button> -->
 
-        <div class="flex items-center gap-5 mb-4">
-          <div class="w-11 h-11 rounded-full bg-[#FBFBFB] border border-[#BABABA] flex items-center justify-center">
-            <Camera class="w-[21px] h-[21px] text-gray-500" />
+        <div class="flex items-center gap-3 sm:gap-5 mb-4">
+          <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#FBFBFB] border border-[#BABABA] flex items-center justify-center">
+            <Camera class="w-4 h-4 sm:w-[21px] sm:h-[21px] text-gray-500" />
           </div>
-          <h2 class="text-[21.76px] font-bold leading-[1.219] text-[#535353]" style="font-family: Montserrat">
+          <h2 class="text-lg sm:text-[21.76px] font-bold leading-[1.219] text-[#535353]" style="font-family: Montserrat">
             Fiche de produits
           </h2>
         </div>
@@ -170,7 +170,7 @@ const handleClose = () => {
         </div>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="px-[47px]">
+      <form @submit.prevent="handleSubmit" class="px-4 sm:px-[47px]">
         <!-- Famille produit -->
         <div class="mb-[10px]">
           <label for="famille" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">

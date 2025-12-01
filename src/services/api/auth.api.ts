@@ -38,7 +38,7 @@ export const authApi = {
    */
   async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
     const response: AxiosResponse<RefreshTokenResponse> = await Axios.post(
-      '/auth/login/',
+      '/auth/refresh/',
       { refresh: refreshToken },
       { skipAuthRefresh: true } as CustomAxiosRequestConfig
     )
@@ -47,16 +47,19 @@ export const authApi = {
 
   /**
    * Déconnexion utilisateur
+   * Note: JWT étant stateless, la déconnexion se fait côté client (suppression des tokens)
    */
-  async logout(refreshToken: string): Promise<void> {
-    await Axios.post('/auth/logout/', { refresh: refreshToken })
+  async logout(): Promise<void> {
+    // Pas d'appel API nécessaire pour JWT
+    // Le store gérera la suppression des tokens du localStorage
+    return Promise.resolve()
   },
 
   /**
    * Récupérer les informations de l'utilisateur connecté
    */
   async getCurrentUser(): Promise<User> {
-    const response: AxiosResponse<User> = await Axios.get('/auth/me/')
+    const response: AxiosResponse<User> = await Axios.get('/auth/users/me/')
     return response.data
   },
 

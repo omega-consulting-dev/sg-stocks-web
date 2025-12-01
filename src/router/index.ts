@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import FamilleProduitsView from '../views/products/FamilleProduitsView.vue'
+import FamilleServicesView from '../views/products/FamilleServicesView.vue'
 import ProduitsView from '../views/products/ProduitsView.vue'
 import ServicesView from '../views/services/ServicesView.vue'
 import EntreeStockView from '../views/achats/EntreeStockView.vue'
@@ -31,9 +32,14 @@ const router = createRouter({
       component: () => import('@/views/users/CustomerView.vue'),
     },
     {
-      path: '/familles-produits',
-      name: 'familles-produits',
+      path: '/categories/produits',
+      name: 'categories-produits',
       component: FamilleProduitsView,
+    },
+    {
+      path: '/categories/services',
+      name: 'categories-services',
+      component: FamilleServicesView,
     },
     {
       path: '/produits',

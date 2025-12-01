@@ -51,31 +51,31 @@ const handleExportExcel = () => {
 </script>
 
 <template>
-  <div class="flex items-start justify-between gap-12">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
     <!-- Colonne gauche : Titre et sous-titre -->
-    <div class="flex flex-col gap-2">
-      <h1 class="text-[32px] font-bold leading-[1.21] text-[#003FD8]" style="font-family: Inter">
+    <div class="flex flex-col gap-1 sm:gap-2">
+      <h1 class="text-xl sm:text-2xl lg:text-[32px] font-bold leading-[1.21] text-[#003FD8]" style="font-family: Inter">
         Services
       </h1>
-      <p class="text-[20px] font-normal leading-[1.21] text-[#85878D]" style="font-family: Inter">
+      <p class="text-sm sm:text-base lg:text-[20px] font-normal leading-[1.21] text-[#85878D]" style="font-family: Inter">
         listes des services
       </p>
     </div>
 
     <!-- Colonne droite : Boutons d'action + Barre de recherche/Filtre -->
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-4 sm:gap-6">
       <!-- Boutons d'action -->
-      <div class="flex items-center gap-8">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-4 lg:gap-8">
 
     <!-- Bouton Importer avec menu déroulant -->
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
             <Button
               variant="outline"
-              class="gap-2 rounded-[10px] border-[rgba(7,105,207,0.23)] px-[10.64px] py-[7.09px] text-[#0769CF] hover:bg-[#0769CF]/5"
+              class="gap-1 sm:gap-2 rounded-[10px] border-[rgba(7,105,207,0.23)] px-2 sm:px-[10.64px] py-[7.09px] text-[#0769CF] hover:bg-[#0769CF]/5"
             >
-              <Download class="h-[14.19px] w-[14.19px]" />
-              <span class="text-[18.41px] font-medium leading-[1.5]">Importer</span>
+              <Download class="h-4 w-4 sm:h-[14.19px] sm:w-[14.19px]" />
+              <span class="hidden sm:inline text-sm sm:text-[18.41px] font-medium leading-[1.5]">Importer</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -108,29 +108,29 @@ const handleExportExcel = () => {
         <!-- Bouton Exporter -->
         <Button
           variant="outline"
-          class="gap-2 rounded-[10px] border-[rgba(7,105,207,0.23)] px-[10.64px] py-[7.09px] text-[#0769CF] hover:bg-[#0769CF]/5"
+          class="gap-1 sm:gap-2 rounded-[10px] border-[rgba(7,105,207,0.23)] px-2 sm:px-[10.64px] py-[7.09px] text-[#0769CF] hover:bg-[#0769CF]/5"
           @click="handleImport"
         >
-          <Upload class="h-[14.19px] w-[14.19px]" />
-          <span class="text-[18.41px] font-medium leading-[1.5]">Exporter</span>
+          <Upload class="h-4 w-4 sm:h-[14.19px] sm:w-[14.19px]" />
+          <span class="hidden sm:inline text-sm sm:text-[18.41px] font-medium leading-[1.5]">Exporter</span>
         </Button>
 
 
 
         <!-- Bouton Nouveau -->
         <Button
-          class="gap-2 rounded-[10px] bg-[#0769CF] px-[10.64px] py-[7.09px] text-white hover:bg-[#0558b0]"
+          class="gap-1 sm:gap-2 rounded-[10px] bg-[#0769CF] px-2 sm:px-[10.64px] py-[7.09px] text-white hover:bg-[#0558b0]"
           @click="handleAdd"
         >
-          <Plus class="h-[14.19px] w-[14.19px]" />
-          <span class="text-[18.41px] font-medium leading-[1.5]">Nouveau</span>
+          <Plus class="h-4 w-4 sm:h-[14.19px] sm:w-[14.19px]" />
+          <span class="hidden sm:inline text-sm sm:text-[18.41px] font-medium leading-[1.5]">Nouveau</span>
         </Button>
       </div>
 
       <!-- Barre de recherche + Filtre (sous les boutons) -->
-      <div class="flex items-center gap-6">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6">
         <!-- Barre de recherche -->
-        <div class="relative flex-1 max-w-[216px]">
+        <div class="relative w-full sm:flex-1 sm:max-w-[216px]">
           <Input
             v-model="searchQuery"
             type="text"

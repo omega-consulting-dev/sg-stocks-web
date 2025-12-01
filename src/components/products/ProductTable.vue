@@ -57,8 +57,9 @@ const paginationInfo = computed(() => {
 </script>
 
 <template>
-  <div class="rounded-[30px] bg-white shadow-[0px_10px_60px_0px_rgba(226,236,249,0.5)]">
-    <Table>
+  <div class="rounded-xl sm:rounded-[30px] bg-white shadow-[0px_10px_60px_0px_rgba(226,236,249,0.5)] overflow-hidden">
+    <div class="overflow-x-auto">
+    <Table class="min-w-[800px]">
       <TableHeader>
         <TableRow>
           <TableHead class="w-[100px] font-semibold">Image</TableHead>
@@ -161,10 +162,11 @@ const paginationInfo = computed(() => {
         </template>
       </TableBody>
     </Table>
+    </div>
 
     <!-- Pagination info -->
-    <div class="px-[38px] py-[30px] border-t">
-      <p class="text-[14px] font-medium text-[#B5B7C0]" style="font-family: Poppins">
+    <div class="px-4 sm:px-[38px] py-4 sm:py-[30px] border-t">
+      <p class="text-xs sm:text-[14px] font-medium text-[#B5B7C0]" style="font-family: Poppins">
         {{ paginationInfo }}
       </p>
     </div>

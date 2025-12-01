@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useProductFamiliesStore, type ProductFamily } from '@/stores/productFamilies'
-import { useProductsStore } from '@/stores/products'
-import ProductFamilySearchBar from '@/components/product-families/ProductFamilySearchBar.vue'
-import ProductFamilyTable from '@/components/product-families/ProductFamilyTable.vue'
-import ProductFamilyForm from '@/components/product-families/ProductFamilyForm.vue'
-import ProductTable from '@/components/products/ProductTable.vue'
+import { useServiceFamiliesStore, type ServiceFamily } from '@/stores/serviceFamilies'
+import ServiceFamilySearchBar from '@/components/service-families/ServiceFamilySearchBar.vue'
+import ServiceFamilyTable from '@/components/service-families/ServiceFamilyTable.vue'
+import ServiceFamilyForm from '@/components/service-families/ServiceFamilyForm.vue'
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -25,17 +23,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
-const store = useProductFamiliesStore()
-const productsStore = useProductsStore()
+const store = useServiceFamiliesStore()
 
-// État local
+// Etat local
 const searchQuery = ref('')
 const isFormOpen = ref(false)
 const isDeleteDialogOpen = ref(false)
-const isProductsDialogOpen = ref(false)
-const selectedFamily = ref<ProductFamily | null>(null)
-const familyToDelete = ref<ProductFamily | null>(null)
-const selectedFamilyForProducts = ref<ProductFamily | null>(null)
+const selectedFamily = ref<ServiceFamily | null>(null)
+const familyToDelete = ref<ServiceFamily | null>(null)
 
 // Computed
 const filteredFamilies = computed(() => {
@@ -45,24 +40,14 @@ const filteredFamilies = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return store.families.filter(
     (family) =>
-      family.code.toLowerCase().includes(query) ||
-      family.libelle.toLowerCase().includes(query) ||
+      family.name.toLowerCase().includes(query) ||
       family.description.toLowerCase().includes(query)
   )
 })
 
-// Produits de la famille sélectionnée
-const familyProducts = computed(() => {
-  if (!selectedFamilyForProducts.value) return []
-  return productsStore.products.filter(
-    (product) => product.familleId === selectedFamilyForProducts.value!.id
-  )
-})
-
-// Charger les données au montage
+// Charger les donnees au montage
 onMounted(() => {
   store.fetchFamilies()
-  productsStore.fetchProducts()
 })
 
 // Gestion de la recherche
@@ -77,37 +62,33 @@ const handleAdd = () => {
 }
 
 // Gestion de l'import
-const handleImport = () => {
-  // TODO: Implémenter l'import de données
-  console.log('Import clicked')
+const handleImport = async () => {
+  alert('Import des familles de services - Fonctionnalite a venir')
 }
 
 // Gestion de l'export PDF
-const handleExportPdf = () => {
-  // TODO: Implémenter l'export PDF
-  console.log('Export PDF clicked')
+const handleExportPdf = async () => {
+  alert('Export PDF des familles de services - Fonctionnalite a venir')
 }
 
 // Gestion de l'export Excel
-const handleExportExcel = () => {
-  // TODO: Implémenter l'export Excel
-  console.log('Export Excel clicked')
+const handleExportExcel = async () => {
+  alert('Export Excel des familles de services - Fonctionnalite a venir')
 }
 
-// Gestion de la sélection d'une famille pour voir ses produits
-const handleSelectFamily = (family: ProductFamily) => {
-  selectedFamilyForProducts.value = family
-  isProductsDialogOpen.value = true
+// Gestion de la selection
+const handleSelectFamily = (family: ServiceFamily) => {
+  console.log('Famille de service selectionnee:', family)
 }
 
 // Gestion de la modification
-const handleEdit = (family: ProductFamily) => {
+const handleEdit = (family: ServiceFamily) => {
   selectedFamily.value = family
   isFormOpen.value = true
 }
 
 // Gestion de la suppression
-const handleDelete = (family: ProductFamily) => {
+const handleDelete = (family: ServiceFamily) => {
   familyToDelete.value = family
   isDeleteDialogOpen.value = true
 }
@@ -125,13 +106,11 @@ const confirmDelete = async () => {
 }
 
 // Soumission du formulaire
-const handleFormSubmit = async (data: { code: string; libelle: string; description: string }) => {
+const handleFormSubmit = async (data: { name: string; description: string }) => {
   try {
     if (selectedFamily.value) {
-      // Modification
       await store.updateFamily(selectedFamily.value.id, data)
     } else {
-      // Ajout
       await store.addFamily(data)
     }
     isFormOpen.value = false
@@ -152,16 +131,20 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage>Familles de produits</BreadcrumbPage>
+          <BreadcrumbLink href="/categories/services">Categories</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>Famille de services</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
 
-    <!-- Barre de recherche et actions (avec titre intégré) -->
-    <ProductFamilySearchBar
+    <!-- Barre de recherche et actions -->
+    <ServiceFamilySearchBar
       @search="handleSearch"
       @add="handleAdd"
-      @import="handleImport"
+      @import-excel="handleImport"
       @export-pdf="handleExportPdf"
       @export-excel="handleExportExcel"
     />
@@ -169,7 +152,7 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
     <!-- Tableau des familles -->
     <Card>
       <CardContent class="p-0">
-        <ProductFamilyTable
+        <ServiceFamilyTable
           :families="filteredFamilies"
           :loading="store.loading"
           @edit="handleEdit"
@@ -184,12 +167,12 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
       <span>Total:</span>
       <span class="font-semibold text-[#003FD8]">{{ store.familiesCount }} famille(s)</span>
       <span v-if="searchQuery" class="ml-2">
-        · {{ filteredFamilies.length }} résultat(s) filtré(s)
+        · {{ filteredFamilies.length }} resultat(s) filtre(s)
       </span>
     </div>
 
     <!-- Formulaire d'ajout/modification -->
-    <ProductFamilyForm
+    <ServiceFamilyForm
       v-model:open="isFormOpen"
       :family="selectedFamily"
       :loading="store.loading"
@@ -202,9 +185,9 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
         <DialogHeader>
           <DialogTitle>Confirmer la suppression</DialogTitle>
           <DialogDescription>
-            Êtes-vous sûr de vouloir supprimer la famille
-            <span class="font-semibold">{{ familyToDelete?.libelle }}</span> ?
-            Cette action est irréversible.
+            Etes-vous sur de vouloir supprimer la famille
+            <span class="font-semibold">{{ familyToDelete?.name }}</span> ?
+            Cette action est irreversible.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter class="gap-2">
@@ -221,40 +204,6 @@ const handleFormSubmit = async (data: { code: string; libelle: string; descripti
             :disabled="store.loading"
           >
             {{ store.loading ? 'Suppression...' : 'Supprimer' }}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    <!-- Dialog des produits de la famille -->
-    <Dialog v-model:open="isProductsDialogOpen">
-      <DialogContent class="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle class="text-[#003FD8]">
-            Produits de la famille "{{ selectedFamilyForProducts?.libelle }}"
-          </DialogTitle>
-          <DialogDescription>
-            {{ familyProducts.length }} produit(s) dans cette famille
-          </DialogDescription>
-        </DialogHeader>
-        <div class="flex-1 overflow-auto">
-          <ProductTable
-            v-if="familyProducts.length > 0"
-            :products="familyProducts"
-            :loading="productsStore.loading"
-            :current-page="1"
-            :page-size="familyProducts.length"
-            :total="familyProducts.length"
-            @edit="() => {}"
-            @delete="() => {}"
-          />
-          <div v-else class="py-8 text-center text-muted-foreground">
-            Aucun produit dans cette famille
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" @click="isProductsDialogOpen = false">
-            Fermer
           </Button>
         </DialogFooter>
       </DialogContent>

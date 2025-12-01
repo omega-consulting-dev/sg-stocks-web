@@ -49,7 +49,7 @@ export const productsApi = {
    * Récupérer tous les produits avec filtres optionnels
    */
   async fetchAll(filters?: ProductFilters): Promise<Product[]> {
-    const response: AxiosResponse<Product[]> = await Axios.get('/products', {
+    const response: AxiosResponse<Product[]> = await Axios.get('/products/products/', {
       params: filters,
     })
     return response.data
@@ -68,7 +68,7 @@ export const productsApi = {
    */
   async fetchByFamily(familleId: number): Promise<Product[]> {
     const response: AxiosResponse<Product[]> = await Axios.get(
-      `/product-families/${familleId}/products`
+      `/product-families/${familleId}/products/products/`
     )
     return response.data
   },
@@ -85,7 +85,7 @@ export const productsApi = {
    * Créer un nouveau produit
    */
   async create(data: CreateProductDto): Promise<Product> {
-    const response: AxiosResponse<Product> = await Axios.post('/products', data)
+    const response: AxiosResponse<Product> = await Axios.post('/products/products/', data)
     return response.data
   },
 
@@ -93,7 +93,7 @@ export const productsApi = {
    * Mettre à jour un produit existant
    */
   async update(id: number, data: UpdateProductDto): Promise<Product> {
-    const response: AxiosResponse<Product> = await Axios.put(`/products/${id}`, data)
+    const response: AxiosResponse<Product> = await Axios.put(`/products/products/${id}`, data)
     return response.data
   },
 
@@ -101,7 +101,7 @@ export const productsApi = {
    * Mettre à jour le stock d'un produit
    */
   async updateStock(id: number, quantite: number): Promise<Product> {
-    const response: AxiosResponse<Product> = await Axios.patch(`/products/${id}/stock`, {
+    const response: AxiosResponse<Product> = await Axios.patch(`/products/products/${id}/stock`, {
       quantite,
     })
     return response.data
@@ -111,7 +111,7 @@ export const productsApi = {
    * Supprimer un produit
    */
   async remove(id: number): Promise<void> {
-    await Axios.delete(`/products/${id}`)
+    await Axios.delete(`/products/products/${id}`)
   },
 
   /**
@@ -122,7 +122,7 @@ export const productsApi = {
     formData.append('image', imageFile)
 
     const response: AxiosResponse<{ imageUrl: string }> = await Axios.post(
-      `/products/${id}/image`,
+      `/products/products/${id}/image`,
       formData,
       {
         headers: {

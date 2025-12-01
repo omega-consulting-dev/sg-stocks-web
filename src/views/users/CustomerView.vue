@@ -137,16 +137,17 @@ async function get_users() {
 </script>
 
 <template>
-    <header class="flex justify-between items-center">
+    <div class="p-4 sm:p-6">
+    <header class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div>
-            <h1 class="text-3xl font-bold text-primary">Clients</h1>
-            <p class="opacity-60 text-sm">Liste des client ajouter</p>
+            <h1 class="text-2xl sm:text-3xl font-bold text-primary">Clients</h1>
+            <p class="opacity-60 text-xs sm:text-sm">Liste des client ajouter</p>
         </div>
 
-        <div class="flex items-center gap-4">
+        <div class="flex flex-wrap items-center gap-2 sm:gap-4">
             <!-- bare de recherche -->
             <div class="relative flex items-center gap-1 transition-all duration-500 w-11 overflow-hidden"
-                :class="{ 'w-64 overflow-visible': search.opened }">
+                :class="{ 'w-48 sm:w-64 overflow-visible': search.opened }">
                 <Button variant="outline" class="absolutef top-0 left-0"
                     :class="{ 'absolute size-7 left-1 top-1/2 -translate-y-1/2 border-none': search.opened }"
                     @click="open_search">
@@ -160,9 +161,9 @@ async function get_users() {
             <!-- bouton d'importation -->
             <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                    <Button variant="outline">
+                    <Button variant="outline" class="px-2 sm:px-4">
                         <Upload />
-                        Importer
+                        <span class="hidden sm:inline">Importer</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent class="w-[--reka-dropdown-menu-trigger-width] rounded-lg" :side="'bottom'"
@@ -177,9 +178,9 @@ async function get_users() {
             <!-- bouton d'exportation -->
             <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                    <Button variant="outline">
+                    <Button variant="outline" class="px-2 sm:px-4">
                         <Download />
-                        Exporter
+                        <span class="hidden sm:inline">Exporter</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent class="w-[--reka-dropdown-menu-trigger-width] rounded-lg" :side="'bottom'"
@@ -199,9 +200,9 @@ async function get_users() {
             <!-- bouton d'ajout -->
             <Dialog :open="openModal" @update:open="(v: boolean) => openModal = v">
                 <DialogTrigger asChild>
-                    <Button>
+                    <Button class="px-2 sm:px-4">
                         <Plus />
-                        Nouveau client
+                        <span class="hidden sm:inline">Nouveau client</span>
                     </Button>
                 </DialogTrigger>
 
@@ -234,12 +235,12 @@ async function get_users() {
                 </DialogContent>
             </Dialog>
 
-            <Button @click="get_users"> Compte clients </Button>
+            <Button @click="get_users" class="hidden lg:flex"> Compte clients </Button>
         </div>
     </header>
 
-    <div class="mt-8">
-        <Table>
+    <div class="mt-6 sm:mt-8 overflow-x-auto">
+        <Table class="min-w-[600px]">
             <TableHeader>
                 <TableRow class="bg-muted">
                     <TableHead class="w-[100px]"> Nom client </TableHead>
@@ -269,5 +270,6 @@ async function get_users() {
                 </TableRow>
             </TableBody>
         </Table>
+    </div>
     </div>
 </template>

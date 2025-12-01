@@ -14,19 +14,19 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex-1 p-[30px] bg-white rounded-[16.4px]">
+  <div class="flex-1 p-4 sm:p-6 lg:p-8 bg-white rounded-xl lg:rounded-[16.4px]">
     <!-- En-tête de bienvenue -->
-    <div class="mb-[50px]">
-      <h1 class="text-[48px] font-normal leading-[1em] text-[#0A1632] mb-[56px]" style="font-family: Trispace">
-        Salut Dannielle, Bienvenue👌
+    <div class="mb-6 sm:mb-8 lg:mb-12">
+      <h1 class="text-2xl sm:text-3xl lg:text-4xl xl:text-[48px] font-normal leading-tight text-[#0A1632] mb-3 sm:mb-4 lg:mb-6" style="font-family: Trispace">
+        Salut Dannielle, Bienvenue
       </h1>
-      <p class="text-[20px] font-normal leading-[1.4em] text-[#4B5563]" style="font-family: Poppins">
+      <p class="text-sm sm:text-base lg:text-xl font-normal leading-relaxed text-[#4B5563]" style="font-family: Poppins">
         Manipule vos données avec soins et faciliter.
       </p>
     </div>
 
     <!-- Cartes statistiques -->
-    <div class="flex gap-[23px] mb-[29px]">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 mb-6 sm:mb-8">
       <StatCard
         v-for="stat in store.stats"
         :key="stat.id"
@@ -35,21 +35,22 @@ onMounted(() => {
     </div>
 
     <!-- Section graphiques -->
-    <div class="flex gap-[46px] mb-[42px]">
+    <div class="flex flex-col lg:flex-row gap-6 lg:gap-8 xl:gap-12 mb-6 sm:mb-8 lg:mb-10">
       <!-- Graphique principal -->
-      <DashboardChart />
+      <div class="w-full lg:flex-1">
+        <DashboardChart />
+      </div>
 
       <!-- Diagramme circulaire avec bordure -->
-      <div class="relative">
-        <div class="absolute inset-0 border border-[rgba(130,130,130,0.15)] rounded-[12px] w-[443px] h-[298px]"></div>
-        <div class="pt-[43px] pl-[121px]">
+      <div class="w-full lg:w-auto lg:min-w-[300px] xl:min-w-[400px]">
+        <div class="border border-[rgba(130,130,130,0.15)] rounded-xl p-4 sm:p-6 lg:p-8">
           <StockPieChart />
         </div>
       </div>
     </div>
 
     <!-- Tableau de stock -->
-    <div class="mt-[42px]">
+    <div class="mt-6 sm:mt-8 lg:mt-10 overflow-x-auto">
       <StockTable :items="store.stockItems" />
     </div>
   </div>

@@ -88,7 +88,7 @@ const handleDelete = (family: ProductFamily) => {
             ]"
             @click="handleSelect(family)"
           >
-            <TableCell class="font-medium">{{ family.code }}</TableCell>
+            <TableCell class="font-medium">{{ family.id }}</TableCell>
             <TableCell>{{ family.libelle }}</TableCell>
             <TableCell class="text-muted-foreground">{{ family.description }}</TableCell>
             <TableCell class="text-muted-foreground text-sm">

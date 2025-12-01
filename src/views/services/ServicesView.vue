@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useServicesStore, type Service } from '@/stores/services'
+import { useServicesStore, type Service, type CreateServiceDto } from '@/stores/services'
 import ServiceSearchBar from '@/components/services/ServiceSearchBar.vue'
 import ServiceTable from '@/components/services/ServiceTable.vue'
 import ServiceForm from '@/components/services/ServiceForm.vue'
@@ -26,9 +26,9 @@ const store = useServicesStore()
 
 // État local
 const searchQuery = ref('')
-const familyFilter = ref('')
+const categoryFilter = ref<number | null>(null)
 const currentPage = ref(1)
-const pageSize = ref(6)
+const pageSize = ref(8)
 const isFormOpen = ref(false)
 const isDeleteDialogOpen = ref(false)
 const selectedService = ref<Service | null>(null)
@@ -43,16 +43,16 @@ const filteredServices = computed(() => {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(
       (service) =>
-        service.intitule.toLowerCase().includes(query) ||
-        service.client.toLowerCase().includes(query) ||
-        service.familleLibelle.toLowerCase().includes(query)
+        service.name.toLowerCase().includes(query) ||
+        service.reference.toLowerCase().includes(query) ||
+        service.category_name.toLowerCase().includes(query)
     )
   }
 
-  // Filtre par famille
-  if (familyFilter.value) {
+  // Filtre par catégorie
+  if (categoryFilter.value) {
     filtered = filtered.filter(
-      (service) => service.familleLibelle === familyFilter.value
+      (service) => service.category === categoryFilter.value
     )
   }
 
@@ -73,13 +73,13 @@ onMounted(() => {
 // Gestion de la recherche
 const handleSearch = (query: string) => {
   searchQuery.value = query
-  currentPage.value = 1 // Reset pagination
+  currentPage.value = 1
 }
 
-// Gestion du filtre famille
-const handleFamilyFilter = (family: string) => {
-  familyFilter.value = family
-  currentPage.value = 1 // Reset pagination
+// Gestion du filtre catégorie
+const handleCategoryFilter = (category: number | null) => {
+  categoryFilter.value = category
+  currentPage.value = 1
 }
 
 // Gestion de l'ajout
@@ -90,20 +90,17 @@ const handleAdd = () => {
 
 // Gestion de l'import
 const handleImport = () => {
-  console.log('Import clicked')
-  // TODO: Implémenter l'import de données
+  alert('Import des services - Fonctionnalité à venir')
 }
 
 // Gestion de l'export PDF
 const handleExportPdf = () => {
-  console.log('Export PDF clicked')
-  // TODO: Implémenter l'export PDF
+  alert('Export PDF des services - Fonctionnalité à venir')
 }
 
 // Gestion de l'export Excel
 const handleExportExcel = () => {
-  console.log('Export Excel clicked')
-  // TODO: Implémenter l'export Excel
+  alert('Export Excel des services - Fonctionnalité à venir')
 }
 
 // Gestion de la modification
@@ -131,14 +128,12 @@ const confirmDelete = async () => {
 }
 
 // Soumission du formulaire
-const handleFormSubmit = async (data: Partial<Service>) => {
+const handleFormSubmit = async (data: CreateServiceDto) => {
   try {
     if (selectedService.value) {
-      // Modification
       await store.updateService(selectedService.value.id, data)
     } else {
-      // Ajout
-      await store.addService(data as Omit<Service, 'id' | 'createdAt' | 'updatedAt'>)
+      await store.addService(data)
     }
     isFormOpen.value = false
     selectedService.value = null
@@ -154,7 +149,7 @@ const handlePageChange = (page: number) => {
 </script>
 
 <template>
-  <div class="flex-1 space-y-6 p-6">
+  <div class="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6">
     <!-- Breadcrumb -->
     <Breadcrumb>
       <BreadcrumbList>
@@ -171,7 +166,7 @@ const handlePageChange = (page: number) => {
     <!-- Barre de recherche et actions -->
     <ServiceSearchBar
       @search="handleSearch"
-      @family-filter="handleFamilyFilter"
+      @category-filter="handleCategoryFilter"
       @add="handleAdd"
       @import="handleImport"
       @export-pdf="handleExportPdf"
@@ -205,7 +200,7 @@ const handlePageChange = (page: number) => {
           <DialogTitle>Confirmer la suppression</DialogTitle>
           <DialogDescription>
             Êtes-vous sûr de vouloir supprimer le service
-            <span class="font-semibold">{{ serviceToDelete?.intitule }}</span> ?
+            <span class="font-semibold">{{ serviceToDelete?.name }}</span> ?
             Cette action est irréversible.
           </DialogDescription>
         </DialogHeader>
