@@ -1,18 +1,15 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { servicesApi } from '@/services/api/services.api'
+import type {
+  Service,
+  CreateServiceDto,
+  UpdateServiceDto,
+  ServiceFilters,
+} from '@/services/api/services.api'
 
-export interface Service {
-  id: number
-  dateOperation: Date
-  intitule: string
-  client: string
-  quantite: number
-  montantFacture: number
-  familleId: number
-  familleLibelle: string
-  createdAt: Date
-  updatedAt: Date
-}
+// Réexporter les types pour les composants
+export type { Service, CreateServiceDto }
 
 export const useServicesStore = defineStore('services', () => {
   // État
@@ -20,93 +17,17 @@ export const useServicesStore = defineStore('services', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // Données mock correspondant au design Figma
-  const mockServices: Service[] = [
-    {
-      id: 1,
-      dateOperation: new Date('2025-04-26'),
-      intitule: 'Conception de site web',
-      client: 'RD design',
-      quantite: 20,
-      montantFacture: 255000,
-      familleId: 1,
-      familleLibelle: 'Développement Web',
-      createdAt: new Date('2025-04-26'),
-      updatedAt: new Date('2025-04-26'),
-    },
-    {
-      id: 2,
-      dateOperation: new Date('2025-04-26'),
-      intitule: 'Gestion de page facebook',
-      client: 'Negoce cameroun',
-      quantite: 25,
-      montantFacture: 25000,
-      familleId: 2,
-      familleLibelle: 'Marketing Digital',
-      createdAt: new Date('2025-04-26'),
-      updatedAt: new Date('2025-04-26'),
-    },
-    {
-      id: 3,
-      dateOperation: new Date('2025-04-26'),
-      intitule: 'Campagne Publicitaire',
-      client: 'Negoce cameroun',
-      quantite: 358,
-      montantFacture: 105000,
-      familleId: 2,
-      familleLibelle: 'Marketing Digital',
-      createdAt: new Date('2025-04-26'),
-      updatedAt: new Date('2025-04-26'),
-    },
-    {
-      id: 4,
-      dateOperation: new Date('2025-04-26'),
-      intitule: 'Campagne Publicitaire',
-      client: 'WE GO',
-      quantite: 26,
-      montantFacture: 255000,
-      familleId: 2,
-      familleLibelle: 'Marketing Digital',
-      createdAt: new Date('2025-04-26'),
-      updatedAt: new Date('2025-04-26'),
-    },
-    {
-      id: 5,
-      dateOperation: new Date('2025-04-26'),
-      intitule: 'Creaction de spot publicitaire',
-      client: 'Agri bio future',
-      quantite: 235,
-      montantFacture: 125000,
-      familleId: 3,
-      familleLibelle: 'Production Vidéo',
-      createdAt: new Date('2025-04-26'),
-      updatedAt: new Date('2025-04-26'),
-    },
-    {
-      id: 6,
-      dateOperation: new Date('2025-04-26'),
-      intitule: 'Creaction de spot publicitaire',
-      client: 'Agri bio future',
-      quantite: 12,
-      montantFacture: 125000,
-      familleId: 3,
-      familleLibelle: 'Production Vidéo',
-      createdAt: new Date('2025-04-26'),
-      updatedAt: new Date('2025-04-26'),
-    },
-  ]
-
   // Computed
   const servicesCount = computed(() => services.value.length)
 
   // Actions
-  const fetchServices = async () => {
+  const fetchServices = async (filters?: ServiceFilters) => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      services.value = mockServices
+      const params = { is_active: true, ...filters }
+      const data = await servicesApi.fetchAll(params)
+      services.value = data
     } catch (e) {
       error.value = 'Erreur lors du chargement des services'
       console.error(e)
@@ -115,23 +36,24 @@ export const useServicesStore = defineStore('services', () => {
     }
   }
 
-  const addService = async (
-    service: Omit<Service, 'id' | 'createdAt' | 'updatedAt'>
-  ) => {
+  const addService = async (service: CreateServiceDto) => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
-      const newService: Service = {
-        ...service,
-        id: Math.max(...services.value.map((s) => s.id), 0) + 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-
-      services.value.push(newService)
+      const newService = await servicesApi.create(service)
+      // Convertir ServiceDetail en Service pour la liste
+      services.value.push({
+        id: newService.id,
+        reference: newService.reference,
+        name: newService.name,
+        category: newService.category,
+        category_name: newService.category_name,
+        unit_price: newService.unit_price,
+        estimated_duration: newService.estimated_duration,
+        assigned_staff_count: newService.assigned_staff_count,
+        is_active: newService.is_active,
+        created_at: newService.created_at,
+      })
       return newService
     } catch (e) {
       error.value = "Erreur lors de l'ajout du service"
@@ -142,26 +64,27 @@ export const useServicesStore = defineStore('services', () => {
     }
   }
 
-  const updateService = async (
-    id: number,
-    updates: Partial<Omit<Service, 'id' | 'createdAt' | 'updatedAt'>>
-  ) => {
+  const updateService = async (id: number, updates: UpdateServiceDto) => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
+      const updatedService = await servicesApi.update(id, updates)
       const index = services.value.findIndex((s) => s.id === id)
       if (index !== -1) {
         services.value[index] = {
-          ...services.value[index],
-          ...updates,
-          updatedAt: new Date(),
+          id: updatedService.id,
+          reference: updatedService.reference,
+          name: updatedService.name,
+          category: updatedService.category,
+          category_name: updatedService.category_name,
+          unit_price: updatedService.unit_price,
+          estimated_duration: updatedService.estimated_duration,
+          assigned_staff_count: updatedService.assigned_staff_count,
+          is_active: updatedService.is_active,
+          created_at: updatedService.created_at,
         }
-        return services.value[index]
       }
-      throw new Error('Service non trouvé')
+      return updatedService
     } catch (e) {
       error.value = 'Erreur lors de la modification du service'
       console.error(e)
@@ -175,15 +98,10 @@ export const useServicesStore = defineStore('services', () => {
     loading.value = true
     error.value = null
     try {
-      // Simulation d'un appel API
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
-      const index = services.value.findIndex((s) => s.id === id)
-      if (index !== -1) {
-        services.value.splice(index, 1)
-        return true
-      }
-      throw new Error('Service non trouvé')
+      await servicesApi.remove(id)
+      // Retirer immédiatement le service de la liste locale
+      services.value = services.value.filter((s) => s.id !== id)
+      return true
     } catch (e) {
       error.value = 'Erreur lors de la suppression du service'
       console.error(e)
@@ -195,6 +113,63 @@ export const useServicesStore = defineStore('services', () => {
 
   const getServiceById = (id: number) => {
     return services.value.find((s) => s.id === id)
+  }
+
+  const exportExcel = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const blob = await servicesApi.exportExcel()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `services_${new Date().toISOString().slice(0, 10)}.xlsx`
+      link.click()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      error.value = "Erreur lors de l'export Excel"
+      console.error(e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const exportPdf = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const blob = await servicesApi.exportPdf()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `services_${new Date().toISOString().slice(0, 10)}.pdf`
+      link.click()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      error.value = "Erreur lors de l'export PDF"
+      console.error(e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const importExcel = async (file: File) => {
+    loading.value = true
+    error.value = null
+    try {
+      const result = await servicesApi.importExcel(file)
+      // Recharger les services après import
+      await fetchServices()
+      return result
+    } catch (e) {
+      error.value = "Erreur lors de l'import Excel"
+      console.error(e)
+      throw e
+    } finally {
+      loading.value = false
+    }
   }
 
   return {
@@ -210,5 +185,8 @@ export const useServicesStore = defineStore('services', () => {
     updateService,
     deleteService,
     getServiceById,
+    exportExcel,
+    exportPdf,
+    importExcel,
   }
 })

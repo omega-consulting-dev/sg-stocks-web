@@ -118,7 +118,7 @@ const goToNextPage = () => {
             Référence
           </TableHead>
           <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
-            Nom du service
+            Désignation
           </TableHead>
           <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
             Catégorie

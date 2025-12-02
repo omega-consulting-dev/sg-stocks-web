@@ -179,6 +179,40 @@ export const servicesApi = {
     const response: AxiosResponse<ServiceStats> = await Axios.get('/services/services/stats/')
     return response.data
   },
+
+  /**
+   * Exporter les services en Excel
+   */
+  async exportExcel(): Promise<Blob> {
+    const response = await Axios.get('/services/services/export_excel/', {
+      responseType: 'blob',
+    })
+    return response.data
+  },
+
+  /**
+   * Exporter les services en PDF
+   */
+  async exportPdf(): Promise<Blob> {
+    const response = await Axios.get('/services/services/export_pdf/', {
+      responseType: 'blob',
+    })
+    return response.data
+  },
+
+  /**
+   * Importer des services depuis un fichier Excel
+   */
+  async importExcel(
+    file: File
+  ): Promise<{ message: string; created: number; updated: number; errors: string[] }> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await Axios.post('/services/services/import_excel/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
 }
 
 export default servicesApi

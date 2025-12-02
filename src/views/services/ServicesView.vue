@@ -90,17 +90,38 @@ const handleAdd = () => {
 
 // Gestion de l'import
 const handleImport = () => {
-  alert('Import des services - Fonctionnalité à venir')
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.xlsx,.xls'
+  input.onchange = async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (file) {
+      try {
+        await store.importExcel(file)
+      } catch (error) {
+        console.error("Erreur lors de l'import:", error)
+      }
+    }
+  }
+  input.click()
 }
 
 // Gestion de l'export PDF
-const handleExportPdf = () => {
-  alert('Export PDF des services - Fonctionnalité à venir')
+const handleExportPdf = async () => {
+  try {
+    await store.exportPdf()
+  } catch (error) {
+    console.error("Erreur lors de l'export PDF:", error)
+  }
 }
 
 // Gestion de l'export Excel
-const handleExportExcel = () => {
-  alert('Export Excel des services - Fonctionnalité à venir')
+const handleExportExcel = async () => {
+  try {
+    await store.exportExcel()
+  } catch (error) {
+    console.error("Erreur lors de l'export Excel:", error)
+  }
 }
 
 // Gestion de la modification
@@ -166,9 +187,8 @@ const handlePageChange = (page: number) => {
     <!-- Barre de recherche et actions -->
     <ServiceSearchBar
       @search="handleSearch"
-      @category-filter="handleCategoryFilter"
       @add="handleAdd"
-      @import="handleImport"
+      @import-excel="handleImport"
       @export-pdf="handleExportPdf"
       @export-excel="handleExportExcel"
     />

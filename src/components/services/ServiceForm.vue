@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { X, Calendar, FileText, User, Hash, DollarSign, CreditCard, ChevronDown } from 'lucide-vue-next'
+import { ref, watch, onMounted, computed } from 'vue'
+import { FileText, Camera } from 'lucide-vue-next'
 import type { Service } from '@/stores/services'
+import { useServicesStore } from '@/stores/services'
+import type { CreateServiceDto } from '@/services/api/services.api'
+import { useServiceFamiliesStore } from '@/stores/serviceFamilies'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,100 +26,91 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  submit: [data: Partial<Service>]
+  submit: [data: CreateServiceDto]
 }>()
 
+// Stores
+const familiesStore = useServiceFamiliesStore()
+const servicesStore = useServicesStore()
+
 const formData = ref({
-  dateOperation: new Date().toISOString().split('T')[0],
-  intitule: '',
-  client: '',
-  quantite: '',
-  montantFacture: '',
-  naturePaiement: '',
+  reference: '',
+  name: '',
+  category: 0,
+  unit_price: 0,
   description: '',
-  familleId: 1,
-  familleLibelle: 'Développement Web',
+})
+
+// Générer le prochain code séquentiel (SRV001, SRV002, etc.)
+const generateNextCode = (): string => {
+  const existingCodes = servicesStore.services
+    .map(s => s.reference)
+    .filter(ref => ref && ref.startsWith('SRV'))
+    .map(ref => parseInt(ref.replace('SRV', '')) || 0)
+
+  const maxCode = existingCodes.length > 0 ? Math.max(...existingCodes) : 0
+  const nextNumber = maxCode + 1
+  return `SRV${nextNumber.toString().padStart(3, '0')}`
+}
+
+// Obtenir le nom de la catégorie sélectionnée
+const selectedCategoryName = computed(() => {
+  const family = familiesStore.families.find(f => f.id === formData.value.category)
+  return family?.name || ''
 })
 
 const isEditing = ref(false)
 
-// Liste des clients disponibles
-const clientsDisponibles = [
-  { id: 1, nom: 'Client A' },
-  { id: 2, nom: 'Client B' },
-  { id: 3, nom: 'Client C' },
-]
+// Charger les catégories au montage
+onMounted(() => {
+  if (familiesStore.families.length === 0) {
+    familiesStore.fetchFamilies()
+  }
+})
 
-// Liste des familles de services disponibles (pour intitulé)
-const motifsDisponibles = [
-  { id: 1, libelle: 'Développement Web' },
-  { id: 2, libelle: 'Marketing Digital' },
-  { id: 3, libelle: 'Production Vidéo' },
-  { id: 4, libelle: 'Design Graphique' },
-  { id: 5, libelle: 'Consulting' },
-]
-
-// Liste des natures de paiement
-const naturesPaiement = [
-  { id: 1, libelle: 'Espèces' },
-  { id: 2, libelle: 'Virement' },
-  { id: 3, libelle: 'Chèque' },
-  { id: 4, libelle: 'Mobile Money' },
-]
-
-watch(
-  () => props.open,
-  (newValue) => {
-    if (newValue) {
-      if (props.service) {
-        isEditing.value = true
-        formData.value = {
-          dateOperation: new Date(props.service.dateOperation).toISOString().split('T')[0],
-          intitule: props.service.intitule,
-          client: props.service.client,
-          quantite: props.service.quantite.toString(),
-          montantFacture: props.service.montantFacture.toString(),
-          naturePaiement: '',
-          description: '',
-          familleId: props.service.familleId,
-          familleLibelle: props.service.familleLibelle,
-        }
-      } else {
-        isEditing.value = false
-        formData.value = {
-          dateOperation: new Date().toISOString().split('T')[0],
-          intitule: '',
-          client: '',
-          quantite: '',
-          montantFacture: '',
-          naturePaiement: '',
-          description: '',
-          familleId: 1,
-          familleLibelle: 'Développement Web',
-        }
+watch(() => props.open, (newValue) => {
+  if (newValue) {
+    if (props.service) {
+      isEditing.value = true
+      formData.value = {
+        reference: props.service.reference,
+        name: props.service.name,
+        category: props.service.category,
+        unit_price: props.service.unit_price,
+        description: '',
+      }
+    } else {
+      isEditing.value = false
+      formData.value = {
+        reference: generateNextCode(),
+        name: '',
+        category: familiesStore.families[0]?.id || 0,
+        unit_price: 0,
+        description: '',
       }
     }
   }
-)
+})
 
-const handleMotifChange = (value: string) => {
-  const motif = motifsDisponibles.find((m) => m.id === parseInt(value))
-  if (motif) {
-    formData.value.familleId = motif.id
-    formData.value.familleLibelle = motif.libelle
+const handleCategoryChange = (value: unknown) => {
+  if (value !== null && value !== undefined) {
+    formData.value.category = parseInt(String(value))
   }
 }
 
 const handleSubmit = () => {
-  const data: Partial<Service> = {
-    dateOperation: new Date(formData.value.dateOperation),
-    intitule: formData.value.intitule,
-    client: formData.value.client,
-    quantite: parseInt(formData.value.quantite) || 0,
-    montantFacture: parseFloat(formData.value.montantFacture) || 0,
-    familleId: formData.value.familleId,
-    familleLibelle: formData.value.familleLibelle,
+  if (!formData.value.name || !formData.value.unit_price || !formData.value.category) {
+    return
   }
+
+  const data: CreateServiceDto = {
+    reference: formData.value.reference,
+    name: formData.value.name,
+    category: formData.value.category,
+    unit_price: formData.value.unit_price,
+    description: formData.value.description || '',
+  }
+
   emit('submit', data)
 }
 
@@ -126,236 +120,137 @@ const handleClose = () => {
 </script>
 
 <template>
-  <Dialog :open="open" @update:open="(value) => emit('update:open', value)">
-    <DialogContent
-      class="w-[95vw] sm:w-[836px] sm:max-w-[836px] h-auto sm:min-h-[621px] p-0 border border-[#0072C1] rounded-[10px] bg-white max-h-[90vh] overflow-y-auto"
-    >
-      <div class="relative">
-        <!-- Avatar circle - position: left 33.88px, top 27px -->
-        <div
-          class="absolute left-[33.88px] top-[27px] w-[44px] h-[44px] rounded-full bg-[#FBFBFB] border border-[#BABABA] flex items-center justify-center"
-        >
-          <User class="w-5 h-5 text-gray-500" />
-        </div>
-
-        <!-- Bouton X en haut à droite - position: right 21px, top 20px -->
-        <button
-          @click="handleClose"
-          type="button"
-          class="absolute right-[21px] top-[20px] w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded transition-colors"
-        >
-          <X class="h-4 w-4 text-black" />
-        </button>
-
-        <!-- Titre - centré -->
-        <div class="pt-[36px] pb-6 text-center">
-          <h2
-            class="text-[21.76px] font-bold text-[#3D3D3D]"
-            style="font-family: 'Montserrat', sans-serif"
-          >
-            Enregistrement Services
+  <Dialog :open="open" @update:open="handleClose">
+    <DialogContent class="w-[95vw] sm:w-auto max-w-[600px] p-0 gap-0 border border-[#0072C1] rounded-[10px] max-h-[90vh] overflow-y-auto">
+      <div class="relative px-4 sm:px-[47px] pt-[27px] pb-[20px]">
+        <div class="flex items-center gap-3 sm:gap-5 mb-4">
+          <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#FBFBFB] border border-[#BABABA] flex items-center justify-center">
+            <Camera class="w-4 h-4 sm:w-[21px] sm:h-[21px] text-gray-500" />
+          </div>
+          <h2 class="text-lg sm:text-[21.76px] font-bold leading-[1.219] text-[#535353]" style="font-family: Montserrat">
+            Fiche de service
           </h2>
         </div>
-
-        <!-- Form -->
-        <form @submit.prevent="handleSubmit" class="px-4 sm:px-[46px] pb-[27px]">
-          <!-- Grille 2 colonnes avec gap de 40px -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-[40px]">
-
-            <!-- Ligne 1: Date (gauche) -->
-            <div class="space-y-[7px]">
-              <label
-                class="block text-[18.76px] text-[#0E1420]"
-                style="font-family: 'Palanquin Dark', sans-serif"
-              >
-                Date
-              </label>
-              <div class="relative">
-                <FileText class="absolute left-[10px] top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
-                <Input
-                  v-model="formData.dateOperation"
-                  type="date"
-                  required
-                  class="w-full sm:w-[367px] h-[37px] pl-10 border border-[#BEBEBE] rounded-[10px] text-[14.76px] font-medium bg-white"
-                  style="font-family: 'Palanquin Dark', sans-serif"
-                />
-              </div>
-            </div>
-
-            <!-- Ligne 1: Client (droite) -->
-            <div class="space-y-[7px]">
-              <label
-                class="block text-[18.76px] text-[#0E1420]"
-                style="font-family: 'Palanquin Dark', sans-serif"
-              >
-                Client :
-              </label>
-              <div class="relative">
-                <FileText class="absolute left-[10px] top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none z-10" />
-                <Select v-model="formData.client">
-                  <SelectTrigger
-                    class="w-full sm:w-[367px] h-[37px] pl-10 border border-[#BEBEBE] rounded-[10px] text-[14.76px] bg-white"
-                    style="font-family: 'Palanquin Dark', sans-serif"
-                  >
-                    <SelectValue placeholder="Selectionner un client" class="text-[rgba(120,120,120,0.48)]" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem
-                        v-for="client in clientsDisponibles"
-                        :key="client.id"
-                        :value="client.nom"
-                      >
-                        {{ client.nom }}
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <!-- Ligne 2: Intitulé de l'opération (gauche) -->
-            <div class="space-y-[7px]">
-              <label
-                class="block text-[18.76px] text-[#0E1420]"
-                style="font-family: 'Palanquin Dark', sans-serif"
-              >
-                Intitulé de l'operation <span class="text-[#707070]">(Obligatoire)</span> :
-              </label>
-              <div class="relative">
-                <FileText class="absolute left-[10px] top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none z-10" />
-                <Select
-                  :model-value="formData.familleId.toString()"
-                  @update:model-value="handleMotifChange"
-                >
-                  <SelectTrigger
-                    class="w-full sm:w-[367px] h-[37px] pl-10 border border-[#BEBEBE] rounded-[10px] text-[14.76px] bg-white"
-                    style="font-family: 'Palanquin Dark', sans-serif"
-                  >
-                    <SelectValue placeholder="Selectionner un motif" class="text-[rgba(120,120,120,0.48)]" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem
-                        v-for="motif in motifsDisponibles"
-                        :key="motif.id"
-                        :value="motif.id.toString()"
-                      >
-                        {{ motif.libelle }}
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <!-- Ligne 2: Quantité (droite) -->
-            <div class="space-y-[7px]">
-              <label
-                class="block text-[18.76px] text-[#0E1420]"
-                style="font-family: 'Palanquin Dark', sans-serif"
-              >
-                Quantité :
-              </label>
-              <div class="relative">
-                <FileText class="absolute left-[10px] top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
-                <Input
-                  v-model="formData.quantite"
-                  type="text"
-                  placeholder="Ex : Salaire de Mr Kon Romeo"
-                  required
-                  class="w-full sm:w-[367px] h-[37px] pl-10 border border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)] bg-white"
-                  style="font-family: 'Palanquin Dark', sans-serif"
-                />
-              </div>
-            </div>
-
-            <!-- Ligne 3: Montant (gauche) -->
-            <div class="space-y-[7px]">
-              <label
-                class="block text-[18.76px] text-[#0E1420]"
-                style="font-family: 'Palanquin Dark', sans-serif"
-              >
-                Montant :
-              </label>
-              <div class="relative">
-                <FileText class="absolute left-[10px] top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
-                <Input
-                  v-model="formData.montantFacture"
-                  type="text"
-                  placeholder="Ex : 25 000"
-                  required
-                  class="w-full sm:w-[367px] h-[37px] pl-10 border border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)] bg-white"
-                  style="font-family: 'Palanquin Dark', sans-serif"
-                />
-              </div>
-            </div>
-
-            <!-- Ligne 3: Nature de paiement (droite) -->
-            <div class="space-y-[7px]">
-              <label
-                class="block text-[18.76px] text-[#0E1420]"
-                style="font-family: 'Palanquin Dark', sans-serif"
-              >
-                Nature de paiement :
-              </label>
-              <div class="relative">
-                <FileText class="absolute left-[10px] top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none z-10" />
-                <Select v-model="formData.naturePaiement">
-                  <SelectTrigger
-                    class="w-full sm:w-[367px] h-[37px] pl-10 border border-[#BEBEBE] rounded-[10px] text-[14.76px] bg-white"
-                    style="font-family: 'Palanquin Dark', sans-serif"
-                  >
-                    <SelectValue placeholder="Ex : especes" class="text-[rgba(120,120,120,0.48)]" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem
-                        v-for="nature in naturesPaiement"
-                        :key="nature.id"
-                        :value="nature.libelle"
-                      >
-                        {{ nature.libelle }}
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Description - pleine largeur -->
-          <div class="mt-5 space-y-[7px]">
-            <label
-              class="block text-[18.76px] text-[#0E1420]"
-              style="font-family: 'Palanquin Dark', sans-serif"
-            >
-              Description :
-            </label>
-            <div class="relative">
-              <FileText class="absolute left-[10px] top-4 h-5 w-5 text-gray-500 pointer-events-none" />
-              <Textarea
-                v-model="formData.description"
-                placeholder="Ex : Salaire du mois de janvier 2025"
-                class="w-full sm:w-[747px] min-h-[130px] pl-10 pt-3 border border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)] bg-white resize"
-                style="font-family: 'Palanquin Dark', sans-serif"
-              />
-            </div>
-          </div>
-
-          <!-- Bouton Sauver - centré, 367px × 37px -->
-          <div class="flex justify-center mt-6">
-            <Button
-              type="submit"
-              class="w-full sm:w-[367px] h-[37px] bg-[#0769CF] hover:bg-[#0558b0] rounded-[10px] text-white text-[14.762px] font-bold uppercase tracking-wide"
-              style="font-family: 'Montserrat', sans-serif"
-              :disabled="loading"
-            >
-              {{ loading ? 'ENREGISTREMENT...' : 'SAUVER' }}
-            </Button>
-          </div>
-        </form>
       </div>
+
+      <form @submit.prevent="handleSubmit" class="px-4 sm:px-[47px]">
+        <!-- Code service (auto-généré) -->
+        <div class="mb-[10px]">
+          <label for="reference" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Code :
+          </label>
+          <div class="relative">
+            <FileText class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
+            <Input
+              id="reference"
+              v-model="formData.reference"
+              :disabled="true"
+              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] bg-gray-100 font-semibold"
+              style="font-family: 'Palanquin Dark'"
+            />
+          </div>
+        </div>
+
+        <!-- Catégorie de service -->
+        <div class="mb-[10px]">
+          <label for="category" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Catégorie :
+          </label>
+          <Select
+            :model-value="formData.category.toString()"
+            @update:model-value="handleCategoryChange"
+            :disabled="loading || familiesStore.loading"
+          >
+            <SelectTrigger class="h-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px]" style="font-family: 'Palanquin Dark'">
+              <SelectValue placeholder="Sélectionner la catégorie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem
+                  v-for="family in familiesStore.families"
+                  :key="family.id"
+                  :value="family.id.toString()"
+                >
+                  {{ family.name }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <p v-if="selectedCategoryName" class="text-sm text-muted-foreground mt-1">
+            Catégorie : <span class="font-medium text-[#0769CF]">{{ selectedCategoryName }}</span>
+          </p>
+        </div>
+
+        <!-- Nom du service -->
+        <div class="mb-[10px]">
+          <label for="name" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Désignation :
+          </label>
+          <div class="relative">
+            <FileText class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
+            <Input
+              id="name"
+              v-model="formData.name"
+              placeholder="Ex : Conception de site web"
+              required
+              :disabled="loading"
+              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
+              style="font-family: 'Palanquin Dark'"
+            />
+          </div>
+        </div>
+
+        <!-- Prix unitaire -->
+        <div class="mb-[10px]">
+          <label for="unit_price" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Prix unitaire :
+          </label>
+          <div class="relative">
+            <FileText class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
+            <Input
+              id="unit_price"
+              v-model.number="formData.unit_price"
+              type="number"
+              step="1"
+              placeholder="Ex : 25 000"
+              required
+              :disabled="loading"
+              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
+              style="font-family: 'Palanquin Dark'"
+            />
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-[15px]">
+          <label for="description" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Description :
+          </label>
+          <div class="relative">
+            <FileText class="absolute left-[7px] top-4 h-6 w-6 text-[#616161]" />
+            <Textarea
+              id="description"
+              v-model="formData.description"
+              placeholder="Description du service..."
+              :disabled="loading"
+              class="w-full min-h-[80px] pl-[37px] pt-3 border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
+              style="font-family: 'Palanquin Dark'"
+            />
+          </div>
+        </div>
+
+        <!-- Bouton Sauver -->
+        <div class="pb-[37px]">
+          <Button
+            type="submit"
+            :disabled="loading || !formData.name || !formData.unit_price || !formData.category"
+            class="w-full h-[37px] bg-[#0769CF] hover:bg-[#0558b0] text-white rounded-[10px] text-[14.76px] font-bold uppercase"
+            style="font-family: Montserrat"
+          >
+            {{ loading ? 'ENREGISTREMENT...' : 'SAUVER' }}
+          </Button>
+        </div>
+      </form>
     </DialogContent>
   </Dialog>
 </template>
