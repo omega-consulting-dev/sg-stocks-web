@@ -10,6 +10,8 @@ import FacturationServiceView from '../views/facturation/FacturationServiceView.
 import FacturationProduitNouveauView from '../views/facturation/FacturationProduitNouveauView.vue'
 import EncaissementsView from '../views/encaissements/EncaissementsView.vue'
 import LoginView from '../views/auth/LoginView.vue'
+import FournisseursView from '../views/fournisseurs/FournisseursView.vue'
+import ComptesFournisseursView from '../views/fournisseurs/ComptesFournisseursView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -80,6 +82,16 @@ const router = createRouter({
       path: '/encaissements',
       name: 'encaissements',
       component: EncaissementsView,
+    },
+    {
+      path: '/fournisseurs',
+      name: 'fournisseurs',
+      component: FournisseursView,
+    },
+    {
+      path: '/fournisseurs/comptes',
+      name: 'comptes-fournisseurs',
+      component: ComptesFournisseursView,
     },
   ],
 })

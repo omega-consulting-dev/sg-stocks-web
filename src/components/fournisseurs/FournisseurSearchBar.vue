@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Search, Plus, Upload, FileText, Sheet } from 'lucide-vue-next'
+import { Search, Plus, Upload, Download, FileText, Sheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,6 +13,7 @@ import {
 const emit = defineEmits<{
   search: [value: string]
   add: []
+  importExcel: []
   exportPdf: []
   exportExcel: []
 }>()
@@ -27,7 +28,7 @@ watch(searchQuery, (newValue) => {
 const openSearch = () => {
   isSearchOpen.value = true
   setTimeout(() => {
-    const input = document.querySelector('#stockEntrySearchInput') as HTMLInputElement
+    const input = document.querySelector('#fournisseurSearchInput') as HTMLInputElement
     input?.focus()
   }, 100)
 }
@@ -42,8 +43,8 @@ const handleFocusOut = () => {
 <template>
   <header class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
     <div>
-      <h1 class="text-2xl sm:text-3xl font-bold text-primary">Entrée en stock</h1>
-      <p class="opacity-60 text-xs sm:text-sm">Liste des entrées de stock</p>
+      <h1 class="text-2xl sm:text-3xl font-bold text-primary">Fournisseurs</h1>
+      <p class="opacity-60 text-xs sm:text-sm">Liste des fournisseurs</p>
     </div>
 
     <div class="flex flex-wrap items-center gap-2 sm:gap-4">
@@ -60,14 +61,30 @@ const handleFocusOut = () => {
           <Search />
         </Button>
         <Input
-          id="stockEntrySearchInput"
+          id="fournisseurSearchInput"
           v-model="searchQuery"
-          placeholder="Rechercher une entrée..."
+          placeholder="Rechercher un fournisseur..."
           :class="{ 'pl-9': isSearchOpen }"
           @focusout="handleFocusOut"
           @focusin="openSearch"
         />
       </div>
+
+      <!-- Bouton Importer -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button variant="outline" class="px-2 sm:px-4">
+            <Download />
+            <span class="hidden sm:inline">Importer</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent class="rounded-lg" align="end">
+          <DropdownMenuItem @click="emit('importExcel')">
+            <Sheet />
+            Document excel
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <!-- Bouton Exporter -->
       <DropdownMenu>
@@ -89,10 +106,10 @@ const handleFocusOut = () => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <!-- Bouton Nouveau -->
+      <!-- Bouton Règlement -->
       <Button @click="emit('add')" class="px-2 sm:px-4">
         <Plus />
-        <span class="hidden sm:inline">Nouveau</span>
+        <span class="hidden sm:inline">Règlement</span>
       </Button>
     </div>
   </header>

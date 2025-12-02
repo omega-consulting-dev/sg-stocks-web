@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useAchatsStore, type Achat } from '@/stores/achats'
-import AchatSearchBar from '@/components/achats/AchatSearchBar.vue'
-import AchatTable from '@/components/achats/AchatTable.vue'
-import AchatForm from '@/components/achats/AchatForm.vue'
+import { useFournisseursStore, type Fournisseur } from '@/stores/fournisseurs'
+import CompteSearchBar from '@/components/fournisseurs/CompteSearchBar.vue'
+import FournisseurTable from '@/components/fournisseurs/FournisseurTable.vue'
+import FournisseurForm from '@/components/fournisseurs/FournisseurForm.vue'
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -22,43 +22,42 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
-const store = useAchatsStore()
+const store = useFournisseursStore()
 
 // État local
 const searchQuery = ref('')
-const currentPage = ref(1)
-const pageSize = ref(8)
 const isFormOpen = ref(false)
 const isDeleteDialogOpen = ref(false)
-const selectedAchat = ref<Achat | null>(null)
-const achatToDelete = ref<Achat | null>(null)
+const selectedFournisseur = ref<Fournisseur | null>(null)
+const fournisseurToDelete = ref<Fournisseur | null>(null)
+const currentPage = ref(1)
+const pageSize = 8
 
 // Computed
-const filteredAchats = computed(() => {
-  let filtered = store.achats
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(
-      (achat) =>
-        achat.reference?.toLowerCase().includes(query) ||
-        achat.product_name?.toLowerCase().includes(query) ||
-        achat.store_name?.toLowerCase().includes(query)
-    )
+const filteredFournisseurs = computed(() => {
+  if (!searchQuery.value) {
+    return store.fournisseurs
   }
-
-  return filtered
+  const query = searchQuery.value.toLowerCase()
+  return store.fournisseurs.filter(
+    (fournisseur) =>
+      fournisseur.name.toLowerCase().includes(query) ||
+      fournisseur.phone.toLowerCase().includes(query) ||
+      fournisseur.email.toLowerCase().includes(query) ||
+      fournisseur.location.toLowerCase().includes(query) ||
+      fournisseur.legal_form.toLowerCase().includes(query)
+  )
 })
 
-const paginatedAchats = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredAchats.value.slice(start, end)
+const paginatedFournisseurs = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  const end = start + pageSize
+  return filteredFournisseurs.value.slice(start, end)
 })
 
 // Charger les données au montage
 onMounted(() => {
-  store.fetchAchats()
+  store.fetchFournisseurs()
 })
 
 // Gestion de la recherche
@@ -69,64 +68,70 @@ const handleSearch = (query: string) => {
 
 // Gestion de l'ajout
 const handleAdd = () => {
-  selectedAchat.value = null
+  selectedFournisseur.value = null
   isFormOpen.value = true
 }
 
+// Gestion de l'import
+const handleImport = () => {
+  console.log('Import fournisseurs - À implémenter')
+  alert('Fonctionnalité d\'import à venir')
+}
+
 // Gestion de l'export PDF
-const handleExportPdf = async () => {
-  // TODO: Implémenter l'export PDF
-  console.log('Export PDF')
+const handleExportPdf = () => {
+  console.log('Export PDF fournisseurs - À implémenter')
+  alert('Fonctionnalité d\'export PDF à venir')
 }
 
 // Gestion de l'export Excel
-const handleExportExcel = async () => {
-  // TODO: Implémenter l'export Excel
-  console.log('Export Excel')
+const handleExportExcel = () => {
+  console.log('Export Excel fournisseurs - À implémenter')
+  alert('Fonctionnalité d\'export Excel à venir')
 }
 
 // Gestion de la modification
-const handleEdit = (achat: Achat) => {
-  selectedAchat.value = achat
+const handleEdit = (fournisseur: Fournisseur) => {
+  selectedFournisseur.value = fournisseur
   isFormOpen.value = true
 }
 
 // Gestion de la suppression
-const handleDelete = (achat: Achat) => {
-  achatToDelete.value = achat
+const handleDelete = (fournisseur: Fournisseur) => {
+  fournisseurToDelete.value = fournisseur
   isDeleteDialogOpen.value = true
 }
 
 const confirmDelete = async () => {
-  if (!achatToDelete.value) return
+  if (!fournisseurToDelete.value) return
 
   try {
-    await store.deleteAchat(achatToDelete.value.id)
+    await store.deleteFournisseur(fournisseurToDelete.value.id)
     isDeleteDialogOpen.value = false
-    achatToDelete.value = null
+    fournisseurToDelete.value = null
   } catch (error) {
     console.error('Erreur lors de la suppression:', error)
-  }
-}
-
-// Soumission du formulaire
-const handleFormSubmit = async (data: any) => {
-  try {
-    if (selectedAchat.value) {
-      await store.updateAchat(selectedAchat.value.id, data)
-    } else {
-      await store.addAchat(data)
-    }
-    isFormOpen.value = false
-    selectedAchat.value = null
-  } catch (error) {
-    console.error("Erreur lors de l'enregistrement:", error)
   }
 }
 
 // Gestion de la pagination
 const handlePageChange = (page: number) => {
   currentPage.value = page
+}
+
+// Soumission du formulaire
+const handleFormSubmit = async (data: Omit<Fournisseur, 'id' | 'created_at' | 'updated_at'>) => {
+  try {
+    if (selectedFournisseur.value) {
+      await store.updateFournisseur(selectedFournisseur.value.id, data)
+    } else {
+      await store.addFournisseur(data)
+    }
+    isFormOpen.value = false
+    selectedFournisseur.value = null
+  } catch (error) {
+    console.error("Erreur lors de l'enregistrement:", error)
+  }
 }
 </script>
 
@@ -140,35 +145,40 @@ const handlePageChange = (page: number) => {
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage>Entrée en stock</BreadcrumbPage>
+          <BreadcrumbLink href="/fournisseurs">Fournisseurs</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>Comptes</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
 
     <!-- Barre de recherche et actions -->
-    <AchatSearchBar
+    <CompteSearchBar
       @search="handleSearch"
       @add="handleAdd"
+      @import-excel="handleImport"
       @export-pdf="handleExportPdf"
       @export-excel="handleExportExcel"
     />
 
-    <!-- Tableau des entrées -->
-    <AchatTable
-      :achats="paginatedAchats"
+    <!-- Tableau des fournisseurs -->
+    <FournisseurTable
+      :fournisseurs="paginatedFournisseurs"
       :loading="store.loading"
       :current-page="currentPage"
       :page-size="pageSize"
-      :total="filteredAchats.length"
+      :total="filteredFournisseurs.length"
       @edit="handleEdit"
       @delete="handleDelete"
       @page-change="handlePageChange"
     />
 
     <!-- Formulaire d'ajout/modification -->
-    <AchatForm
+    <FournisseurForm
       v-model:open="isFormOpen"
-      :achat="selectedAchat"
+      :fournisseur="selectedFournisseur"
       :loading="store.loading"
       @submit="handleFormSubmit"
     />
@@ -179,8 +189,8 @@ const handlePageChange = (page: number) => {
         <DialogHeader>
           <DialogTitle>Confirmer la suppression</DialogTitle>
           <DialogDescription>
-            Êtes-vous sûr de vouloir supprimer cette entrée de stock pour
-            <span class="font-semibold">{{ achatToDelete?.product_name }}</span> ?
+            Êtes-vous sûr de vouloir supprimer le fournisseur
+            <span class="font-semibold">{{ fournisseurToDelete?.name }}</span> ?
             Cette action est irréversible.
           </DialogDescription>
         </DialogHeader>
