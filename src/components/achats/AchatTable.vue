@@ -16,7 +16,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { MoreHorizontal, Eye, Pencil, Trash2 } from 'lucide-vue-next'
+import { Skeleton } from '@/components/ui/skeleton'
+import { MoreVertical, Pencil, Trash2 } from 'lucide-vue-next'
 
 // Props
 interface Props {
@@ -36,33 +37,34 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  consult: [achat: Achat]
   edit: [achat: Achat]
   delete: [achat: Achat]
   pageChange: [page: number]
 }>()
 
-// Computed
-const displayedAchats = computed(() => {
-  const start = (props.currentPage - 1) * props.pageSize
-  const end = start + props.pageSize
-  return props.achats.slice(start, end)
-})
+// Computed - Les données sont déjà paginées par le parent, pas de slice ici
+const displayedAchats = computed(() => props.achats)
 
 const totalPages = computed(() => Math.ceil(props.total / props.pageSize))
 
+const paginationInfo = computed(() => {
+  const start = (props.currentPage - 1) * props.pageSize + 1
+  const end = Math.min(props.currentPage * props.pageSize, props.total)
+  return `Affichage de ${start} à ${end} sur ${props.total} entrées`
+})
+
 // Formatage de date
-const formatDate = (date: Date) => {
-  return new Date(date).toLocaleDateString('fr-FR', {
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
   })
 }
 
-// Formatage du montant
-const formatMontant = (montant: number) => {
-  return montant.toLocaleString('fr-FR')
+// Formatage de la quantité
+const formatQuantity = (quantity: number) => {
+  return quantity.toLocaleString('fr-FR')
 }
 
 // Pagination
@@ -86,171 +88,157 @@ const getPageNumbers = () => {
     }
 
     if (props.currentPage < totalPages.value - 2) pages.push('...')
-    pages.push(totalPages.value)
+    if (totalPages.value > 1) pages.push(totalPages.value)
   }
 
   return pages
 }
+
+// Handlers
+const handleEdit = (achat: Achat) => {
+  emit('edit', achat)
+}
+
+const handleDelete = (achat: Achat) => {
+  emit('delete', achat)
+}
 </script>
 
 <template>
-  <div class="space-y-4">
-    <!-- Table -->
-    <div class="rounded-[30px] bg-white shadow-[0px_10px_60px_0px_rgba(226,236,249,0.5)] overflow-hidden">
-      <Table>
+  <div class="rounded-xl sm:rounded-[30px] bg-white shadow-[0px_10px_60px_0px_rgba(226,236,249,0.5)] overflow-hidden">
+    <div class="overflow-x-auto">
+      <Table class="min-w-[700px]">
         <TableHeader>
           <TableRow class="border-b border-[#EEEEEE]">
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] px-10 py-4">
-              Intitulé de l'opération
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              Référence
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] px-6 py-4">
-              Date de l'achat
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              Produit
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] px-6 py-4">
-              Montant facture
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              Magasin
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] px-6 py-4">
-              Nbre de produit
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              Quantité
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] px-6 py-4">
-              Fournisseur
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              Date
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] px-6 py-4 text-right">
+            <TableHead class="w-[80px] text-center font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
               Action
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow
-            v-for="achat in displayedAchats"
-            :key="achat.id"
-            class="border-b border-[#EEEEEE] hover:bg-gray-50/50"
-          >
-            <TableCell class="font-medium text-[14px] text-[#292D32] px-10 py-6">
-              {{ achat.intitule }}
-            </TableCell>
-            <TableCell class="text-[14px] text-[#292D32] px-6 py-6">
-              {{ formatDate(achat.dateAchat) }}
-            </TableCell>
-            <TableCell class="text-[14px] text-[#292D32] px-6 py-6">
-              {{ formatMontant(achat.montantFacture) }}
-            </TableCell>
-            <TableCell class="text-[14px] text-[#292D32] px-6 py-6">
-              {{ achat.nbreProduits }}
-            </TableCell>
-            <TableCell class="text-[14px] text-[#292D32] px-6 py-6">
-              {{ achat.fournisseur }}
-            </TableCell>
-            <TableCell class="px-6 py-6 text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="h-8 w-8 hover:bg-gray-100"
-                  >
-                    <MoreHorizontal class="h-5 w-5 text-[#595959]" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  class="w-[130px] rounded-[10px] shadow-[0px_5px_10px_5px_rgba(0,0,0,0.05)] border border-[rgba(0,0,0,0.1)]"
-                >
-                  <DropdownMenuItem
-                    @click="emit('consult', achat)"
-                    class="cursor-pointer text-[14.9px] text-[#154BFF] font-medium py-2 flex items-center gap-2"
-                  >
-                    <Eye class="h-4 w-4" />
-                    consulter
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    @click="emit('edit', achat)"
-                    class="cursor-pointer text-[14.9px] text-[#3A3A3A] font-medium py-2 flex items-center gap-2"
-                  >
-                    <Pencil class="h-4 w-4" />
-                    Modifier
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    @click="emit('delete', achat)"
-                    class="cursor-pointer text-[14.9px] text-[#F52F2F] font-medium py-2 flex items-center gap-2"
-                  >
-                    <Trash2 class="h-4 w-4" />
-                    Supprimer
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-
-          <!-- État de chargement -->
-          <TableRow v-if="loading">
-            <TableCell colspan="6" class="text-center py-10">
-              <div class="flex items-center justify-center gap-2">
-                <div class="animate-spin h-5 w-5 border-2 border-[#0769CF] border-t-transparent rounded-full"></div>
-                <span class="text-[#B5B7C0]">Chargement...</span>
-              </div>
-            </TableCell>
-          </TableRow>
-
-          <!-- Aucun résultat -->
-          <TableRow v-if="!loading && displayedAchats.length === 0">
-            <TableCell colspan="6" class="text-center py-10">
-              <span class="text-[#B5B7C0]">Aucun achat trouvé</span>
-            </TableCell>
-          </TableRow>
+          <template v-if="loading">
+            <TableRow v-for="i in (pageSize || 8)" :key="i">
+              <TableCell class="text-center"><Skeleton class="h-4 w-20 mx-auto" /></TableCell>
+              <TableCell class="text-center"><Skeleton class="h-4 w-32 mx-auto" /></TableCell>
+              <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
+              <TableCell class="text-center"><Skeleton class="h-4 w-16 mx-auto" /></TableCell>
+              <TableCell class="text-center"><Skeleton class="h-4 w-28 mx-auto" /></TableCell>
+              <TableCell class="text-center"><Skeleton class="h-4 w-8 mx-auto" /></TableCell>
+            </TableRow>
+          </template>
+          <template v-else-if="displayedAchats.length > 0">
+            <TableRow
+              v-for="achat in displayedAchats"
+              :key="achat.id"
+              class="border-b border-[#EEEEEE] hover:bg-gray-50"
+            >
+              <TableCell class="text-[14px] font-medium text-[#5932EA] text-center" style="font-family: Poppins">
+                {{ achat.reference || '-' }}
+              </TableCell>
+              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+                {{ achat.product_name }}
+              </TableCell>
+              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+                {{ achat.store_name }}
+              </TableCell>
+              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+                {{ formatQuantity(achat.quantity) }}
+              </TableCell>
+              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+                {{ formatDate(achat.created_at) }}
+              </TableCell>
+              <TableCell class="text-center">
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button variant="ghost" size="icon" class="h-8 w-8">
+                      <MoreVertical class="h-4 w-4" />
+                      <span class="sr-only">Ouvrir le menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" class="w-[130px]">
+                    <DropdownMenuItem @click="handleEdit(achat)" class="cursor-pointer">
+                      <Pencil class="mr-2 h-4 w-4" />
+                      <span>Modifier</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      @click="handleDelete(achat)"
+                      class="cursor-pointer text-red-600 focus:text-red-600"
+                    >
+                      <Trash2 class="mr-2 h-4 w-4" />
+                      <span>Supprimer</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          </template>
+          <template v-else>
+            <TableRow>
+              <TableCell colspan="6" class="text-center text-muted-foreground py-8">
+                Aucune entrée de stock trouvée
+              </TableCell>
+            </TableRow>
+          </template>
         </TableBody>
       </Table>
     </div>
 
-    <!-- Footer avec pagination et info -->
-    <div class="flex items-center justify-between px-4">
-      <!-- Info sur les entrées affichées -->
-      <p class="text-[14px] text-[#B5B7C0] font-medium">
-        Showing data {{ (currentPage - 1) * pageSize + 1 }} to
-        {{ Math.min(currentPage * pageSize, total) }} of {{ total.toLocaleString() }} entries
+    <!-- Pagination -->
+    <div v-if="displayedAchats.length > 0" class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 sm:px-[38px] py-4 sm:py-[30px] border-t border-[#EEEEEE]">
+      <p class="text-xs sm:text-[14px] font-medium text-[#B5B7C0]" style="font-family: Poppins">
+        {{ paginationInfo }}
       </p>
 
-      <!-- Pagination -->
-      <div class="flex items-center gap-2">
-        <!-- Bouton Précédent -->
+      <div class="flex items-center gap-1">
         <Button
           variant="outline"
           size="sm"
           @click="emit('pageChange', currentPage - 1)"
           :disabled="currentPage === 1"
-          class="h-[24px] px-2 rounded-[4px] border border-[#EEEEEE] bg-[#F5F5F5] text-[#404B52] text-[12px] font-medium disabled:opacity-50"
+          class="h-[26px] w-[26px] p-0 rounded-[4px] border-[#EEEEEE] bg-[#F5F5F5]"
         >
           &lt;
         </Button>
 
-        <!-- Numéros de page -->
         <template v-for="(page, index) in getPageNumbers()" :key="index">
-          <span v-if="page === '...'" class="text-[12px] text-[#000000] font-medium">
-            ...
-          </span>
+          <span v-if="page === '...'" class="px-2 text-[12px] text-[#404B52]">...</span>
           <Button
             v-else
             variant="outline"
             size="sm"
             @click="emit('pageChange', page as number)"
             :class="[
-              'h-[24px] px-2 min-w-[24px] rounded-[4px] border text-[12px] font-medium',
+              'h-[26px] w-[26px] p-0 rounded-[4px] text-[12px] font-medium',
               currentPage === page
                 ? 'bg-[#5932EA] border-[#5932EA] text-white'
-                : 'border-[#EEEEEE] bg-[#F5F5F5] text-[#404B52]',
+                : 'border-[#EEEEEE] bg-[#F5F5F5] text-[#404B52]'
             ]"
           >
             {{ page }}
           </Button>
         </template>
 
-        <!-- Bouton Suivant -->
         <Button
           variant="outline"
           size="sm"
           @click="emit('pageChange', currentPage + 1)"
-          :disabled="currentPage === totalPages"
-          class="h-[24px] px-2 rounded-[4px] border border-[#EEEEEE] bg-[#F5F5F5] text-[#404B52] text-[12px] font-medium disabled:opacity-50"
+          :disabled="currentPage === totalPages || totalPages === 0"
+          class="h-[26px] w-[26px] p-0 rounded-[4px] border-[#EEEEEE] bg-[#F5F5F5]"
         >
           &gt;
         </Button>

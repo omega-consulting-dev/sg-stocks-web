@@ -1,128 +1,130 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
+import { Package, Store as StoreIcon, Hash } from 'lucide-vue-next'
+import type { Achat } from '@/stores/achats'
+import type { CreateStockMovementDto } from '@/services/api/stockMovements.api'
+import { useProductsStore } from '@/stores/products'
+import { useAchatsStore } from '@/stores/achats'
+import { useStoresStore } from '@/stores/stores'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import DatePicker from '@/components/ui/date-picker/DatePicker.vue'
-import {
-  X,
-  Upload,
-  Users,
-  Package,
-  ChevronDown,
-  Trash2,
-} from 'lucide-vue-next'
 
-interface Props {
+const props = defineProps<{
   open: boolean
-}
-
-interface ProduitAjoute {
-  id: number
-  nom: string
-  quantiteAjoutee: number
-  enStock: number
-  selected: boolean
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<{
-  'update:open': [value: boolean]
-  submit: [data: any]
+  achat?: Achat | null
+  loading?: boolean
 }>()
 
-// Formulaire - Section 1: Operation d'achat
-const numeroPiece = ref('')
-const intitule = ref('')
-const montantFacture = ref('')
-const naturePayement = ref('')
-const montantVerse = ref('')
-const pieceJointe = ref<File | null>(null)
-const dateAchat = ref(new Date())
-const fournisseur = ref('')
-const dateLimiteReglement = ref(new Date())
+const emit = defineEmits<{
+  'update:open': [value: boolean]
+  submit: [data: Omit<CreateStockMovementDto, 'movement_type'>]
+}>()
 
-// Formulaire - Section 2: Contenue de l'achat
-const produitSelectionne = ref('')
-const quantiteAjoutee = ref('')
-const produitsAjoutes = ref<ProduitAjoute[]>([
-  { id: 1, nom: 'Bidon Fongi', quantiteAjoutee: 25, enStock: 5, selected: false },
-  { id: 2, nom: 'Bidon Super', quantiteAjoutee: 20, enStock: 5, selected: false },
-])
+// Stores
+const productsStore = useProductsStore()
+const achatsStore = useAchatsStore()
+const storesStore = useStoresStore()
 
-// Computed
-const montantTotal = computed(() => {
-  return produitsAjoutes.value.reduce((sum, p) => sum + (p.quantiteAjoutee + p.enStock), 0) * 1000
+const formData = ref({
+  reference: '',
+  product: 0,
+  store: 0,
+  quantity: 0,
+  notes: '',
 })
 
-const montantRestant = computed(() => {
-  const verse = parseFloat(montantVerse.value) || 0
-  return montantTotal.value - verse
-})
+// Générer le prochain code séquentiel (ETN-001, ETN-002, etc.)
+// Utilise la liste de toutes les références pour ne jamais réutiliser un code
+const generateNextCode = (allReferences: string[]): string => {
+  const existingCodes = allReferences
+    .filter(ref => ref && ref.startsWith('ETN-'))
+    .map(ref => parseInt(ref.replace('ETN-', '')) || 0)
 
-const selectAll = ref(false)
-
-const toggleSelectAll = () => {
-  selectAll.value = !selectAll.value
-  produitsAjoutes.value.forEach(p => p.selected = selectAll.value)
+  const maxCode = existingCodes.length > 0 ? Math.max(...existingCodes) : 0
+  const nextNumber = maxCode + 1
+  return `ETN-${nextNumber.toString().padStart(3, '0')}`
 }
 
-const ajouterProduit = () => {
-  if (!produitSelectionne.value || !quantiteAjoutee.value) return
+// Obtenir le nom du produit sélectionné
+const selectedProductName = computed(() => {
+  const product = productsStore.products.find(p => p.id === formData.value.product)
+  return product?.name || ''
+})
 
-  const newProduct: ProduitAjoute = {
-    id: produitsAjoutes.value.length + 1,
-    nom: produitSelectionne.value,
-    quantiteAjoutee: parseInt(quantiteAjoutee.value),
-    enStock: 0,
-    selected: false,
+const isEditing = ref(false)
+
+// Charger les produits et magasins au montage
+onMounted(() => {
+  if (productsStore.products.length === 0) {
+    productsStore.fetchProducts()
   }
+  if (storesStore.stores.length === 0) {
+    storesStore.fetchStores()
+  }
+})
 
-  produitsAjoutes.value.push(newProduct)
-  produitSelectionne.value = ''
-  quantiteAjoutee.value = ''
+watch(() => props.open, async (newValue) => {
+  if (newValue) {
+    if (props.achat) {
+      isEditing.value = true
+      formData.value = {
+        reference: props.achat.reference,
+        product: props.achat.product,
+        store: props.achat.store,
+        quantity: props.achat.quantity,
+        notes: props.achat.notes || '',
+      }
+    } else {
+      isEditing.value = false
+      // Récupérer TOUTES les références pour générer un code unique
+      const allReferences = await achatsStore.fetchAllReferences()
+      formData.value = {
+        reference: generateNextCode(allReferences),
+        product: productsStore.products[0]?.id || 0,
+        store: storesStore.stores[0]?.id || 0,
+        quantity: 0,
+        notes: '',
+      }
+    }
+  }
+})
+
+const handleProductChange = (value: unknown) => {
+  if (value !== null && value !== undefined) {
+    formData.value.product = parseInt(String(value))
+  }
 }
 
-const supprimerSelectionnes = () => {
-  produitsAjoutes.value = produitsAjoutes.value.filter(p => !p.selected)
-  selectAll.value = false
-}
-
-const supprimerProduit = (id: number) => {
-  produitsAjoutes.value = produitsAjoutes.value.filter(p => p.id !== id)
-}
-
-const handleFileUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target.files && target.files[0]) {
-    pieceJointe.value = target.files[0]
+const handleStoreChange = (value: unknown) => {
+  if (value !== null && value !== undefined) {
+    formData.value.store = parseInt(String(value))
   }
 }
 
 const handleSubmit = () => {
-  const data = {
-    numeroPiece: numeroPiece.value,
-    intitule: intitule.value,
-    montantFacture: parseFloat(montantFacture.value),
-    naturePayement: naturePayement.value,
-    montantVerse: parseFloat(montantVerse.value),
-    pieceJointe: pieceJointe.value,
-    dateAchat: dateAchat.value,
-    fournisseur: fournisseur.value,
-    dateLimiteReglement: dateLimiteReglement.value,
-    produits: produitsAjoutes.value,
+  if (!formData.value.product || !formData.value.store || !formData.value.quantity) {
+    return
+  }
+
+  const data: Omit<CreateStockMovementDto, 'movement_type'> = {
+    product: formData.value.product,
+    store: formData.value.store,
+    quantity: formData.value.quantity,
+    reference: formData.value.reference,
+    notes: formData.value.notes || '',
   }
 
   emit('submit', data)
-  handleClose()
 }
 
 const handleClose = () => {
@@ -131,343 +133,145 @@ const handleClose = () => {
 </script>
 
 <template>
-  <Dialog :open="props.open" @update:open="emit('update:open', $event)">
-    <DialogContent class="max-w-[1320px] w-[95vw] max-h-[95vh] overflow-y-auto p-0">
-      <div class="relative">
-        <!-- Bouton fermer -->
-        <Button
-          @click="handleClose"
-          variant="ghost"
-          size="icon"
-          class="absolute right-4 top-4 z-10"
-        >
-          <X class="h-6 w-6" />
-        </Button>
-
-        <!-- Section 1: Operation d'achat -->
-        <div class="border border-[#0072C1] rounded-[10px] m-6 p-8 bg-white">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-11 h-11 rounded-full bg-[#FBFBFB] border border-[#BABABA] flex items-center justify-center">
-              <Package class="h-6 w-6 text-gray-600" />
-            </div>
-            <h2 class="text-[21.76px] font-bold text-[#3D3D3D]">Operation d'achat</h2>
+  <Dialog :open="open" @update:open="handleClose">
+    <DialogContent class="w-[95vw] sm:w-auto max-w-[600px] p-0 gap-0 border border-[#0072C1] rounded-[10px] max-h-[90vh] overflow-y-auto">
+      <div class="relative px-4 sm:px-[47px] pt-[27px] pb-[20px]">
+        <div class="flex items-center gap-3 sm:gap-5 mb-4">
+          <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#FBFBFB] border border-[#BABABA] flex items-center justify-center">
+            <Package class="w-4 h-4 sm:w-[21px] sm:h-[21px] text-gray-500" />
           </div>
-
-          <div class="grid grid-cols-2 gap-x-12 gap-y-6">
-            <!-- N° de la pièce -->
-            <div>
-              <Label class="text-[18.76px] text-[#0E1420]">
-                N° de la piece (Obligatoire) :
-              </Label>
-              <Input
-                v-model="numeroPiece"
-                placeholder="No référence"
-                class="mt-2 h-[37px] border-[#BEBEBE] rounded-[10px]"
-              />
-            </div>
-
-            <!-- Date de réalisation -->
-            <div>
-              <Label class="text-[18.76px] text-[#0E1420]">
-                Date de réalisation de l'achat
-              </Label>
-              <DatePicker
-                v-model="dateAchat"
-                placeholder="JJ/mm/aaaa"
-                class="mt-2 w-full"
-              />
-            </div>
-
-            <!-- Intitulé de l'opération -->
-            <div>
-              <Label class="text-[18.76px] text-[#0E1420]">
-                Intitulé de l'opération (Obligatoire) :
-              </Label>
-              <div class="relative mt-2">
-                <Input
-                  v-model="intitule"
-                  placeholder="Ex : Achat de Marchandises"
-                  class="h-[37px] border-[#BEBEBE] rounded-[10px] pl-10"
-                />
-                <Package class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
-              </div>
-            </div>
-
-            <!-- Sélectionner le Fournisseur -->
-            <div>
-              <Label class="text-[18.76px] text-[#0E1420]">
-                Sélectionner le Fournisseur :
-              </Label>
-              <div class="relative mt-2">
-                <Select v-model="fournisseur">
-                  <SelectTrigger class="h-[37px] border-[#BEBEBE] rounded-[10px] pl-10">
-                    <SelectValue placeholder="Liste des Fournisseurs" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="nova">nova plastique Sarl</SelectItem>
-                    <SelectItem value="graphic">graphic design</SelectItem>
-                    <SelectItem value="zone">zone sarl</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Users class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
-              </div>
-              <div class="flex items-center gap-2 mt-2">
-                <span class="text-[18.76px] text-[#0E1420]">Le fournisseur n'existe pas encore ?</span>
-                <Button
-                  variant="ghost"
-                  class="h-[37px] px-4 bg-[#E4E4E6] text-[#7C7C7C] rounded-[10px] hover:bg-[#E4E4E6]/80"
-                >
-                  Créer ici
-                </Button>
-              </div>
-            </div>
-
-            <!-- Montant de la facture -->
-            <div>
-              <Label class="text-[18.76px] text-[#0E1420]">
-                Montant de la facture :
-              </Label>
-              <Input
-                v-model="montantFacture"
-                type="number"
-                placeholder="Ex : douala Deido"
-                class="mt-2 h-[37px] border-[#BEBEBE] rounded-[10px]"
-              />
-            </div>
-
-            <!-- Nature du payement -->
-            <div>
-              <Label class="text-[18.76px] text-[#0E1420]">
-                Nature du payement :
-              </Label>
-              <Select v-model="naturePayement" class="mt-2">
-                <SelectTrigger class="h-[36px] border-[#BEBEBE] rounded-[10px]">
-                  <SelectValue placeholder="Selectionner une méthode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="espece">Espèce</SelectItem>
-                  <SelectItem value="credit">Crédit</SelectItem>
-                  <SelectItem value="cheque">Chèque</SelectItem>
-                  <SelectItem value="virement">Virement</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <!-- Montant Versé -->
-            <div>
-              <Label class="text-[18.76px] text-[#0E1420]">
-                Montant Versé (Obligatoire) :
-              </Label>
-              <Input
-                v-model="montantVerse"
-                type="number"
-                placeholder="Ex : douala Deido"
-                class="mt-2 h-[37px] border-[#BEBEBE] rounded-[10px]"
-              />
-            </div>
-
-            <!-- Date limite de règlement -->
-            <div v-if="naturePayement === 'credit'">
-              <Label class="text-[18.76px] text-[#0E1420]">
-                Date limite de reglement (Obligatoire) : si nat = credit
-              </Label>
-              <DatePicker
-                v-model="dateLimiteReglement"
-                placeholder="JJ/mm/aaaa"
-                class="mt-2 w-full"
-              />
-            </div>
-
-            <!-- Pièce jointe -->
-            <div>
-              <Label class="text-[18.76px] text-[#0E1420]">Piece jointe</Label>
-              <div class="mt-2 h-[64px] border border-dashed border-[#BEBEBE] rounded-[10px] bg-[#D9D9D9] flex items-center justify-center cursor-pointer hover:bg-[#D9D9D9]/80">
-                <input
-                  type="file"
-                  @change="handleFileUpload"
-                  class="hidden"
-                  id="file-upload"
-                />
-                <label for="file-upload" class="flex items-center gap-2 cursor-pointer">
-                  <Upload class="h-5 w-5 text-gray-600" />
-                  <span class="text-sm text-gray-600">
-                    {{ pieceJointe ? pieceJointe.name : 'Cliquer pour télécharger' }}
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 2: Contenue de l'achat -->
-        <div class="border-0 rounded-[10px] mx-6 mb-6 p-8 bg-white">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-11 h-11 rounded-full bg-[#FBFBFB] border border-[#BABABA] flex items-center justify-center">
-              <Package class="h-6 w-6 text-gray-600" />
-            </div>
-            <h2 class="text-[21.76px] font-bold text-[#3D3D3D]">Contenue de l'achat</h2>
-          </div>
-
-          <div class="grid grid-cols-3 gap-6">
-            <!-- Produit -->
-            <div>
-              <Label class="text-[18.76px] text-[#0E1420]">Produit :</Label>
-              <div class="relative mt-2">
-                <Select v-model="produitSelectionne">
-                  <SelectTrigger class="h-[37px] border-[#BEBEBE] rounded-[10px] pl-10">
-                    <SelectValue placeholder="Liste des produits" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bidon-fongi">Bidon Fongi</SelectItem>
-                    <SelectItem value="bidon-super">Bidon Super</SelectItem>
-                    <SelectItem value="bidon-autre">Autre bidon</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Package class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
-              </div>
-              <div class="flex items-center gap-2 mt-2">
-                <span class="text-[18.76px] text-[#0E1420]">Le produit n'existe pas encore ?</span>
-                <Button
-                  variant="ghost"
-                  class="h-[37px] px-4 bg-[#E4E4E6] text-[#7C7C7C] rounded-[10px] hover:bg-[#E4E4E6]/80"
-                >
-                  Créer ici
-                </Button>
-              </div>
-            </div>
-
-            <!-- Quantité ajoutée -->
-            <div>
-              <Label class="text-[18.76px] text-[#0E1420]">Quantité ajoutée :</Label>
-              <div class="relative mt-2">
-                <Input
-                  v-model="quantiteAjoutee"
-                  type="number"
-                  placeholder="Ex : 50"
-                  class="h-[37px] border-[#BEBEBE] rounded-[10px] pl-10"
-                />
-                <Package class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
-              </div>
-            </div>
-
-            <!-- Bouton Ajouter -->
-            <div class="flex items-end">
-              <Button
-                @click="ajouterProduit"
-                class="h-[37px] px-8 bg-[#474747] text-white rounded-[10px] hover:bg-[#474747]/90 font-bold text-sm uppercase"
-              >
-                Ajouter
-              </Button>
-            </div>
-          </div>
-
-          <!-- Séparateur -->
-          <div class="border-t border-[#003FD8] my-8"></div>
-
-          <!-- Liste des produits achetés -->
-          <h3 class="text-[21.76px] font-bold text-[#3D3D3D] mb-4">
-            Liste des produits achetés
-          </h3>
-
-          <!-- Tableau -->
-          <div class="bg-[#FFFEFF] border border-[#007ACE] rounded-md overflow-hidden">
-            <!-- Header -->
-            <div class="bg-[#0769CF] text-white flex items-center p-3">
-              <div class="w-12 flex items-center justify-center">
-                <input
-                  type="checkbox"
-                  :checked="selectAll"
-                  @change="toggleSelectAll"
-                  class="w-5 h-5 rounded border-[#D9D9D9]"
-                />
-              </div>
-              <div class="flex-1 font-normal text-[18.76px]">Produit</div>
-              <div class="w-32 font-normal text-[18.76px]">Ajoutée</div>
-              <div class="w-32 font-normal text-[18.76px]">En stock</div>
-              <div class="w-32 font-normal text-[18.76px]">Total</div>
-              <div class="w-32 font-normal text-[18.76px]">Action</div>
-            </div>
-
-            <!-- Lignes -->
-            <div
-              v-for="(produit, index) in produitsAjoutes"
-              :key="produit.id"
-              :class="[
-                'flex items-center p-3 border-b border-[rgba(0,0,0,0.37)]',
-                index % 2 === 0 ? 'bg-[rgba(178,217,252,0.59)]' : 'bg-[rgba(178,217,252,0.59)]'
-              ]"
-            >
-              <div class="w-12 flex items-center justify-center">
-                <input
-                  type="checkbox"
-                  v-model="produit.selected"
-                  class="w-5 h-5 rounded border-[rgba(0,0,0,0.2)]"
-                />
-              </div>
-              <div class="flex-1 text-[18.76px] text-black">{{ produit.nom }}</div>
-              <div class="w-32 text-[18.76px] text-black">{{ produit.quantiteAjoutee }}</div>
-              <div class="w-32 text-[18.76px] text-black">{{ produit.enStock }}</div>
-              <div class="w-32 text-[18.76px] text-black">
-                {{ produit.quantiteAjoutee + produit.enStock }}
-              </div>
-              <div class="w-32">
-                <Button
-                  @click="supprimerProduit(produit.id)"
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8"
-                >
-                  <Trash2 class="h-5 w-5 text-[#F52F2F]" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bouton Supprimer sélectionnés -->
-          <div class="flex justify-end mt-4">
-            <Button
-              @click="supprimerSelectionnes"
-              variant="outline"
-              class="h-[37px] px-4 border border-[rgba(7,105,207,0.23)] text-[#0769CF] rounded-[10px]"
-            >
-              Supprimer
-            </Button>
-          </div>
-        </div>
-
-        <!-- Footer avec totaux et bouton Valider -->
-        <div class="mx-6 mb-6 p-6 bg-white rounded-[10px]">
-          <div class="flex items-start justify-between">
-            <div class="space-y-2">
-              <div class="flex items-center gap-8">
-                <span class="text-[29.76px] font-bold text-black">Montant Total:</span>
-                <span class="text-[29.76px] font-bold text-black">{{ montantTotal.toFixed(2) }}</span>
-              </div>
-              <div class="border-t border-[#929090] my-2"></div>
-              <div class="flex items-center gap-8">
-                <span class="text-[29.76px] font-bold text-black">Montant payé:</span>
-                <span class="text-[29.76px] font-bold text-black">{{ montantVerse || '0.00' }}</span>
-              </div>
-              <div class="border-t border-[#929090] my-2"></div>
-              <div class="flex items-center gap-8">
-                <span class="text-[29.76px] font-bold text-black">Montant Restant:</span>
-                <span class="text-[29.76px] font-bold text-black">{{ montantRestant.toFixed(2) }}</span>
-              </div>
-              <div class="border-t border-[#929090] my-2"></div>
-              <p v-if="naturePayement === 'credit'" class="text-[16.76px] text-[#8F8F8F] mt-4">
-                avant le {{ dateLimiteReglement ? new Date(dateLimiteReglement).toLocaleDateString('fr-FR') : '' }}
-              </p>
-            </div>
-
-            <Button
-              @click="handleSubmit"
-              class="h-[37px] px-12 bg-[#0769CF] text-white rounded-[10px] hover:bg-[#0769CF]/90 font-bold text-sm uppercase"
-            >
-              Valider
-            </Button>
-          </div>
+          <h2 class="text-lg sm:text-[21.76px] font-bold leading-[1.219] text-[#535353]" style="font-family: Montserrat">
+            {{ isEditing ? 'Modifier l\'entrée' : 'Nouvelle entrée de stock' }}
+          </h2>
         </div>
       </div>
+
+      <form @submit.prevent="handleSubmit" class="px-4 sm:px-[47px]">
+        <!-- Référence (auto-générée) -->
+        <div class="mb-[10px]">
+          <label for="reference" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Référence :
+          </label>
+          <div class="relative">
+            <Hash class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
+            <Input
+              id="reference"
+              v-model="formData.reference"
+              :disabled="true"
+              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] bg-gray-100 font-semibold"
+              style="font-family: 'Palanquin Dark'"
+            />
+          </div>
+        </div>
+
+        <!-- Produit -->
+        <div class="mb-[10px]">
+          <label for="product" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Produit :
+          </label>
+          <Select
+            :model-value="formData.product.toString()"
+            @update:model-value="handleProductChange"
+            :disabled="loading || productsStore.loading"
+          >
+            <SelectTrigger class="h-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px]" style="font-family: 'Palanquin Dark'">
+              <SelectValue placeholder="Sélectionner un produit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem
+                  v-for="product in productsStore.products"
+                  :key="product.id"
+                  :value="product.id.toString()"
+                >
+                  {{ product.reference }} - {{ product.name }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <p v-if="selectedProductName" class="text-sm text-muted-foreground mt-1">
+            Produit : <span class="font-medium text-[#0769CF]">{{ selectedProductName }}</span>
+          </p>
+        </div>
+
+        <!-- Magasin -->
+        <div class="mb-[10px]">
+          <label for="store" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Magasin :
+          </label>
+          <Select
+            :model-value="formData.store.toString()"
+            @update:model-value="handleStoreChange"
+            :disabled="loading || storesStore.loading"
+          >
+            <SelectTrigger class="h-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px]" style="font-family: 'Palanquin Dark'">
+              <SelectValue placeholder="Sélectionner un magasin" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem
+                  v-for="store in storesStore.stores"
+                  :key="store.id"
+                  :value="store.id.toString()"
+                >
+                  {{ store.name }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <!-- Quantité -->
+        <div class="mb-[10px]">
+          <label for="quantity" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Quantité :
+          </label>
+          <div class="relative">
+            <Package class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
+            <Input
+              id="quantity"
+              v-model.number="formData.quantity"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Ex : 100"
+              required
+              :disabled="loading"
+              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
+              style="font-family: 'Palanquin Dark'"
+            />
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="mb-[15px]">
+          <label for="notes" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+            Notes :
+          </label>
+          <div class="relative">
+            <Textarea
+              id="notes"
+              v-model="formData.notes"
+              placeholder="Notes optionnelles..."
+              :disabled="loading"
+              class="w-full min-h-[80px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
+              style="font-family: 'Palanquin Dark'"
+            />
+          </div>
+        </div>
+
+        <!-- Bouton Sauver -->
+        <div class="pb-[37px]">
+          <Button
+            type="submit"
+            :disabled="loading || !formData.product || !formData.store || !formData.quantity"
+            class="w-full h-[37px] bg-[#0769CF] hover:bg-[#0558b0] text-white rounded-[10px] text-[14.76px] font-bold uppercase"
+            style="font-family: Montserrat"
+          >
+            {{ loading ? 'ENREGISTREMENT...' : 'SAUVER' }}
+          </Button>
+        </div>
+      </form>
     </DialogContent>
   </Dialog>
 </template>
