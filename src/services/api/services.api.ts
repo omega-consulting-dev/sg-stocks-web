@@ -101,11 +101,14 @@ export interface ServiceStats {
 export const servicesApi = {
   /**
    * Récupérer tous les services avec filtres optionnels
+   * @param filters - Filtres optionnels
+   * @param includeInactive - Si true, récupère aussi les services inactifs
    */
-  async fetchAll(filters?: ServiceFilters): Promise<Service[]> {
+  async fetchAll(filters?: ServiceFilters, includeInactive = false): Promise<Service[]> {
+    const params = includeInactive ? { ...filters } : { is_active: true, ...filters }
     const response: AxiosResponse<PaginatedResponse<Service> | Service[]> = await Axios.get(
       '/services/services/',
-      { params: filters }
+      { params }
     )
     if (Array.isArray(response.data)) {
       return response.data

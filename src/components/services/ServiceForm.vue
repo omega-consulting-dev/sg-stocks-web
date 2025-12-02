@@ -42,9 +42,9 @@ const formData = ref({
 })
 
 // Générer le prochain code séquentiel (SRV001, SRV002, etc.)
-const generateNextCode = (): string => {
-  const existingCodes = servicesStore.services
-    .map(s => s.reference)
+// Utilise la liste de toutes les références (actifs + inactifs) pour ne jamais réutiliser un code
+const generateNextCode = (allReferences: string[]): string => {
+  const existingCodes = allReferences
     .filter(ref => ref && ref.startsWith('SRV'))
     .map(ref => parseInt(ref.replace('SRV', '')) || 0)
 
@@ -68,7 +68,7 @@ onMounted(() => {
   }
 })
 
-watch(() => props.open, (newValue) => {
+watch(() => props.open, async (newValue) => {
   if (newValue) {
     if (props.service) {
       isEditing.value = true
@@ -81,8 +81,10 @@ watch(() => props.open, (newValue) => {
       }
     } else {
       isEditing.value = false
+      // Récupérer TOUTES les références (actifs + inactifs) pour générer un code unique
+      const allReferences = await servicesStore.fetchAllReferences()
       formData.value = {
-        reference: generateNextCode(),
+        reference: generateNextCode(allReferences),
         name: '',
         category: familiesStore.families[0]?.id || 0,
         unit_price: 0,

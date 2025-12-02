@@ -25,14 +25,27 @@ export const useServicesStore = defineStore('services', () => {
     loading.value = true
     error.value = null
     try {
-      const params = { is_active: true, ...filters }
-      const data = await servicesApi.fetchAll(params)
+      const data = await servicesApi.fetchAll(filters)
       services.value = data
     } catch (e) {
       error.value = 'Erreur lors du chargement des services'
       console.error(e)
     } finally {
       loading.value = false
+    }
+  }
+
+  /**
+   * Récupérer tous les services (actifs + inactifs) pour la génération de code
+   * Retourne uniquement les références pour calculer le prochain code
+   */
+  const fetchAllReferences = async (): Promise<string[]> => {
+    try {
+      const allServices = await servicesApi.fetchAll(undefined, true)
+      return allServices.map(s => s.reference)
+    } catch (e) {
+      console.error('Erreur lors de la récupération des références:', e)
+      return services.value.map(s => s.reference)
     }
   }
 
@@ -181,6 +194,7 @@ export const useServicesStore = defineStore('services', () => {
     servicesCount,
     // Actions
     fetchServices,
+    fetchAllReferences,
     addService,
     updateService,
     deleteService,
