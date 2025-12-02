@@ -4,15 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Vue 3 + TypeScript stock management web application using Vite as the build tool. The project uses shadcn-vue components (New York style) with Tailwind CSS v4 for styling.
+SG-Stocks est une application web de gestion de stock développée avec Vue 3 + TypeScript. Elle utilise Vite comme outil de build et shadcn-vue (style New York) avec Tailwind CSS v4 pour le styling.
 
 ## Technology Stack
 
-- **Framework**: Vue 3.5+ with Composition API
+- **Framework**: Vue 3.5+ avec Composition API
 - **State Management**: Pinia
 - **Routing**: Vue Router
-- **Styling**: Tailwind CSS v4 with shadcn-vue components
-- **UI Components**: Reka UI (headless components) + shadcn-vue
+- **Styling**: Tailwind CSS v4 avec shadcn-vue
+- **UI Components**: Reka UI (headless) + shadcn-vue
 - **Icons**: lucide-vue-next
 - **Build Tool**: Vite 7
 - **Testing**: Vitest + Vue Test Utils
@@ -43,55 +43,128 @@ npm run format                # Format code with Prettier
 
 ### Directory Structure
 
-- `src/components/navigation/` - App-level navigation components (AppSidebar, AppNavbar, MenuMain, NavUser, ToggleMode)
-- `src/components/ui/` - shadcn-vue component library (15 components installed: avatar, breadcrumb, button, collapsible, dropdown-menu, input, label, separator, sheet, sidebar, skeleton, switch, tooltip)
-- `src/views/` - Route view components
-- `src/router/` - Vue Router configuration
-- `src/stores/` - Pinia state management stores
-- `src/lib/` - Utility functions (includes `cn()` for class merging)
-- `src/assets/` - Static assets and global CSS
+```
+src/
+├── components/
+│   ├── achats/              # Composants entrées de stock
+│   ├── dashboard/           # Composants tableau de bord
+│   ├── encaissements/       # Composants encaissements
+│   ├── facturation/         # Composants facturation
+│   ├── fournisseurs/        # Composants gestion fournisseurs
+│   ├── forms/               # Composants formulaires génériques
+│   ├── navigation/          # AppSidebar, AppNavbar, MenuMain, NavUser
+│   ├── product-families/    # Composants familles de produits
+│   ├── products/            # Composants produits
+│   ├── service-families/    # Composants familles de services
+│   ├── services/            # Composants services
+│   └── ui/                  # shadcn-vue components
+├── stores/
+│   ├── achats.ts            # Store entrées de stock
+│   ├── customers.ts         # Store clients
+│   ├── dashboard.ts         # Store tableau de bord
+│   ├── encaissements.ts     # Store encaissements
+│   ├── facturations.ts      # Store facturations
+│   ├── fournisseurs.ts      # Store fournisseurs & comptes
+│   ├── productFamilies.ts   # Store familles produits
+│   ├── products.ts          # Store produits
+│   ├── serviceFamilies.ts   # Store familles services
+│   ├── services.ts          # Store services
+│   ├── stores.ts            # Store magasins
+│   └── user.ts              # Store utilisateur
+├── views/
+│   ├── achats/              # Vues entrées de stock
+│   ├── auth/                # Vues authentification
+│   ├── encaissements/       # Vues encaissements
+│   ├── facturation/         # Vues facturation
+│   ├── fournisseurs/        # Vues gestion fournisseurs
+│   ├── products/            # Vues produits et familles
+│   ├── services/            # Vues services
+│   └── users/               # Vues gestion utilisateurs
+├── router/                  # Configuration Vue Router
+├── lib/                     # Utilitaires (cn() pour classes)
+└── assets/                  # Assets statiques et CSS global
+```
+
+### Application Modules
+
+| Module | Route | Description |
+|--------|-------|-------------|
+| Dashboard | `/` | Tableau de bord principal |
+| Produits | `/produits` | Gestion des produits |
+| Services | `/services` | Gestion des services |
+| Familles Produits | `/categories/produits` | Catégories de produits |
+| Familles Services | `/categories/services` | Catégories de services |
+| Entrée Stock | `/achats/entree-stock` | Gestion des entrées de stock |
+| Facturation Produit | `/facturation/produit` | Facturation des produits |
+| Facturation Service | `/facturation/service` | Facturation des services |
+| Encaissements | `/encaissements` | Gestion des encaissements |
+| Fournisseurs | `/fournisseurs` | Comptes fournisseurs et règlements |
+| Comptes Fournisseurs | `/fournisseurs/comptes` | Liste des fournisseurs |
+| Clients | `/users/customer` | Gestion des clients |
+| Authentification | `/login` | Page de connexion |
 
 ### Layout Architecture
 
-The app uses a sidebar-based layout with:
-- `SidebarProvider` wrapping the entire layout
-- `AppSidebar` for main navigation
-- `SidebarInset` containing `AppNavbar` and main content area
-- Collapsible sidebar that transforms to icons when collapsed
+L'application utilise un layout basé sur une sidebar :
+- `SidebarProvider` enveloppe le layout
+- `AppSidebar` pour la navigation principale
+- `SidebarInset` contient `AppNavbar` et le contenu principal
+- Sidebar collapsible avec mode icônes
 
 ### Path Aliases
 
-Configured in `vite.config.ts` and `components.json`:
+Configurés dans `vite.config.ts` et `components.json` :
 - `@/` → `src/`
 - `@/components` → `src/components`
 - `@/lib` → `src/lib`
-- `@/lib/utils` → `src/lib/utils`
 - `@/components/ui` → `src/components/ui`
 
 ### shadcn-vue Integration
 
-This project uses shadcn-vue components with the following configuration:
+Configuration shadcn-vue :
 - Style: New York
 - Base color: neutral
-- CSS variables enabled
-- Icon library: lucide-vue-next
-- No component prefix
+- CSS variables: enabled
+- Icons: lucide-vue-next
+- Pas de préfixe de composant
 
-When adding new shadcn-vue components, they should be added to `src/components/ui/` and follow the existing pattern.
+### Component Pattern
 
-### Styling Utilities
+Chaque module suit ce pattern :
+- `*SearchBar.vue` - Barre de recherche avec actions (export, import, nouveau)
+- `*Table.vue` - Tableau avec pagination
+- `*Form.vue` - Formulaire d'ajout/modification (Dialog)
+- Vue principale dans `views/[module]/`
 
-- Use the `cn()` utility from `@/lib/utils` for merging Tailwind classes with class-variance-authority
-- Tailwind v4 with the new Vite plugin (`@tailwindcss/vite`)
-- Global styles in `src/assets/main.css`
+### Store Pattern
+
+Les stores Pinia suivent ce pattern :
+```typescript
+// État
+const items = ref<Item[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+// Actions CRUD
+const fetchItems = async () => { ... }
+const addItem = async (data) => { ... }
+const updateItem = async (id, data) => { ... }
+const deleteItem = async (id) => { ... }
+```
+
+## Styling Guidelines
+
+- Utiliser `cn()` de `@/lib/utils` pour merger les classes Tailwind
+- Couleur primaire : `#0769CF`
+- Bordures arrondies : `rounded-xl` ou `rounded-2xl`
+- Formulaires : Dialog avec gradient header pour les actions importantes
 
 ## Node Version Requirements
 
-This project requires Node.js `^20.19.0 || >=22.12.0`
+Node.js `^20.19.0 || >=22.12.0`
 
 ## Development Notes
 
-- The app currently has a single route (`/`) rendering `HomeView`
-- Main layout includes placeholder content (grid of aspect-video divs) that should be replaced with actual application content
-- Vue DevTools plugin is enabled in development mode
-- All `.vue` files use TypeScript (`<script setup lang="ts">`)
+- Tous les fichiers `.vue` utilisent TypeScript (`<script setup lang="ts">`)
+- Vue DevTools activé en développement
+- Les données mockées sont dans les stores (à remplacer par API)
