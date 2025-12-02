@@ -40,9 +40,9 @@ const formData = ref({
 })
 
 // Générer le prochain code séquentiel (PROD001, PROD002, etc.)
-const generateNextCode = (): string => {
-  const existingCodes = productsStore.products
-    .map(p => p.reference)
+// Utilise la liste de toutes les références (actifs + inactifs) pour ne jamais réutiliser un code
+const generateNextCode = (allReferences: string[]): string => {
+  const existingCodes = allReferences
     .filter(ref => ref && ref.startsWith('PROD'))
     .map(ref => parseInt(ref.replace('PROD', '')) || 0)
 
@@ -70,7 +70,7 @@ onMounted(() => {
   }
 })
 
-watch(() => props.open, (newValue) => {
+watch(() => props.open, async (newValue) => {
   if (newValue) {
     if (props.product) {
       isEditing.value = true
@@ -83,8 +83,10 @@ watch(() => props.open, (newValue) => {
       imagePreview.value = props.product.primary_image || ''
     } else {
       isEditing.value = false
+      // Récupérer TOUTES les références (actifs + inactifs) pour générer un code unique
+      const allReferences = await productsStore.fetchAllReferences()
       formData.value = {
-        reference: generateNextCode(),
+        reference: generateNextCode(allReferences),
         name: '',
         category: categoriesStore.families[0]?.id || 0,
         selling_price: 0,

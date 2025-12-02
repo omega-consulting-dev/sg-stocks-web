@@ -85,9 +85,11 @@ export const productsApi = {
   /**
    * Récupérer tous les produits avec filtres optionnels
    * Par défaut, ne récupère que les produits actifs
+   * @param filters - Filtres optionnels
+   * @param includeInactive - Si true, récupère aussi les produits inactifs
    */
-  async fetchAll(filters?: ProductFilters): Promise<Product[]> {
-    const params = { is_active: true, ...filters }
+  async fetchAll(filters?: ProductFilters, includeInactive = false): Promise<Product[]> {
+    const params = includeInactive ? { ...filters } : { is_active: true, ...filters }
     const response: AxiosResponse<Product[] | PaginatedResponse<Product>> = await Axios.get(
       '/products/products/',
       { params }

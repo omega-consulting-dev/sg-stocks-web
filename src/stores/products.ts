@@ -38,6 +38,20 @@ export const useProductsStore = defineStore('products', () => {
     }
   }
 
+  /**
+   * Récupérer tous les produits (actifs + inactifs) pour la génération de code
+   * Retourne uniquement les références pour calculer le prochain code
+   */
+  const fetchAllReferences = async (): Promise<string[]> => {
+    try {
+      const allProducts = await productsApi.fetchAll(undefined, true)
+      return allProducts.map(p => p.reference)
+    } catch (e) {
+      console.error('Erreur lors de la récupération des références:', e)
+      return products.value.map(p => p.reference)
+    }
+  }
+
   const addProduct = async (product: CreateProductDto) => {
     loading.value = true
     error.value = null
@@ -161,6 +175,7 @@ export const useProductsStore = defineStore('products', () => {
     lowStockProducts,
     // Actions
     fetchProducts,
+    fetchAllReferences,
     addProduct,
     updateProduct,
     deleteProduct,
