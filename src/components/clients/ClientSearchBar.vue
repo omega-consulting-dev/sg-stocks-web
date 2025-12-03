@@ -27,7 +27,7 @@ watch(searchQuery, (newValue) => {
 const openSearch = () => {
   isSearchOpen.value = true
   setTimeout(() => {
-    const input = document.querySelector('#fournisseurSearchInput') as HTMLInputElement
+    const input = document.querySelector('#clientSearchInput') as HTMLInputElement
     input?.focus()
   }, 100)
 }
@@ -42,8 +42,8 @@ const handleFocusOut = () => {
 <template>
   <header class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
     <div>
-      <h1 class="text-2xl sm:text-3xl font-bold text-primary">Fournisseurs</h1>
-      <p class="opacity-60 text-xs sm:text-sm">Liste des fournisseurs</p>
+      <h1 class="text-2xl sm:text-3xl font-bold text-primary">Comptes Clients</h1>
+      <p class="opacity-60 text-xs sm:text-sm">Comptes clients</p>
     </div>
 
     <div class="flex flex-wrap items-center gap-2 sm:gap-4">
@@ -60,9 +60,9 @@ const handleFocusOut = () => {
           <Search />
         </Button>
         <Input
-          id="fournisseurSearchInput"
+          id="clientSearchInput"
           v-model="searchQuery"
-          placeholder="Rechercher un fournisseur..."
+          placeholder="recherche"
           :class="{ 'pl-9': isSearchOpen }"
           @focusout="handleFocusOut"
           @focusin="openSearch"
@@ -80,19 +80,19 @@ const handleFocusOut = () => {
         <DropdownMenuContent class="rounded-lg" align="end">
           <DropdownMenuItem @click="emit('exportPdf')">
             <FileText />
-            Document pdf
+            document pdf
           </DropdownMenuItem>
           <DropdownMenuItem @click="emit('exportExcel')">
             <Sheet />
-            Document excel
+            document excel
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <!-- Bouton Règlement -->
+      <!-- Bouton Nouveau -->
       <Button @click="emit('add')" class="px-2 sm:px-4">
         <Plus />
-        <span class="hidden sm:inline">Règlement</span>
+        <span class="hidden sm:inline">Nouveau</span>
       </Button>
     </div>
   </header>

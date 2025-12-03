@@ -166,7 +166,11 @@ const data = {
       children: [
         {
           title: "Gestion client",
-          url: "/users/customer",
+          url: "/clients",
+        },
+        {
+          title: "Comptes Clients",
+          url: "/clients/comptes",
         },
         {
           title: "Gestion Fournisseur",

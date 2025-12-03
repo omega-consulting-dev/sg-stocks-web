@@ -12,6 +12,8 @@ import EncaissementsView from '../views/encaissements/EncaissementsView.vue'
 import LoginView from '../views/auth/LoginView.vue'
 import FournisseursView from '../views/fournisseurs/FournisseursView.vue'
 import ComptesFournisseursView from '../views/fournisseurs/ComptesFournisseursView.vue'
+import ClientsView from '../views/clients/ClientsView.vue'
+import ComptesClientsView from '../views/clients/ComptesClientsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -92,6 +94,16 @@ const router = createRouter({
       path: '/fournisseurs/comptes',
       name: 'comptes-fournisseurs',
       component: ComptesFournisseursView,
+    },
+    {
+      path: '/clients',
+      name: 'clients',
+      component: ClientsView,
+    },
+    {
+      path: '/clients/comptes',
+      name: 'comptes-clients',
+      component: ComptesClientsView,
     },
   ],
 })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Search, Plus, Upload, Download, FileText, Sheet } from 'lucide-vue-next'
+import { Search, Plus, Upload, FileText, Sheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,7 +13,6 @@ import {
 const emit = defineEmits<{
   search: [value: string]
   add: []
-  importExcel: []
   exportPdf: []
   exportExcel: []
 }>()
@@ -69,22 +68,6 @@ const handleFocusOut = () => {
           @focusin="openSearch"
         />
       </div>
-
-      <!-- Bouton Importer -->
-      <DropdownMenu>
-        <DropdownMenuTrigger as-child>
-          <Button variant="outline" class="px-2 sm:px-4">
-            <Download />
-            <span class="hidden sm:inline">Importer</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent class="rounded-lg" align="end">
-          <DropdownMenuItem @click="emit('importExcel')">
-            <Sheet />
-            Document excel
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
 
       <!-- Bouton Exporter -->
       <DropdownMenu>

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAchatsStore, type Achat } from '@/stores/achats'
 import AchatSearchBar from '@/components/achats/AchatSearchBar.vue'
 import AchatTable from '@/components/achats/AchatTable.vue'
-import AchatForm from '@/components/achats/AchatForm.vue'
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -22,15 +22,14 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
+const router = useRouter()
 const store = useAchatsStore()
 
 // État local
 const searchQuery = ref('')
 const currentPage = ref(1)
 const pageSize = ref(8)
-const isFormOpen = ref(false)
 const isDeleteDialogOpen = ref(false)
-const selectedAchat = ref<Achat | null>(null)
 const achatToDelete = ref<Achat | null>(null)
 
 // Computed
@@ -67,10 +66,9 @@ const handleSearch = (query: string) => {
   currentPage.value = 1
 }
 
-// Gestion de l'ajout
+// Gestion de l'ajout - Navigation vers la page dédiée
 const handleAdd = () => {
-  selectedAchat.value = null
-  isFormOpen.value = true
+  router.push('/achats/entree-stock/nouveau')
 }
 
 // Gestion de l'export PDF
@@ -85,10 +83,9 @@ const handleExportExcel = async () => {
   console.log('Export Excel')
 }
 
-// Gestion de la modification
+// Gestion de la modification - Navigation vers la page dédiée
 const handleEdit = (achat: Achat) => {
-  selectedAchat.value = achat
-  isFormOpen.value = true
+  router.push(`/achats/entree-stock/nouveau?id=${achat.id}`)
 }
 
 // Gestion de la suppression
@@ -106,21 +103,6 @@ const confirmDelete = async () => {
     achatToDelete.value = null
   } catch (error) {
     console.error('Erreur lors de la suppression:', error)
-  }
-}
-
-// Soumission du formulaire
-const handleFormSubmit = async (data: any) => {
-  try {
-    if (selectedAchat.value) {
-      await store.updateAchat(selectedAchat.value.id, data)
-    } else {
-      await store.addAchat(data)
-    }
-    isFormOpen.value = false
-    selectedAchat.value = null
-  } catch (error) {
-    console.error("Erreur lors de l'enregistrement:", error)
   }
 }
 
@@ -163,14 +145,6 @@ const handlePageChange = (page: number) => {
       @edit="handleEdit"
       @delete="handleDelete"
       @page-change="handlePageChange"
-    />
-
-    <!-- Formulaire d'ajout/modification -->
-    <AchatForm
-      v-model:open="isFormOpen"
-      :achat="selectedAchat"
-      :loading="store.loading"
-      @submit="handleFormSubmit"
     />
 
     <!-- Dialog de confirmation de suppression -->
