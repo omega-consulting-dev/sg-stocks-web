@@ -181,16 +181,16 @@ const getPageNumbers = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="w-[180px]">
-                    <DropdownMenuItem @click="emit('viewOperations', compte)" class="cursor-pointer">
+                    <DropdownMenuItem @select="emit('viewOperations', compte)" class="cursor-pointer">
                       <Eye class="mr-2 h-4 w-4" />
                       <span>Voir opérations</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem @click="emit('addOperation', compte)" class="cursor-pointer">
+                    <DropdownMenuItem @select="emit('addOperation', compte)" class="cursor-pointer">
                       <Plus class="mr-2 h-4 w-4" />
                       <span>Ajouter opération</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @click="emit('delete', compte)"
+                      @select="emit('delete', compte)"
                       class="cursor-pointer text-red-600 focus:text-red-600"
                     >
                       <Trash2 class="mr-2 h-4 w-4" />

@@ -78,11 +78,11 @@ const handleFocusOut = () => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent class="rounded-lg" align="end">
-          <DropdownMenuItem @click="emit('exportPdf')">
+          <DropdownMenuItem @select="emit('exportPdf')">
             <FileText />
             document pdf
           </DropdownMenuItem>
-          <DropdownMenuItem @click="emit('exportExcel')">
+          <DropdownMenuItem @select="emit('exportExcel')">
             <Sheet />
             document excel
           </DropdownMenuItem>

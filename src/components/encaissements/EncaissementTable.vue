@@ -100,12 +100,12 @@ const paginationInfo = computed(() => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="w-[130px]">
-                    <DropdownMenuItem @click="emit('view', encaissement)" class="cursor-pointer">
+                    <DropdownMenuItem @select="emit('view', encaissement)" class="cursor-pointer">
                       <Eye class="mr-2 h-4 w-4" />
                       <span>Consulter</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @click="emit('delete', encaissement)"
+                      @select="emit('delete', encaissement)"
                       class="cursor-pointer text-red-600 focus:text-red-600"
                     >
                       <Trash2 class="mr-2 h-4 w-4" />

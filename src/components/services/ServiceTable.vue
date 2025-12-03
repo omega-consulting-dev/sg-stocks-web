@@ -184,12 +184,12 @@ const goToNextPage = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" class="w-[130px]">
-                  <DropdownMenuItem @click="handleEdit(service)" class="cursor-pointer">
+                  <DropdownMenuItem @select="handleEdit(service)" class="cursor-pointer">
                     <Edit class="mr-2 h-4 w-4" />
                     <span>Modifier</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    @click="handleDelete(service)"
+                    @select="handleDelete(service)"
                     class="cursor-pointer text-red-600 focus:text-red-600"
                   >
                     <Trash2 class="mr-2 h-4 w-4" />

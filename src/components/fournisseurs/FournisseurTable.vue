@@ -159,12 +159,12 @@ const handleDelete = (fournisseur: Fournisseur) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="w-[130px]">
-                    <DropdownMenuItem @click="handleEdit(fournisseur)" class="cursor-pointer">
+                    <DropdownMenuItem @select="handleEdit(fournisseur)" class="cursor-pointer">
                       <Pencil class="mr-2 h-4 w-4" />
                       <span>Modifier</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @click="handleDelete(fournisseur)"
+                      @select="handleDelete(fournisseur)"
                       class="cursor-pointer text-red-600 focus:text-red-600"
                     >
                       <Trash2 class="mr-2 h-4 w-4" />

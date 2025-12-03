@@ -138,12 +138,12 @@ const paginationInfo = computed(() => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" class="w-[130px]">
-                  <DropdownMenuItem @click="handleEdit(product)" class="cursor-pointer">
+                  <DropdownMenuItem @select="handleEdit(product)" class="cursor-pointer">
                     <Edit class="mr-2 h-4 w-4" />
                     <span>Modifier</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    @click="handleDelete(product)"
+                    @select="handleDelete(product)"
                     class="cursor-pointer text-red-600 focus:text-red-600"
                   >
                     <Trash2 class="mr-2 h-4 w-4" />

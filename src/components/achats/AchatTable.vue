@@ -171,12 +171,12 @@ const handleDelete = (achat: Achat) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="w-[130px]">
-                    <DropdownMenuItem @click="handleEdit(achat)" class="cursor-pointer">
+                    <DropdownMenuItem @select="handleEdit(achat)" class="cursor-pointer">
                       <Pencil class="mr-2 h-4 w-4" />
                       <span>Modifier</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @click="handleDelete(achat)"
+                      @select="handleDelete(achat)"
                       class="cursor-pointer text-red-600 focus:text-red-600"
                     >
                       <Trash2 class="mr-2 h-4 w-4" />
