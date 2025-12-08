@@ -67,7 +67,7 @@ const paginationInfo = computed(() => {
           <TableHead class="w-[120px] font-semibold">Code</TableHead>
           <TableHead class="font-semibold">Désignation</TableHead>
           <TableHead class="font-semibold">Famille</TableHead>
-          <TableHead class="text-right font-semibold">Prix Achat</TableHead>
+          <!-- <TableHead class="text-right font-semibold">Prix Achat</TableHead> -->
           <TableHead class="text-right font-semibold">Prix Vente</TableHead>
           <TableHead class="text-right font-semibold">Stock</TableHead>
           <TableHead class="w-[80px] text-center font-semibold">Actions</TableHead>
@@ -111,9 +111,9 @@ const paginationInfo = computed(() => {
             <TableCell class="font-medium">{{ product.reference }}</TableCell>
             <TableCell>{{ product.name }}</TableCell>
             <TableCell class="text-muted-foreground">{{ product.category_name }}</TableCell>
-            <TableCell class="text-right text-muted-foreground text-sm">
+            <!-- <TableCell class="text-right text-muted-foreground text-sm">
               {{ formatPrice(product.cost_price) }}
-            </TableCell>
+            </TableCell> -->
             <TableCell class="text-right font-medium">
               {{ formatPrice(product.selling_price) }}
             </TableCell>

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Search, Plus, Upload, FileText, Sheet } from 'lucide-vue-next'
+import { Search, Upload, Download, FileText, Sheet, FileDown, Plus } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
@@ -15,10 +16,13 @@ const emit = defineEmits<{
   add: []
   exportPdf: []
   exportExcel: []
+  importExcel: [file: File]
+  downloadTemplate: []
 }>()
 
 const searchQuery = ref('')
 const isSearchOpen = ref(false)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 watch(searchQuery, (newValue) => {
   emit('search', newValue)
@@ -35,6 +39,21 @@ const openSearch = () => {
 const handleFocusOut = () => {
   if (searchQuery.value.length === 0) {
     isSearchOpen.value = false
+  }
+}
+
+// Gestion de l'import
+const handleImportClick = () => {
+  fileInputRef.value?.click()
+}
+
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    emit('importExcel', file)
+    // Reset input pour permettre de réimporter le même fichier
+    target.value = ''
   }
 }
 </script>
@@ -62,12 +81,42 @@ const handleFocusOut = () => {
         <Input
           id="compteSearchInput"
           v-model="searchQuery"
-          placeholder="Rechercher un compte..."
+          placeholder="Rechercher un fournisseur..."
           :class="{ 'pl-9': isSearchOpen }"
           @focusout="handleFocusOut"
           @focusin="openSearch"
         />
       </div>
+
+      <!-- Input file caché pour l'import -->
+      <input
+        ref="fileInputRef"
+        type="file"
+        accept=".xlsx,.xls"
+        class="hidden"
+        @change="handleFileChange"
+      />
+
+      <!-- Bouton Importer -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button variant="outline" class="px-2 sm:px-4">
+            <Download />
+            <span class="hidden sm:inline">Importer</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent class="rounded-lg" align="end">
+          <DropdownMenuItem @select="handleImportClick" class="cursor-pointer">
+            <Sheet class="mr-2 h-4 w-4" />
+            Importer Excel
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem @select="emit('downloadTemplate')" class="cursor-pointer">
+            <FileDown class="mr-2 h-4 w-4" />
+            Télécharger le modèle
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <!-- Bouton Exporter -->
       <DropdownMenu>
@@ -78,20 +127,20 @@ const handleFocusOut = () => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent class="rounded-lg" align="end">
-          <DropdownMenuItem @select="emit('exportPdf')">
-            <FileText />
-            Document pdf
+          <DropdownMenuItem @select="emit('exportPdf')" class="cursor-pointer">
+            <FileText class="mr-2 h-4 w-4" />
+            Document PDF
           </DropdownMenuItem>
-          <DropdownMenuItem @select="emit('exportExcel')">
-            <Sheet />
-            Document excel
+          <DropdownMenuItem @select="emit('exportExcel')" class="cursor-pointer">
+            <Sheet class="mr-2 h-4 w-4" />
+            Document Excel
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       <!-- Bouton Nouveau -->
-      <Button @click="emit('add')" class="px-2 sm:px-4">
-        <Plus />
+      <Button class="bg-[#0769CF] hover:bg-[#0557a8] px-2 sm:px-4" @click="emit('add')">
+        <Plus class="h-4 w-4" />
         <span class="hidden sm:inline">Nouveau</span>
       </Button>
     </div>

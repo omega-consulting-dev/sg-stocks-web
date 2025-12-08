@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { MoreVertical, Pencil, Trash2 } from 'lucide-vue-next'
-import type { Fournisseur } from '@/stores/fournisseurs'
+import { MoreVertical, Pencil, Trash2, Eye } from 'lucide-vue-next'
+import type { Supplier } from '@/stores/fournisseurs'
 import {
   Table,
   TableBody,
@@ -21,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 // Props
 interface Props {
-  fournisseurs: Fournisseur[]
+  fournisseurs: Supplier[]
   loading?: boolean
   currentPage?: number
   pageSize?: number
@@ -37,8 +37,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  edit: [fournisseur: Fournisseur]
-  delete: [fournisseur: Fournisseur]
+  view: [fournisseur: Supplier]
+  edit: [fournisseur: Supplier]
+  delete: [fournisseur: Supplier]
   pageChange: [page: number]
 }>()
 
@@ -48,10 +49,19 @@ const displayedFournisseurs = computed(() => props.fournisseurs)
 const totalPages = computed(() => Math.ceil(props.total / props.pageSize))
 
 const paginationInfo = computed(() => {
+  if (props.total === 0) return 'Aucun fournisseur'
   const start = (props.currentPage - 1) * props.pageSize + 1
   const end = Math.min(props.currentPage * props.pageSize, props.total)
   return `Affichage de ${start} à ${end} sur ${props.total} entrées`
 })
+
+// Helper pour afficher le nom du fournisseur
+const getDisplayName = (fournisseur: Supplier): string => {
+  // Priorité : display_name > first_name > username
+  if (fournisseur.display_name) return fournisseur.display_name
+  if (fournisseur.first_name) return `${fournisseur.first_name} ${fournisseur.last_name || ''}`.trim()
+  return fournisseur.username
+}
 
 // Pagination
 const getPageNumbers = () => {
@@ -81,11 +91,15 @@ const getPageNumbers = () => {
 }
 
 // Handlers
-const handleEdit = (fournisseur: Fournisseur) => {
+const handleView = (fournisseur: Supplier) => {
+  emit('view', fournisseur)
+}
+
+const handleEdit = (fournisseur: Supplier) => {
   emit('edit', fournisseur)
 }
 
-const handleDelete = (fournisseur: Fournisseur) => {
+const handleDelete = (fournisseur: Supplier) => {
   emit('delete', fournisseur)
 }
 </script>
@@ -97,6 +111,12 @@ const handleDelete = (fournisseur: Fournisseur) => {
         <TableHeader>
           <TableRow class="border-b border-[#EEEEEE]">
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              Code
+            </TableHead>
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              Nom entreprise
+            </TableHead>
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Nom du fournisseur
             </TableHead>
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
@@ -106,10 +126,10 @@ const handleDelete = (fournisseur: Fournisseur) => {
               E-mail
             </TableHead>
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
-              Localisation
+              Ville
             </TableHead>
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
-              Forme juridique
+              Statut
             </TableHead>
             <TableHead class="w-[80px] text-center font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
               Action
@@ -119,7 +139,9 @@ const handleDelete = (fournisseur: Fournisseur) => {
         <TableBody>
           <template v-if="loading">
             <TableRow v-for="i in (pageSize || 8)" :key="i">
+              <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-32 mx-auto" /></TableCell>
+              <TableCell class="text-center"><Skeleton class="h-4 w-28 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-28 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-36 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
@@ -133,21 +155,34 @@ const handleDelete = (fournisseur: Fournisseur) => {
               :key="fournisseur.id"
               class="border-b border-[#EEEEEE] hover:bg-gray-50"
             >
-              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ fournisseur.name }}
+              <TableCell class="text-[14px] font-medium text-[#0769CF] text-center" style="font-family: Poppins">
+                {{ fournisseur.supplier_code || '-' }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ fournisseur.phone }}
+                {{ fournisseur.supplier_company_name || '-' }}
+              </TableCell>
+              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+                {{ fournisseur.username || '-' }}
+              </TableCell>
+              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+                {{ fournisseur.phone || '-' }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#5932EA] text-center" style="font-family: Poppins">
-                {{ fournisseur.email }}
+                {{ fournisseur.email || '-' }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ fournisseur.location }}
+                {{ fournisseur.city || '-' }}
               </TableCell>
-              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                <span class="px-2 py-1 rounded-full bg-[#E6F0FF] text-[#0072C1] text-xs">
-                  {{ fournisseur.legal_form }}
+              <TableCell class="text-center">
+                <span
+                  :class="[
+                    'px-2 py-1 rounded-full text-xs font-medium',
+                    fournisseur.is_active
+                      ? 'bg-[#E6F9F0] text-[#16A34A]'
+                      : 'bg-[#FEE2E2] text-[#DC2626]'
+                  ]"
+                >
+                  {{ fournisseur.is_active ? 'Actif' : 'Inactif' }}
                 </span>
               </TableCell>
               <TableCell class="text-center">
@@ -159,6 +194,10 @@ const handleDelete = (fournisseur: Fournisseur) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="w-[130px]">
+                    <DropdownMenuItem @select="handleView(fournisseur)" class="cursor-pointer">
+                      <Eye class="mr-2 h-4 w-4" />
+                      <span>Voir</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem @select="handleEdit(fournisseur)" class="cursor-pointer">
                       <Pencil class="mr-2 h-4 w-4" />
                       <span>Modifier</span>
@@ -177,7 +216,7 @@ const handleDelete = (fournisseur: Fournisseur) => {
           </template>
           <template v-else>
             <TableRow>
-              <TableCell colspan="6" class="text-center text-muted-foreground py-8">
+              <TableCell colspan="8" class="text-center text-muted-foreground py-8">
                 Aucun fournisseur trouvé
               </TableCell>
             </TableRow>

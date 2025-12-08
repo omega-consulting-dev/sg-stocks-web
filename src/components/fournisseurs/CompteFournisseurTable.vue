@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { MoreVertical, Eye, Plus, Trash2 } from 'lucide-vue-next'
-import type { CompteFournisseur } from '@/stores/fournisseurs'
+import { MoreVertical, Eye, Plus } from 'lucide-vue-next'
+import type { SupplierDebt } from '@/stores/fournisseurs'
 import {
   Table,
   TableBody,
@@ -21,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 // Props
 interface Props {
-  comptes: CompteFournisseur[]
+  debts: SupplierDebt[]
   loading?: boolean
   currentPage?: number
   pageSize?: number
@@ -37,18 +37,18 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  viewOperations: [compte: CompteFournisseur]
-  addOperation: [compte: CompteFournisseur]
-  delete: [compte: CompteFournisseur]
+  viewDetails: [debt: SupplierDebt]
+  addPayment: [debt: SupplierDebt]
   pageChange: [page: number]
 }>()
 
 // Computed
-const displayedComptes = computed(() => props.comptes)
+const displayedDebts = computed(() => props.debts)
 
 const totalPages = computed(() => Math.ceil(props.total / props.pageSize))
 
 const paginationInfo = computed(() => {
+  if (props.total === 0) return 'Aucune dette fournisseur'
   const start = (props.currentPage - 1) * props.pageSize + 1
   const end = Math.min(props.currentPage * props.pageSize, props.total)
   return `Affichage de ${start} à ${end} sur ${props.total} entrées`
@@ -61,20 +61,6 @@ const formatMontant = (montant: number) => {
     currency: 'XAF',
     minimumFractionDigits: 0,
   }).format(montant)
-}
-
-// Formatage de date
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  })
-}
-
-// Calculer le solde
-const getSolde = (compte: CompteFournisseur) => {
-  return compte.montant_facture - compte.montant_encaissement
 }
 
 // Pagination
@@ -112,19 +98,19 @@ const getPageNumbers = () => {
         <TableHeader>
           <TableRow class="border-b border-[#EEEEEE]">
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              Code
+            </TableHead>
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Fournisseur
             </TableHead>
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
-              Montant facture
+              Contact
             </TableHead>
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
-              Date facture
+              Total commandé
             </TableHead>
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
-              Montant encaissement
-            </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
-              Date encaissement
+              Total payé
             </TableHead>
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Solde
@@ -137,39 +123,43 @@ const getPageNumbers = () => {
         <TableBody>
           <template v-if="loading">
             <TableRow v-for="i in (pageSize || 8)" :key="i">
+              <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-32 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-28 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-28 mx-auto" /></TableCell>
+              <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-8 mx-auto" /></TableCell>
             </TableRow>
           </template>
-          <template v-else-if="displayedComptes.length > 0">
+          <template v-else-if="displayedDebts.length > 0">
             <TableRow
-              v-for="compte in displayedComptes"
-              :key="compte.id"
+              v-for="debt in displayedDebts"
+              :key="debt.id"
               class="border-b border-[#EEEEEE] hover:bg-gray-50"
             >
-              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ compte.fournisseur_name }}
+              <TableCell class="text-[14px] font-medium text-[#0769CF] text-center" style="font-family: Poppins">
+                {{ debt.supplier_code }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ formatMontant(compte.montant_facture) }}
+                {{ debt.name }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ formatDate(compte.date_facture) }}
+                <div class="flex flex-col">
+                  <span v-if="debt.email" class="text-[#5932EA]">{{ debt.email }}</span>
+                  <span v-if="debt.phone" class="text-xs text-muted-foreground">{{ debt.phone }}</span>
+                  <span v-if="!debt.email && !debt.phone">-</span>
+                </div>
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ formatMontant(compte.montant_encaissement) }}
+                {{ formatMontant(debt.total_ordered) }}
               </TableCell>
-              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ formatDate(compte.date_encaissement) }}
+              <TableCell class="text-[14px] font-medium text-[#16A34A] text-center" style="font-family: Poppins">
+                {{ formatMontant(debt.total_paid) }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-center" style="font-family: Poppins">
-                <span :class="getSolde(compte) > 0 ? 'text-red-600' : 'text-green-600'">
-                  {{ formatMontant(getSolde(compte)) }}
+                <span :class="debt.balance > 0 ? 'text-red-600 font-semibold' : 'text-green-600'">
+                  {{ formatMontant(debt.balance) }}
                 </span>
               </TableCell>
               <TableCell class="text-center">
@@ -181,20 +171,13 @@ const getPageNumbers = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="w-[180px]">
-                    <DropdownMenuItem @select="emit('viewOperations', compte)" class="cursor-pointer">
+                    <DropdownMenuItem @select="emit('viewDetails', debt)" class="cursor-pointer">
                       <Eye class="mr-2 h-4 w-4" />
-                      <span>Voir opérations</span>
+                      <span>Voir commandes</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem @select="emit('addOperation', compte)" class="cursor-pointer">
+                    <DropdownMenuItem @select="emit('addPayment', debt)" class="cursor-pointer">
                       <Plus class="mr-2 h-4 w-4" />
-                      <span>Ajouter opération</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      @select="emit('delete', compte)"
-                      class="cursor-pointer text-red-600 focus:text-red-600"
-                    >
-                      <Trash2 class="mr-2 h-4 w-4" />
-                      <span>Supprimer</span>
+                      <span>Ajouter paiement</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -204,7 +187,7 @@ const getPageNumbers = () => {
           <template v-else>
             <TableRow>
               <TableCell colspan="7" class="text-center text-muted-foreground py-8">
-                Aucun compte fournisseur trouvé
+                Aucune dette fournisseur trouvée
               </TableCell>
             </TableRow>
           </template>
@@ -213,7 +196,7 @@ const getPageNumbers = () => {
     </div>
 
     <!-- Pagination -->
-    <div v-if="displayedComptes.length > 0" class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 sm:px-[38px] py-4 sm:py-[30px] border-t border-[#EEEEEE]">
+    <div v-if="displayedDebts.length > 0" class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 sm:px-[38px] py-4 sm:py-[30px] border-t border-[#EEEEEE]">
       <p class="text-xs sm:text-[14px] font-medium text-[#B5B7C0]" style="font-family: Poppins">
         {{ paginationInfo }}
       </p>
