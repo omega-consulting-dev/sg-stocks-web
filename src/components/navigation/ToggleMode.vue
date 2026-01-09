@@ -1,4 +1,13 @@
 <script setup lang="ts">
+// Composant désactivé
+</script>
+
+<template>
+  <!-- Composant de basculement mode clair/sombre désactivé -->
+</template>
+
+<!--
+<script setup lang="ts">
 import { useColorMode } from '@vueuse/core'
 
 // Pass { disableTransition: false } to enable transitions
@@ -29,3 +38,4 @@ const checked = computed({
     </Label>
   </div>
 </template>
+-->

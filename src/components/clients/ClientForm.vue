@@ -75,14 +75,6 @@ const handleClose = () => {
           </div>
           <h2 class="text-xl font-semibold">Fiche Client</h2>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          class="h-8 w-8 rounded-full"
-          @click="handleClose"
-        >
-          <X class="h-4 w-4" />
-        </Button>
       </div>
 
       <!-- Form -->

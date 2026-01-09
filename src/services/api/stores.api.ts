@@ -1,25 +1,6 @@
 import Axios from '../axios.service'
 import type { AxiosResponse } from 'axios'
-
-/**
- * Interface pour Store (Magasin)
- */
-export interface Store {
-  id: number
-  name: string
-  code: string
-  address: string
-  city: string
-  phone: string
-  email: string
-  store_type: 'warehouse' | 'store' | 'virtual'
-  store_type_display: string
-  manager: number | null
-  manager_name: string | null
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
+import type { Store, StoreCreateData, StoreUpdateData, StoreFilters } from '@/types/store.types'
 
 /**
  * Interface pour réponse paginée
@@ -32,41 +13,76 @@ interface PaginatedResponse<T> {
 }
 
 /**
- * Interface pour les filtres
- */
-export interface StoreFilters {
-  store_type?: string
-  is_active?: boolean
-  search?: string
-}
-
-/**
  * Service API pour la gestion des magasins
  */
 export const storesApi = {
   /**
-   * Récupérer tous les magasins
+   * Récupérer la liste paginée des magasins
    */
-  async fetchAll(filters?: StoreFilters): Promise<Store[]> {
-    const params = { is_active: true, ...filters }
-    const response: AxiosResponse<PaginatedResponse<Store> | Store[]> = await Axios.get(
-      '/inventory/stores/',
-      { params }
-    )
+  async getStores(params?: StoreFilters & { page?: number; page_size?: number }): Promise<PaginatedResponse<Store>> {
+    const response: AxiosResponse<PaginatedResponse<Store>> = await Axios.get('/inventory/stores/', { params })
+    return response.data
+  },
 
-    if (Array.isArray(response.data)) {
-      return response.data
-    }
+  /**
+   * Récupérer tous les magasins (sans pagination)
+   */
+  async getAllStores(filters?: StoreFilters): Promise<Store[]> {
+    const params = { is_active: true, ...filters }
+    const response: AxiosResponse<PaginatedResponse<Store>> = await Axios.get('/inventory/stores/', { params })
     return response.data.results || []
   },
 
   /**
    * Récupérer un magasin par son ID
    */
-  async fetchById(id: number): Promise<Store> {
+  async getStore(id: number): Promise<Store> {
     const response: AxiosResponse<Store> = await Axios.get(`/inventory/stores/${id}/`)
     return response.data
   },
+
+  /**
+   * Créer un nouveau magasin
+   */
+  async createStore(data: StoreCreateData): Promise<Store> {
+    const response: AxiosResponse<Store> = await Axios.post('/inventory/stores/', data)
+    return response.data
+  },
+
+  /**
+   * Mettre à jour un magasin
+   */
+  async updateStore(id: number, data: StoreUpdateData): Promise<Store> {
+    const response: AxiosResponse<Store> = await Axios.patch(`/inventory/stores/${id}/`, data)
+    return response.data
+  },
+
+  /**
+   * Supprimer un magasin
+   */
+  async deleteStore(id: number): Promise<void> {
+    await Axios.delete(`/inventory/stores/${id}/`)
+  },
+
+  /**
+   * Activer/désactiver un magasin
+   */
+  async toggleStoreStatus(id: number, isActive: boolean): Promise<Store> {
+    const response: AxiosResponse<Store> = await Axios.patch(`/inventory/stores/${id}/`, { is_active: isActive })
+    return response.data
+  },
+
+  /**
+   * Obtenir les statistiques d'un magasin
+   */
+  async getStoreStats(id: number): Promise<{
+    total_products: number
+    total_stock_value: number
+    low_stock_items: number
+  }> {
+    const response = await Axios.get(`/inventory/stores/${id}/stats/`)
+    return response.data
+  }
 }
 
 export default storesApi

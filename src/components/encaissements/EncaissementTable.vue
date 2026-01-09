@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { MoreVertical, Eye, Trash2 } from 'lucide-vue-next'
+import { MoreVertical, Eye, Trash2, Wallet } from 'lucide-vue-next'
 import type { Encaissement } from '@/stores/encaissements'
 import {
   Table,
@@ -54,41 +54,79 @@ const paginationInfo = computed(() => {
   const end = Math.min(start + (props.pageSize || 8) - 1, props.total || props.encaissements.length)
   return `Affichage de ${start} à ${end} sur ${(props.total || props.encaissements.length).toLocaleString('fr-FR')} entrées`
 })
+
+const totalPages = computed(() => Math.ceil((props.total || props.encaissements.length) / (props.pageSize || 20)))
+
+const getPageNumbers = () => {
+  const pages: (number | string)[] = []
+  const maxVisible = 5
+
+  if (totalPages.value <= maxVisible) {
+    for (let i = 1; i <= totalPages.value; i++) {
+      pages.push(i)
+    }
+  } else {
+    pages.push(1)
+    if ((props.currentPage || 1) > 3) pages.push('...')
+
+    const start = Math.max(2, (props.currentPage || 1) - 1)
+    const end = Math.min(totalPages.value - 1, (props.currentPage || 1) + 1)
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i)
+    }
+
+    if ((props.currentPage || 1) < totalPages.value - 2) pages.push('...')
+    if (totalPages.value > 1) pages.push(totalPages.value)
+  }
+
+  return pages
+}
 </script>
 
 <template>
-  <div class="rounded-xl sm:rounded-[30px] bg-white shadow-[0px_10px_60px_0px_rgba(226,236,249,0.5)] overflow-hidden">
+  <div class="border-none bg-white/80 shadow-xl backdrop-blur-sm overflow-hidden rounded-lg">
     <div class="overflow-x-auto">
-      <Table class="min-w-[600px]">
+      <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead class="w-[100px] text-center font-semibold">Code</TableHead>
-            <TableHead class="text-center font-semibold">Date</TableHead>
-            <TableHead class="text-center font-semibold">Référence Facture</TableHead>
-            <TableHead class="text-center font-semibold">Montant</TableHead>
-            <TableHead class="w-[100px] text-center font-semibold">Action</TableHead>
+          <TableRow class="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200">
+            <TableHead class="font-semibold text-slate-700">Code</TableHead>
+            <TableHead class="font-semibold text-slate-700">Date</TableHead>
+            <TableHead class="font-semibold text-slate-700">Référence Facture</TableHead>
+            <TableHead class="text-right font-semibold text-slate-700">Montant</TableHead>
+            <TableHead class="text-center font-semibold text-slate-700">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <template v-if="loading">
-            <TableRow v-for="i in (pageSize || 8)" :key="i">
-              <TableCell class="text-center"><Skeleton class="h-4 w-12 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-32 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-28 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-8 w-8 mx-auto" /></TableCell>
+            <TableRow v-for="i in (pageSize || 8)" :key="i" class="hover:bg-slate-50/50">
+              <TableCell><Skeleton class="h-4 w-full" /></TableCell>
+              <TableCell><Skeleton class="h-4 w-full" /></TableCell>
+              <TableCell><Skeleton class="h-4 w-full" /></TableCell>
+              <TableCell><Skeleton class="h-4 w-full" /></TableCell>
+              <TableCell><Skeleton class="h-8 w-8 mx-auto" /></TableCell>
             </TableRow>
           </template>
-          <template v-else-if="displayedEncaissements.length > 0">
+          <template v-else-if="displayedEncaissements.length === 0">
+            <TableRow>
+              <TableCell colspan="5" class="h-32 text-center">
+                <div class="flex flex-col items-center justify-center text-slate-400">
+                  <Wallet class="h-12 w-12 mb-2 opacity-50" />
+                  <p class="text-sm font-medium">Aucun encaissement trouvé</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          </template>
+          <template v-else>
             <TableRow
               v-for="encaissement in displayedEncaissements"
               :key="encaissement.id"
-              class="hover:bg-gray-50"
+              class="transition-colors hover:bg-green-50/50"
             >
-              <TableCell class="text-center font-medium">{{ encaissement.code }}</TableCell>
-              <TableCell class="text-center text-muted-foreground">{{ formatDate(encaissement.date) }}</TableCell>
-              <TableCell class="text-center text-muted-foreground">{{ encaissement.referenceFacture }}</TableCell>
-              <TableCell class="text-center font-medium text-green-600">
+              <TableCell class="font-medium text-slate-900">{{ encaissement.code }}</TableCell>
+              <TableCell class="text-slate-600">{{ formatDate(encaissement.date) }}</TableCell>
+              <TableCell class="text-slate-600">{{ encaissement.reference_facture }}</TableCell>
+              <TableCell class="text-right font-bold text-green-600">
                 {{ formatMontant(encaissement.montant) }}
               </TableCell>
               <TableCell class="text-center">
@@ -100,12 +138,12 @@ const paginationInfo = computed(() => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="w-[130px]">
-                    <DropdownMenuItem @select="emit('view', encaissement)" class="cursor-pointer">
+                    <DropdownMenuItem @click="emit('view', encaissement)" class="cursor-pointer">
                       <Eye class="mr-2 h-4 w-4" />
                       <span>Consulter</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @select="emit('delete', encaissement)"
+                      @click="emit('delete', encaissement)"
                       class="cursor-pointer text-red-600 focus:text-red-600"
                     >
                       <Trash2 class="mr-2 h-4 w-4" />
@@ -116,22 +154,55 @@ const paginationInfo = computed(() => {
               </TableCell>
             </TableRow>
           </template>
-          <template v-else>
-            <TableRow>
-              <TableCell colspan="5" class="text-center text-muted-foreground py-8">
-                Aucun encaissement trouvé
-              </TableCell>
-            </TableRow>
-          </template>
         </TableBody>
       </Table>
     </div>
 
-    <!-- Pagination info -->
-    <div class="px-4 sm:px-[38px] py-4 sm:py-[30px] border-t">
-      <p class="text-xs sm:text-[14px] font-medium text-[#B5B7C0]" style="font-family: Poppins">
+    <!-- Pagination -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 sm:px-6 py-4 border-t border-slate-200">
+      <p class="text-xs sm:text-sm font-medium text-slate-600">
         {{ paginationInfo }}
       </p>
+
+      <div class="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          @click="emit('pageChange', (currentPage || 1) - 1)"
+          :disabled="(currentPage || 1) === 1"
+          class="h-[26px] w-[26px] p-0 rounded-[4px]"
+        >
+          &lt;
+        </Button>
+
+        <template v-for="(page, index) in getPageNumbers()" :key="index">
+          <span v-if="page === '...'" class="px-2 text-[12px] text-slate-600">...</span>
+          <Button
+            v-else
+            variant="outline"
+            size="sm"
+            @click="emit('pageChange', page as number)"
+            :class="[
+              'h-[26px] w-[26px] p-0 rounded-[4px] text-[12px] font-medium',
+              (currentPage || 1) === page
+                ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
+                : 'hover:bg-slate-100'
+            ]"
+          >
+            {{ page }}
+          </Button>
+        </template>
+
+        <Button
+          variant="outline"
+          size="sm"
+          @click="emit('pageChange', (currentPage || 1) + 1)"
+          :disabled="(currentPage || 1) === totalPages"
+          class="h-[26px] w-[26px] p-0 rounded-[4px]"
+        >
+          &gt;
+        </Button>
+      </div>
     </div>
   </div>
 </template>

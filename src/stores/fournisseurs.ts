@@ -361,6 +361,24 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
   }
 
   /**
+   * Récupérer l'historique des paiements d'un fournisseur
+   */
+  const fetchSupplierPayments = async (supplierId: number): Promise<SupplierPayment[]> => {
+    loading.value = true
+    error.value = null
+    try {
+      const payments = await suppliersApi.fetchSupplierPayments(supplierId)
+      return payments
+    } catch (e) {
+      error.value = 'Erreur lors du chargement de l\'historique des paiements'
+      console.error(e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
    * Réinitialiser le store
    */
   const reset = () => {
@@ -395,6 +413,7 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
     // Actions - Dettes
     fetchDebts,
     createPayment,
+    fetchSupplierPayments,
     // Actions - Export/Import
     exportExcel,
     exportPdf,

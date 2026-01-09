@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
-import { User, DollarSign, Calendar } from 'lucide-vue-next'
+import { User, DollarSign, Calendar, Hash } from 'lucide-vue-next'
 import type { CompteFournisseur } from '@/stores/fournisseurs'
 import { useFournisseursStore } from '@/stores/fournisseurs'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -39,6 +39,12 @@ const formData = ref({
 const selectedFournisseurName = computed(() => {
   const fournisseur = fournisseursStore.fournisseurs.find(f => f.id === formData.value.fournisseur_id)
   return fournisseur?.name || ''
+})
+
+// Obtenir le code du fournisseur sélectionné
+const selectedFournisseurCode = computed(() => {
+  const fournisseur = fournisseursStore.fournisseurs.find(f => f.id === formData.value.fournisseur_id)
+  return fournisseur?.supplier_code || ''
 })
 
 onMounted(() => {
@@ -88,21 +94,41 @@ const handleClose = () => {
 <template>
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent class="w-[95vw] sm:w-auto max-w-[600px] p-0 gap-0 border border-[#0072C1] rounded-[10px] max-h-[90vh] overflow-y-auto">
-      <div class="relative px-4 sm:px-[47px] pt-[27px] pb-[20px]">
-        <div class="flex items-center gap-3 sm:gap-5 mb-4">
-          <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#FBFBFB] border border-[#BABABA] flex items-center justify-center">
-            <DollarSign class="w-4 h-4 sm:w-[21px] sm:h-[21px] text-gray-500" />
+      <div class="relative px-4 sm:px-[47px] pt-[18px] pb-[12px]">
+        <div class="flex items-center gap-3 sm:gap-5 mb-3">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#FBFBFB] border border-[#BABABA] flex items-center justify-center">
+            <DollarSign class="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
           </div>
-          <h2 class="text-lg sm:text-[21.76px] font-bold leading-[1.219] text-[#535353]" style="font-family: Montserrat">
+          <h2 class="text-base sm:text-lg font-bold leading-[1.219] text-[#535353]" style="font-family: Montserrat">
             Nouveau compte fournisseur
           </h2>
         </div>
       </div>
 
       <form @submit.prevent="handleSubmit" class="px-4 sm:px-[47px]">
+        <!-- Code Fournisseur -->
+        <div class="mb-[8px]">
+          <label for="code_fournisseur" class="block text-[16px] font-normal leading-[1.4] text-[#0E1420] mb-[5px]" style="font-family: 'Palanquin Dark'">
+            Code fournisseur * :
+          </label>
+          <div class="relative">
+            <Hash class="absolute left-[7px] top-1/2 -translate-y-1/2 h-6 w-6 text-[#616161]" />
+            <Input
+              id="code_fournisseur"
+              :value="selectedFournisseurCode"
+              type="text"
+              :disabled="true"
+              readonly
+              placeholder="Sélectionnez un fournisseur"
+              class="h-[34px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14px] bg-gray-50 cursor-not-allowed opacity-60"
+              style="font-family: 'Palanquin Dark'"
+            />
+          </div>
+        </div>
+
         <!-- Fournisseur -->
-        <div class="mb-[10px]">
-          <label for="fournisseur" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+        <div class="mb-[8px]">
+          <label for="fournisseur" class="block text-[16px] font-normal leading-[1.4] text-[#0E1420] mb-[5px]" style="font-family: 'Palanquin Dark'">
             Fournisseur * :
           </label>
           <Select
@@ -110,7 +136,7 @@ const handleClose = () => {
             @update:model-value="handleFournisseurChange"
             :disabled="loading"
           >
-            <SelectTrigger class="h-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px]" style="font-family: 'Palanquin Dark'">
+            <SelectTrigger class="h-[34px] border-[#BEBEBE] rounded-[10px] text-[14px]" style="font-family: 'Palanquin Dark'">
               <User class="h-5 w-5 text-[#616161] mr-2" />
               <SelectValue placeholder="Sélectionner un fournisseur" />
             </SelectTrigger>
@@ -129,8 +155,8 @@ const handleClose = () => {
         </div>
 
         <!-- Montant facture -->
-        <div class="mb-[10px]">
-          <label for="montant_facture" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+        <div class="mb-[8px]">
+          <label for="montant_facture" class="block text-[16px] font-normal leading-[1.4] text-[#0E1420] mb-[5px]" style="font-family: 'Palanquin Dark'">
             Montant facture * :
           </label>
           <div class="relative">
@@ -144,15 +170,15 @@ const handleClose = () => {
               placeholder="Ex : 250000"
               required
               :disabled="loading"
-              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
+              class="h-[34px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14px] placeholder:text-[rgba(120,120,120,0.48)]"
               style="font-family: 'Palanquin Dark'"
             />
           </div>
         </div>
 
         <!-- Date facture -->
-        <div class="mb-[10px]">
-          <label for="date_facture" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+        <div class="mb-[8px]">
+          <label for="date_facture" class="block text-[16px] font-normal leading-[1.4] text-[#0E1420] mb-[5px]" style="font-family: 'Palanquin Dark'">
             Date facture * :
           </label>
           <div class="relative">
@@ -163,15 +189,15 @@ const handleClose = () => {
               type="date"
               required
               :disabled="loading"
-              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px]"
+              class="h-[34px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14px]"
               style="font-family: 'Palanquin Dark'"
             />
           </div>
         </div>
 
         <!-- Montant encaissement -->
-        <div class="mb-[10px]">
-          <label for="montant_encaissement" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+        <div class="mb-[8px]">
+          <label for="montant_encaissement" class="block text-[16px] font-normal leading-[1.4] text-[#0E1420] mb-[5px]" style="font-family: 'Palanquin Dark'">
             Montant encaissement :
           </label>
           <div class="relative">
@@ -184,15 +210,15 @@ const handleClose = () => {
               step="1"
               placeholder="Ex : 150000"
               :disabled="loading"
-              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px] placeholder:text-[rgba(120,120,120,0.48)]"
+              class="h-[34px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14px] placeholder:text-[rgba(120,120,120,0.48)]"
               style="font-family: 'Palanquin Dark'"
             />
           </div>
         </div>
 
         <!-- Date encaissement -->
-        <div class="mb-[15px]">
-          <label for="date_encaissement" class="block text-[18.76px] font-normal leading-[1.811] text-[#0E1420] mb-[7px]" style="font-family: 'Palanquin Dark'">
+        <div class="mb-[10px]">
+          <label for="date_encaissement" class="block text-[16px] font-normal leading-[1.4] text-[#0E1420] mb-[5px]" style="font-family: 'Palanquin Dark'">
             Date encaissement :
           </label>
           <div class="relative">
@@ -202,18 +228,18 @@ const handleClose = () => {
               v-model="formData.date_encaissement"
               type="date"
               :disabled="loading"
-              class="h-[37px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14.76px]"
+              class="h-[34px] w-full pl-[37px] border-[#BEBEBE] rounded-[10px] text-[14px]"
               style="font-family: 'Palanquin Dark'"
             />
           </div>
         </div>
 
         <!-- Bouton Sauver -->
-        <div class="pb-[37px]">
+        <div class="pb-[20px]">
           <Button
             type="submit"
             :disabled="loading || !formData.fournisseur_id || !formData.montant_facture || !formData.date_facture"
-            class="w-full h-[37px] bg-[#0769CF] hover:bg-[#0558b0] text-white rounded-[10px] text-[14.76px] font-bold uppercase"
+            class="w-full h-[34px] bg-[#0769CF] hover:bg-[#0558b0] text-white rounded-[10px] text-[14px] font-bold uppercase"
             style="font-family: Montserrat"
           >
             {{ loading ? 'ENREGISTREMENT...' : 'SAUVER' }}

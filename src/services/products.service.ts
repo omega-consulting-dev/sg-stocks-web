@@ -8,12 +8,6 @@ const exportExcel = () : Promise<AxiosResponse<any>> => {
     })
 }
 
-const exportCSV = () : Promise<AxiosResponse<any>> => {
-    return Axios.get('/v1/products/products/export/', {
-        responseType: 'blob'
-    })
-}
-
 const exportPdf = () : Promise<AxiosResponse<any>> => {
     return Axios.get('/v1/products/products/export_pdf/', {
         responseType: 'blob'
@@ -26,7 +20,6 @@ const importExcel = (file: File) : Promise<AxiosResponse<any>> => {
 
 export const ProductServices = {
     exportExcel,
-    exportCSV,
     exportPdf,
     importExcel,
 }

@@ -1,0 +1,899 @@
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAchatsStore } from '@/stores/achats'
+import { useProductsStore } from '@/stores/products'
+import { useFournisseursStore } from '@/stores/fournisseurs'
+import { useStoresStore } from '@/stores/stores.store'
+import { useUserStore } from '@/stores/user'
+import { useStoreAssignment } from '@/composables/useStoreAssignment'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Upload, Users, Package, Trash2, X, Store } from 'lucide-vue-next'
+import FournisseurEditForm from '@/components/fournisseurs/FournisseurEditForm.vue'
+import ProductForm from '@/components/products/ProductForm.vue'
+import type { SupplierDetail } from '@/stores/fournisseurs'
+import type { Product } from '@/stores/products'
+
+interface ProduitAjoute {
+  id: number
+  product_id: number
+  nom: string
+  enStock: number
+  quantiteAjoutee: number
+  total: number
+  selected: boolean
+}
+
+const router = useRouter()
+const route = useRoute()
+const achatsStore = useAchatsStore()
+const productsStore = useProductsStore()
+const fournisseursStore = useFournisseursStore()
+const storesStore = useStoresStore()
+const userStore = useUserStore()
+
+// Messages de notification
+const successMessage = ref('')
+const errorMessage = ref('')
+
+// Composable pour l'assignation de magasin
+const { shouldShowStoreSelector, getDefaultStoreId, getDefaultStore } = useStoreAssignment()
+
+// Debug temporaire
+console.log('🔍 Debug Store Assignment:', {
+  shouldShowStoreSelector: shouldShowStoreSelector.value,
+  getDefaultStoreId: getDefaultStoreId.value,
+  getDefaultStore: getDefaultStore.value,
+  userData: {
+    user: userStore.user,
+    defaultStore: userStore.defaultStore,
+    isStoreRestricted: userStore.isStoreRestricted
+  }
+})
+
+const editingId = ref<number | null>(null)
+const isEditMode = computed(() => editingId.value !== null)
+
+const numeroPiece = ref('')
+const intitule = ref('')
+const dateAchat = ref(new Date().toISOString().split('T')[0])
+const montantFacture = ref<number | null>(null)
+const naturePayement = ref('')
+const fournisseurId = ref<number | null>(null)
+const montantVerse = ref<number | null>(null)
+const dateLimiteReglement = ref('')
+const storeId = ref<number | null>(getDefaultStoreId.value) // Magasin sélectionné (auto-assigné pour utilisateurs restreints)
+const deliveryReference = ref('') // Référence du bon de livraison
+const unitCost = ref<number | null>(null) // Prix unitaire
+const pieceJointeName = ref('')
+const produitSelectionne = ref<number | null>(null)
+const quantiteAjoutee = ref<number | null>(null)
+const produitsAjoutes = ref<ProduitAjoute[]>([])
+
+// Dialog de confirmation
+const isConfirmDialogOpen = ref(false)
+
+// Modal states
+const showFournisseurModal = ref(false)
+const showProductModal = ref(false)
+
+// Erreurs de validation par champ
+const errors = ref({
+  storeId: '',
+  numeroPiece: '',
+  intitule: '',
+  produitsAjoutes: '',
+  montantVerse: '',
+  naturePayement: '',
+  dateLimiteReglement: ''
+})
+
+// Fonction pour effacer une erreur spécifique
+const clearError = (field: keyof typeof errors.value) => {
+  errors.value[field] = ''
+}
+
+const montantTotal = computed(() => montantFacture.value || 0)
+const montantPaye = computed(() => montantVerse.value || 0)
+const montantRestant = computed(() => montantTotal.value - montantPaye.value)
+const hasSelectedProducts = computed(() => produitsAjoutes.value.some(p => p.selected))
+const canAddProduct = computed(() => produitSelectionne.value !== null && quantiteAjoutee.value !== null && quantiteAjoutee.value > 0)
+
+onMounted(async () => {
+  if (productsStore.products.length === 0) await productsStore.fetchProducts()
+  if (fournisseursStore.fournisseurs.length === 0) await fournisseursStore.fetchFournisseurs()
+  if (storesStore.stores.length === 0) await storesStore.fetchStores()
+
+  // Vérifier si on est en mode édition
+  const id = route.query.id
+  const receiptNumber = route.query.receipt
+  if (receiptNumber) {
+    // Édition d'un bon complet (plusieurs produits)
+    await loadBonData(receiptNumber as string)
+  } else if (id) {
+    // Édition d'un achat individuel
+    editingId.value = Number(id)
+    await loadAchatData(editingId.value)
+  } else {
+    // Générer un nouveau numéro de pièce depuis le backend
+    console.log('Récupération du prochain numéro de pièce depuis le backend...')
+    try {
+      numeroPiece.value = await achatsStore.getNextReceiptNumber()
+      console.log('Numéro de pièce généré:', numeroPiece.value)
+    } catch (error) {
+      console.error('Erreur lors de la récupération du numéro:', error)
+      // Fallback: générer localement si l'API échoue
+      const receiptNumbers = await achatsStore.fetchAllReferences()
+      const existingNumbers = receiptNumbers
+        .filter(r => r?.startsWith('RECEIPT-'))
+        .map(r => parseInt(r.replace('RECEIPT-', '')) || 0)
+      const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0
+      numeroPiece.value = `RECEIPT-${(maxNumber + 1).toString().padStart(3, '0')}`
+    }
+  }
+})
+
+// Charger les données d'un bon complet (tous les produits)
+const loadBonData = async (receiptNumber: string) => {
+  try {
+    // Récupérer tous les achats avec ce numéro de bon
+    const achatsWithReceipt = achatsStore.achats.filter(a => a.receipt_number === receiptNumber)
+
+    if (achatsWithReceipt.length === 0) {
+      await achatsStore.fetchAchats()
+      const foundAchats = achatsStore.achats.filter(a => a.receipt_number === receiptNumber)
+      if (foundAchats.length === 0) {
+        alert('Bon d\'entrée non trouvé')
+        router.back()
+        return
+      }
+      fillFormWithBon(foundAchats)
+    } else {
+      fillFormWithBon(achatsWithReceipt)
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement du bon:', error)
+    alert('Erreur lors du chargement des données')
+    router.back()
+  }
+}
+
+// Charger les données d'une entrée existante
+const loadAchatData = async (id: number) => {
+  try {
+    const achat = achatsStore.achats.find(a => a.id === id)
+    if (!achat) {
+      await achatsStore.fetchAchats()
+      const foundAchat = achatsStore.achats.find(a => a.id === id)
+      if (!foundAchat) {
+        alert('Entrée non trouvée')
+        router.back()
+        return
+      }
+      fillFormWithAchat(foundAchat)
+    } else {
+      fillFormWithAchat(achat)
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement:', error)
+    alert('Erreur lors du chargement des données')
+    router.back()
+  }
+}
+
+// Remplir le formulaire avec tous les produits d'un bon
+const fillFormWithBon = (achats: any[]) => {
+  if (achats.length === 0) return
+
+  const firstAchat = achats[0]
+  console.log('Données du bon reçues:', achats)
+  console.log('Premier achat:', firstAchat)
+
+  // Remplir les champs communs depuis le premier produit
+  numeroPiece.value = firstAchat.receipt_number || ''
+  storeId.value = firstAchat.store
+  deliveryReference.value = firstAchat.reference || ''
+  intitule.value = firstAchat.notes || ''
+  dateAchat.value = firstAchat.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
+  fournisseurId.value = firstAchat.supplier || null
+
+  // Calculer le montant total de la facture (somme de tous les invoice_amount)
+  const totalInvoiceAmount = achats.reduce((sum, a) => sum + (a.invoice_amount || 0), 0)
+  montantFacture.value = totalInvoiceAmount > 0 ? totalInvoiceAmount : null
+
+  // Remplir les informations de paiement si disponibles
+  if (firstAchat.payment_info) {
+    console.log('Payment info trouvé:', firstAchat.payment_info)
+    montantVerse.value = firstAchat.payment_info.payment_amount || null
+    dateLimiteReglement.value = firstAchat.payment_info.due_date || ''
+    naturePayement.value = firstAchat.payment_info.payment_method || ''
+    if (firstAchat.payment_info.payment_date) {
+      dateAchat.value = firstAchat.payment_info.payment_date
+    }
+  }
+
+  // Charger tous les produits du bon
+  produitsAjoutes.value = []
+  achats.forEach(achat => {
+    const product = productsStore.products.find(p => p.id === achat.product)
+    if (product) {
+      // Le stock actuel inclut déjà la quantité ajoutée, donc on la soustrait pour avoir le stock AVANT l'entrée
+      const stockActuel = Number(product.current_stock || 0)
+      const quantiteAjoutee = Number(achat.quantity)
+      const stockAvant = stockActuel - quantiteAjoutee
+
+      produitsAjoutes.value.push({
+        id: achat.id || Date.now() + Math.random(),
+        product_id: product.id,
+        nom: product.name,
+        enStock: stockAvant,
+        quantiteAjoutee: quantiteAjoutee,
+        total: stockActuel,
+        selected: false,
+      })
+    }
+  })
+
+  console.log('Produits chargés:', produitsAjoutes.value.length)
+}
+
+// Remplir le formulaire avec les données existantes
+const fillFormWithAchat = (achat: any) => {
+  console.log('Données achat reçues:', achat)
+  console.log('Payment info:', achat.payment_info)
+  console.log('Reference:', achat.reference)
+  console.log('Unit cost:', achat.unit_cost)
+
+  numeroPiece.value = achat.receipt_number || achat.reference || ''
+  storeId.value = achat.store
+  deliveryReference.value = achat.reference || ''
+  intitule.value = achat.notes || ''
+  dateAchat.value = achat.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
+  fournisseurId.value = achat.supplier || null
+  unitCost.value = achat.unit_cost || null
+
+  // Remplir le montant de la facture depuis le champ invoice_amount
+  montantFacture.value = achat.invoice_amount || null
+
+  // Remplir les informations de paiement si disponibles
+  if (achat.payment_info) {
+    console.log('Payment info trouvé:', achat.payment_info)
+    montantVerse.value = achat.payment_info.payment_amount || null
+    dateLimiteReglement.value = achat.payment_info.due_date || ''
+    naturePayement.value = achat.payment_info.payment_method || ''
+    if (achat.payment_info.payment_date) {
+      dateAchat.value = achat.payment_info.payment_date
+    }
+  }
+
+  console.log('Champs remplis:', {
+    numeroPiece: numeroPiece.value,
+    deliveryReference: deliveryReference.value,
+    montantFacture: montantFacture.value,
+    montantVerse: montantVerse.value,
+    dateLimiteReglement: dateLimiteReglement.value,
+    naturePayement: naturePayement.value
+  })
+
+  // Ajouter le produit à la liste
+  const product = productsStore.products.find(p => p.id === achat.product)
+  if (product) {
+    // Le stock actuel inclut déjà la quantité ajoutée, donc on la soustrait pour avoir le stock AVANT l'entrée
+    const stockActuel = Number(product.current_stock || 0)
+    const quantiteAjoutee = Number(achat.quantity)
+    const stockAvant = stockActuel - quantiteAjoutee
+
+    produitsAjoutes.value = [{
+      id: Date.now(),
+      product_id: product.id,
+      nom: product.name,
+      enStock: stockAvant,
+      quantiteAjoutee: quantiteAjoutee,
+      total: stockActuel,
+      selected: false,
+    }]
+  }
+}
+
+// Handle fournisseur creation
+const handleFournisseurCreated = async (fournisseur: SupplierDetail) => {
+  await fournisseursStore.fetchFournisseurs()
+  fournisseurId.value = fournisseur.id
+  showFournisseurModal.value = false
+}
+
+// Handle product creation
+const handleProductCreated = async (product: Product) => {
+  await productsStore.fetchProducts()
+  produitSelectionne.value = product.id
+  showProductModal.value = false
+}
+
+const ajouterProduit = () => {
+  if (!canAddProduct.value) return
+  const product = productsStore.products.find(p => p.id === produitSelectionne.value)
+  if (!product) return
+  const existing = produitsAjoutes.value.find(p => p.product_id === product.id)
+  if (existing) {
+    existing.quantiteAjoutee = Number(existing.quantiteAjoutee) + Number(quantiteAjoutee.value!)
+    existing.total = Number(existing.enStock) + Number(existing.quantiteAjoutee)
+  } else {
+    const stockActuel = Number(product.current_stock || 0)
+    const quantite = Number(quantiteAjoutee.value!)
+
+    produitsAjoutes.value.push({
+      id: Date.now(),
+      product_id: product.id,
+      nom: product.name,
+      enStock: stockActuel,
+      quantiteAjoutee: quantite,
+      total: stockActuel + quantite,
+      selected: false,
+    })
+  }
+  produitSelectionne.value = null
+  quantiteAjoutee.value = null
+}
+
+const supprimerProduit = (id: number) => {
+  produitsAjoutes.value = produitsAjoutes.value.filter(p => p.id !== id)
+}
+
+const supprimerSelectionnes = () => {
+  produitsAjoutes.value = produitsAjoutes.value.filter(p => !p.selected)
+}
+
+const toggleProduitSelection = (id: number, checked: boolean) => {
+  const p = produitsAjoutes.value.find(p => p.id === id)
+  if (p) p.selected = checked
+}
+
+// Réinitialiser le formulaire
+const resetForm = async () => {
+  // Réinitialiser tous les champs
+  intitule.value = ''
+  montantFacture.value = null
+  naturePayement.value = ''
+  fournisseurId.value = null
+  montantVerse.value = null
+  dateLimiteReglement.value = ''
+  dateAchat.value = new Date().toISOString().split('T')[0]
+  deliveryReference.value = ''
+  unitCost.value = null
+  produitsAjoutes.value = []
+  produitSelectionne.value = null
+  quantiteAjoutee.value = null
+
+  // Réinitialiser les erreurs
+  Object.keys(errors.value).forEach(key => {
+    errors.value[key as keyof typeof errors.value] = ''
+  })
+
+  // Générer un nouveau numéro de pièce
+  try {
+    numeroPiece.value = await achatsStore.getNextReceiptNumber()
+    console.log('Nouveau numéro de pièce généré:', numeroPiece.value)
+  } catch (error) {
+    console.error('Erreur lors de la génération du numéro:', error)
+    const receiptNumbers = await achatsStore.fetchAllReferences()
+    const existingNumbers = receiptNumbers
+      .filter(r => r?.startsWith('RECEIPT-'))
+      .map(r => parseInt(r.replace('RECEIPT-', '')) || 0)
+    const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0
+    numeroPiece.value = `RECEIPT-${(maxNumber + 1).toString().padStart(3, '0')}`
+  }
+}
+
+const handleSubmit = async () => {
+  console.log('🔍 handleSubmit appelé')
+  console.log('📊 isEditMode:', isEditMode.value)
+  console.log('🆔 editingId:', editingId.value)
+
+  // Réinitialiser toutes les erreurs
+  Object.keys(errors.value).forEach(key => {
+    errors.value[key as keyof typeof errors.value] = ''
+  })
+
+  let hasError = false
+
+  // Validation de base
+  if (!storeId.value) {
+    errors.value.storeId = 'Le magasin est obligatoire'
+    hasError = true
+  }
+
+  if (!numeroPiece.value.trim()) {
+    errors.value.numeroPiece = 'Le numéro de pièce est obligatoire'
+    hasError = true
+  }
+
+  if (!intitule.value.trim()) {
+    errors.value.intitule = 'L\'intitulé est obligatoire'
+    hasError = true
+  }
+
+  if (produitsAjoutes.value.length === 0) {
+    errors.value.produitsAjoutes = 'Veuillez ajouter au moins un produit'
+    hasError = true
+  }
+
+  // Si montant facture est renseigné, certains champs deviennent obligatoires
+  if (montantFacture.value !== null && montantFacture.value > 0) {
+    if (montantVerse.value === null) {
+      errors.value.montantVerse = 'Le montant versé est obligatoire lorsque le montant de la facture est renseigné'
+      hasError = true
+    }
+    if (!naturePayement.value) {
+      errors.value.naturePayement = 'La nature du paiement est obligatoire lorsque le montant de la facture est renseigné'
+      hasError = true
+    }
+    if (!dateLimiteReglement.value && montantRestant.value > 0) {
+      errors.value.dateLimiteReglement = 'La date limite de règlement est obligatoire en cas de crédit (montant restant > 0)'
+      hasError = true
+    }
+  }
+
+  // Si des erreurs, ne pas continuer
+  if (hasError) {
+    return
+  }
+
+  // Ouvrir le dialog de confirmation
+  isConfirmDialogOpen.value = true
+}
+
+const confirmSubmit = async () => {
+  isConfirmDialogOpen.value = false
+
+  try {
+    // Mode édition : mise à jour
+    if (isEditMode.value && editingId.value) {
+      console.log('✏️ Mode ÉDITION détecté')
+      const p = produitsAjoutes.value[0] // Pour l'instant, on gère un seul produit
+      const payload = {
+        product: p.product_id,
+        store: storeId.value,
+        quantity: p.quantiteAjoutee,
+        receipt_number: numeroPiece.value,
+        reference: deliveryReference.value,
+        notes: intitule.value,
+        supplier: fournisseurId.value || undefined,
+        unit_cost: unitCost.value || undefined,
+        invoice_amount: montantFacture.value || undefined,
+        movement_type: 'in',
+        date: dateAchat.value,
+        is_debt: montantRestant.value > 0,
+        due_date: dateLimiteReglement.value || undefined,
+        payment_amount: montantVerse.value ?? 0,
+        payment_date: dateAchat.value,
+        payment_method: naturePayement.value || undefined,
+      }
+
+      await achatsStore.updateAchat(editingId.value, payload)
+      console.log('✅ Modification réussie')
+      router.push('/achats/entree-stock')
+      // Alerte après redirection
+      setTimeout(() => {
+        alert('✅ Entrée en stock modifiée avec succès !')
+      }, 100)
+      return
+    }
+
+    // Mode création
+    console.log('➕ Mode CRÉATION détecté')
+    console.log(`📦 Création d'un bon avec ${produitsAjoutes.value.length} produits`)
+
+    for (const p of produitsAjoutes.value) {
+      const payload = {
+        product: p.product_id,
+        store: storeId.value || getDefaultStoreId.value,
+        quantity: p.quantiteAjoutee,
+        receipt_number: numeroPiece.value,  // Même numéro pour tout le bon
+        reference: deliveryReference.value,
+        notes: intitule.value,
+        supplier: fournisseurId.value || undefined,
+        unit_cost: unitCost.value || undefined,
+        invoice_amount: montantFacture.value || undefined,
+        movement_type: 'in',
+        date: dateAchat.value,
+        // Gestion du paiement
+        is_debt: montantRestant.value > 0,
+        due_date: dateLimiteReglement.value || undefined,
+        payment_amount: montantVerse.value ?? 0,
+        payment_date: dateAchat.value,
+        payment_method: naturePayement.value || undefined,
+      }
+      console.log(`📤 Ajout produit ${p.nom}:`, payload.receipt_number)
+      await achatsStore.addAchat(payload)
+    }
+
+    // Réinitialiser le formulaire après succès
+    await resetForm()
+
+    // Message de succès
+    successMessage.value = `✅ ${produitsAjoutes.value.length} entrée(s) en stock créée(s) avec succès !`
+    setTimeout(() => {
+      successMessage.value = ''
+      router.push('/achats/entree-stock')
+    }, 2000)
+  } catch (error: any) {
+    console.error('❌ Erreur complète:', error)
+    console.error('📋 Réponse du serveur:', error.response?.data)
+    console.error('📌 Status:', error.response?.status)
+    console.error('📌 Headers:', error.response?.headers)
+
+    if (error.response?.data) {
+      // Vérifier si c'est HTML (erreur Django)
+      if (typeof error.response.data === 'string' && error.response.data.includes('<html>')) {
+        errorMessage.value = `Erreur serveur (${error.response.status}): Vérifiez les champs du formulaire`
+      } else if (typeof error.response.data === 'object') {
+        const messages = Object.entries(error.response.data)
+          .map(([field, msgs]: [string, any]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+          .join(', ')
+        errorMessage.value = `Erreur serveur: ${messages}`
+      } else {
+        errorMessage.value = `Erreur serveur: ${error.response.data}`
+      }
+    } else {
+      errorMessage.value = error.message || 'Erreur inconnue lors de l\'enregistrement'
+    }
+  }
+}
+
+const formatMontant = (n: number) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0 }).format(n)
+const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('fr-FR') : ''
+const handleFileUpload = (e: Event) => {
+  const f = (e.target as HTMLInputElement).files?.[0]
+  if (f) document.getElementById('file-upload')?.setAttribute('value', f.name)
+}
+</script>
+
+<template>
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto">
+      <!-- Header -->
+      <div class="bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between sticky top-0 z-10">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+            <Package class="w-4 h-4 text-slate-600" />
+          </div>
+          <h1 class="text-base font-semibold text-slate-900">
+            {{ isEditMode ? 'Modifier l\'Entrée en Stock' : 'Nouvelle Entrée en Stock' }}
+          </h1>
+        </div>
+        <button @click="router.back()" class="text-slate-400 hover:text-slate-600 transition-colors">
+          <X class="w-5 h-5" />
+        </button>
+      </div>
+
+      <!-- Messages de notification -->
+      <div v-if="successMessage" class="mx-5 mt-4 mb-2 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
+        <div class="flex-shrink-0 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">✓</div>
+        <p class="text-sm text-emerald-800 flex-1">{{ successMessage }}</p>
+        <button @click="successMessage = ''" class="text-emerald-600 hover:text-emerald-800">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+
+      <div v-if="errorMessage" class="mx-5 mt-4 mb-2 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+        <div class="flex-shrink-0 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">!</div>
+        <p class="text-sm text-red-800 flex-1">{{ errorMessage }}</p>
+        <button @click="errorMessage = ''" class="text-red-600 hover:text-red-800">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+
+      <!-- Form Content -->
+      <div class="p-5 space-y-4">
+        <!-- Section 1: Informations principales -->
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">N° de la piece (Obligatoire) :</label>
+            <Input v-model="numeroPiece" placeholder="No reference" class="h-9 text-xs border-slate-300 w-full bg-slate-50" readonly />
+            <p v-if="errors.numeroPiece" class="text-red-500 text-xs mt-1">{{ errors.numeroPiece }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Intitulé de l'opération (Obligatoire) :</label>
+            <Input v-model="intitule" placeholder="Ex : Achat de Merchandises" class="h-9 text-xs border-slate-300 w-full" @focus="clearError('intitule')" />
+            <p v-if="errors.intitule" class="text-red-500 text-xs mt-1">{{ errors.intitule }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Date de réalisation de l'achat</label>
+            <Input v-model="dateAchat" type="date" class="h-9 text-xs border-slate-300 w-full" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Montant de la facture <span class="text-slate-400">(Facultatif)</span> :</label>
+            <Input v-model.number="montantFacture" type="number" placeholder="Ex : 50000" class="h-9 text-xs border-slate-300 w-full" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              Nature du paiement <span v-if="!montantFacture" class="text-slate-400">(Facultatif)</span><span v-else class="text-red-500">*</span> :
+            </label>
+            <Select v-model="naturePayement" @update:modelValue="clearError('naturePayement')">
+              <SelectTrigger class="h-9 text-xs border-slate-300 w-full">
+                <SelectValue placeholder="Sélectionner une méthode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="especes">Espèces</SelectItem>
+                <SelectItem value="carte">Carte</SelectItem>
+                <SelectItem value="cheque">Chèque</SelectItem>
+                <SelectItem value="virement">Virement</SelectItem>
+              </SelectContent>
+            </Select>
+            <p v-if="errors.naturePayement" class="text-red-500 text-xs mt-1">{{ errors.naturePayement }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              Sélectionner le Fournisseur <span class="text-slate-400">(Facultatif)</span> :
+            </label>
+            <Select v-model="fournisseurId">
+              <SelectTrigger class="h-9 text-xs border-slate-300 w-full">
+                <SelectValue placeholder="Liste des Fournisseurs" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="f in fournisseursStore.fournisseurs" :key="f.id" :value="f.id">
+                  {{ f.name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              Montant Versé <span v-if="!montantFacture" class="text-slate-400">(Facultatif)</span><span v-else class="text-red-500">*</span> :
+            </label>
+            <Input v-model.number="montantVerse" type="number" placeholder="Ex : 30000" class="h-9 text-xs border-slate-300 w-full" @focus="clearError('montantVerse')" />
+            <p v-if="errors.montantVerse" class="text-red-500 text-xs mt-1">{{ errors.montantVerse }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              Date limite de règlement <span v-if="!montantFacture || montantRestant <= 0" class="text-slate-400">(Facultatif)</span><span v-else class="text-red-500">* (crédit)</span> :
+            </label>
+            <Input v-model="dateLimiteReglement" type="date" placeholder="JJ/mm/aaaa" class="h-9 text-xs border-slate-300 w-full" @focus="clearError('dateLimiteReglement')" />
+            <p v-if="errors.dateLimiteReglement" class="text-red-500 text-xs mt-1">{{ errors.dateLimiteReglement }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Le fournisseur n'existe pas encore ?</label>
+            <Button @click="showFournisseurModal = true" type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 font-medium">
+              Créer ici
+            </Button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <!-- Afficher le sélecteur uniquement pour les admin/superadmin -->
+          <div v-if="shouldShowStoreSelector">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Sélectionner le Store (magasin ou point de vente) :</label>
+            <Select v-model="storeId" @update:modelValue="clearError('storeId')">
+              <SelectTrigger class="h-9 text-xs border-slate-300 w-full">
+                <SelectValue placeholder="Liste des stores" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="store in storesStore.activeStores" :key="store.id" :value="store.id">
+                  {{ store.name }} - {{ store.store_type === 'retail' ? 'Point de vente' : store.store_type === 'warehouse' ? 'Entrepôt' : 'Mixte' }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p v-if="errors.storeId" class="text-red-500 text-xs mt-1">{{ errors.storeId }}</p>
+          </div>
+
+          <!-- Badge informatif pour les utilisateurs restreints -->
+          <div v-else>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Magasin assigné :</label>
+            <div class="flex items-center gap-2 h-9 px-3 bg-blue-50 border border-blue-200 rounded-md">
+              <Store class="w-4 h-4 text-blue-600" />
+              <span class="text-xs font-medium text-blue-900">{{ getDefaultStore?.name || 'Aucun magasin assigné' }}</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Référence du bon de livraison :</label>
+            <Input
+              v-model="deliveryReference"
+              type="text"
+              placeholder="Ex: BL-DELL-2025-001"
+              class="h-9 text-xs border-slate-300 w-full"
+            />
+          </div>
+        </div>
+
+        <!-- Separator -->
+        <div class="border-t border-slate-200 pt-4 mt-4">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+              <Package class="w-4 h-4 text-slate-600" />
+            </div>
+            <h2 class="text-base font-semibold text-slate-900">Contenue de l'achat</h2>
+            <button @click="router.back()" class="ml-auto text-slate-400 hover:text-slate-600">
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+
+          <!-- Add Product Section -->
+          <div class="space-y-3 mb-4">
+            <div class="grid grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1.5">Produit :</label>
+                <Select v-model="produitSelectionne">
+                  <SelectTrigger class="h-9 text-xs border-slate-300 w-full">
+                    <SelectValue placeholder="Liste des produits" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="p in productsStore.products" :key="p.id" :value="p.id">
+                      {{ p.name }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1.5">Le produit n'existe pas encore ?</label>
+                <Button @click="showProductModal = true" type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 font-medium">
+                  Créer ici
+                </Button>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1.5">Quantité ajoutée :</label>
+                <Input v-model.number="quantiteAjoutee" type="number" placeholder="Ex : 50" class="h-9 text-xs border-slate-300 w-full" min="1" />
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <Button @click="ajouterProduit" :disabled="!canAddProduct" class="bg-slate-800 hover:bg-slate-900 text-white h-9 px-8 text-xs font-semibold uppercase">
+                Ajouter
+              </Button>
+            </div>
+          </div>
+
+          <!-- Products Table -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-semibold text-slate-900">Liste des produits achetés</h3>
+              <button v-if="hasSelectedProducts" @click="supprimerSelectionnes" class="text-xs text-blue-600 hover:text-blue-800 underline">
+                Supprimer
+              </button>
+            </div>
+            <p v-if="errors.produitsAjoutes" class="text-red-500 text-xs mb-2">{{ errors.produitsAjoutes }}</p>
+            <div class="border border-slate-200 rounded overflow-hidden">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="bg-blue-600 text-white">
+                    <th class="px-3 py-2 text-left text-[11px] font-semibold w-10">
+                      <Checkbox class="border-white" />
+                    </th>
+                    <th class="px-3 py-2 text-center text-[11px] font-semibold w-32">N° Pièce</th>
+                    <th class="px-3 py-2 text-left text-[11px] font-semibold">Produit</th>
+                    <th class="px-3 py-2 text-center text-[11px] font-semibold w-20">En stock</th>
+                    <th class="px-3 py-2 text-center text-[11px] font-semibold w-20">Ajoutée</th>
+                    <th class="px-3 py-2 text-center text-[11px] font-semibold w-20">Total</th>
+                    <th class="px-3 py-2 text-center text-[11px] font-semibold w-16">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-slate-50">
+                  <tr v-if="produitsAjoutes.length === 0">
+                    <td colspan="7" class="px-3 py-6 text-center text-slate-500 text-xs">
+                      Aucun produit ajouté
+                    </td>
+                  </tr>
+                  <tr v-for="p in produitsAjoutes" :key="p.id" class="border-b border-slate-200 hover:bg-white transition-colors">
+                    <td class="px-3 py-2">
+                      <Checkbox :checked="p.selected" @update:checked="(c) => toggleProduitSelection(p.id, c === true)" />
+                    </td>
+                    <td class="px-3 py-2 text-center text-blue-600 font-mono text-[11px] font-semibold">{{ numeroPiece }}</td>
+                    <td class="px-3 py-2 font-medium text-slate-900">{{ p.nom }}</td>
+                    <td class="px-3 py-2 text-center text-slate-600">{{ p.enStock }}</td>
+                    <td class="px-3 py-2 text-center font-semibold text-slate-900">{{ p.quantiteAjoutee }}</td>
+                    <td class="px-3 py-2 text-center font-semibold text-slate-900">{{ p.total }}</td>
+                    <td class="px-3 py-2 text-center">
+                      <button @click="supprimerProduit(p.id)" class="text-red-500 hover:text-red-700 inline-flex items-center justify-center w-6 h-6">
+                        <Trash2 class="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="border-t border-slate-200 pt-4 space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-sm font-semibold text-slate-900">Montant Total:</span>
+            <span class="text-lg font-bold text-emerald-600">{{ formatMontant(montantTotal) }}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-slate-700">Montant payé:</span>
+            <span class="text-lg font-semibold text-slate-600">{{ formatMontant(montantPaye) }}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm font-semibold text-slate-900">Montant Restant:</span>
+            <span class="text-lg font-bold text-red-600">{{ formatMontant(montantRestant) }}</span>
+          </div>
+          <p class="text-[10px] text-center text-slate-500 pt-1">avant le {{ formatDate(dateLimiteReglement || '04/06/2025') }}</p>
+        </div>
+
+        <!-- Action Button -->
+        <div class="flex justify-end pt-3 border-t border-slate-200">
+          <Button @click="handleSubmit" :disabled="achatsStore.loading" class="bg-blue-600 hover:bg-blue-700 text-white px-8 h-10 text-sm font-semibold uppercase">
+            {{ achatsStore.loading ? (isEditMode ? 'Modification...' : 'Validation...') : (isEditMode ? 'Modifier' : 'Valider') }}
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dialog de confirmation -->
+    <Dialog v-model:open="isConfirmDialogOpen">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ isEditMode ? 'Confirmer la modification' : 'Confirmer la validation' }}</DialogTitle>
+          <DialogDescription class="space-y-2 pt-2">
+            <span v-if="isEditMode">
+              Modifier cette entrée en stock ?
+            </span>
+            <span v-else>
+              Valider cette entrée en stock ?
+            </span>
+            <div class="bg-slate-50 p-3 rounded-md space-y-1.5 text-xs mt-2">
+              <div class="flex justify-between">
+                <span class="text-slate-600">N° Pièce:</span>
+                <span class="font-semibold text-slate-900">{{ numeroPiece }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-600">Produits:</span>
+                <span class="font-semibold text-slate-900">{{ produitsAjoutes.length }}</span>
+              </div>
+              <div v-if="montantFacture" class="flex justify-between">
+                <span class="text-slate-600">Montant:</span>
+                <span class="font-semibold text-slate-900">{{ montantFacture?.toLocaleString('fr-FR') }} FCFA</span>
+              </div>
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="gap-2">
+          <Button
+            variant="outline"
+            @click="isConfirmDialogOpen = false"
+            :disabled="achatsStore.loading"
+          >
+            Annuler
+          </Button>
+          <Button
+            @click="confirmSubmit"
+            :disabled="achatsStore.loading"
+            class="bg-blue-600 hover:bg-blue-700"
+          >
+            {{ achatsStore.loading ? (isEditMode ? 'Modification...' : 'Validation...') : (isEditMode ? 'Modifier' : 'Valider') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Modal Fournisseur -->
+    <FournisseurEditForm
+      :open="showFournisseurModal"
+      @update:open="showFournisseurModal = $event"
+      @saved="handleFournisseurCreated"
+    />
+
+    <ProductForm
+      :open="showProductModal"
+      @update:open="showProductModal = $event"
+      @submit="handleProductCreated"
+    />
+  </div>
+</template>

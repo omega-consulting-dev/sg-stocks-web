@@ -23,11 +23,7 @@ const loadingDetail = ref(false)
 // Computed pour afficher le nom
 const displayName = computed(() => {
   if (!fournisseurDetail.value) return ''
-  if (fournisseurDetail.value.display_name) return fournisseurDetail.value.display_name
-  if (fournisseurDetail.value.first_name) {
-    return `${fournisseurDetail.value.first_name} ${fournisseurDetail.value.last_name || ''}`.trim()
-  }
-  return fournisseurDetail.value.username
+  return fournisseurDetail.value.contact_person || fournisseurDetail.value.name || '-'
 })
 
 // Charger les détails quand on ouvre le dialog
@@ -91,7 +87,7 @@ const getRatingStars = (rating: number | null) => {
               Détails du fournisseur
             </h2>
             <p v-if="fournisseurDetail" class="text-sm text-gray-500">
-              Code: {{ fournisseurDetail.supplier_code || fournisseurDetail.username }}
+              Code: {{ fournisseurDetail.supplier_code }}
             </p>
           </div>
         </div>
@@ -118,9 +114,9 @@ const getRatingStars = (rating: number | null) => {
               <Building2 class="w-5 h-5 text-[#0769CF] mt-0.5 flex-shrink-0" />
               <div>
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Nom / Raison sociale</p>
-                <p class="text-[15px] font-medium text-[#292D32]">{{ displayName }}</p>
-                <p v-if="fournisseurDetail.supplier_company_name" class="text-sm text-gray-600">
-                  {{ fournisseurDetail.supplier_company_name }}
+                <p class="text-[15px] font-medium text-[#292D32]">{{ fournisseurDetail.name || '-' }}</p>
+                <p v-if="fournisseurDetail.contact_person" class="text-sm text-gray-600">
+                  Contact: {{ fournisseurDetail.contact_person }}
                 </p>
               </div>
             </div>
@@ -174,8 +170,8 @@ const getRatingStars = (rating: number | null) => {
                 <CreditCard class="w-5 h-5 text-[#0769CF] mt-0.5 flex-shrink-0" />
                 <div>
                   <p class="text-xs text-gray-500 uppercase tracking-wide">Solde</p>
-                  <p class="text-[15px] font-bold" :class="fournisseurDetail.supplier_balance > 0 ? 'text-red-600' : 'text-green-600'">
-                    {{ formatMontant(fournisseurDetail.supplier_balance) }}
+                  <p class="text-[15px] font-bold" :class="fournisseurDetail.balance > 0 ? 'text-red-600' : 'text-green-600'">
+                    {{ formatMontant(fournisseurDetail.balance) }}
                   </p>
                 </div>
               </div>
@@ -186,7 +182,7 @@ const getRatingStars = (rating: number | null) => {
                 <div>
                   <p class="text-xs text-gray-500 uppercase tracking-wide">Évaluation</p>
                   <p class="text-[15px] font-medium text-amber-500">
-                    {{ getRatingStars(fournisseurDetail.supplier_rating) }}
+                    {{ getRatingStars(fournisseurDetail.rating) }}
                   </p>
                 </div>
               </div>
@@ -200,7 +196,7 @@ const getRatingStars = (rating: number | null) => {
                 <div>
                   <p class="text-xs text-gray-500 uppercase tracking-wide">N° Fiscal</p>
                   <p class="text-[15px] font-medium text-[#292D32]">
-                    {{ fournisseurDetail.supplier_tax_id || '-' }}
+                    {{ fournisseurDetail.tax_id || '-' }}
                   </p>
                 </div>
               </div>
@@ -211,7 +207,7 @@ const getRatingStars = (rating: number | null) => {
                 <div>
                   <p class="text-xs text-gray-500 uppercase tracking-wide">Compte bancaire</p>
                   <p class="text-[15px] font-medium text-[#292D32]">
-                    {{ fournisseurDetail.supplier_bank_account || '-' }}
+                    {{ fournisseurDetail.bank_account || '-' }}
                   </p>
                 </div>
               </div>
@@ -237,7 +233,7 @@ const getRatingStars = (rating: number | null) => {
               >
                 {{ fournisseurDetail.is_active ? 'Actif' : 'Inactif' }}
               </span>
-              <span>Inscrit le {{ formatDate(fournisseurDetail.date_joined) }}</span>
+              <span>Inscrit le {{ formatDate(fournisseurDetail.created_at) }}</span>
             </div>
           </div>
         </template>

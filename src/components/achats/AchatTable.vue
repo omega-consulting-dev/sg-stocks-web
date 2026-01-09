@@ -111,6 +111,9 @@ const handleDelete = (achat: Achat) => {
         <TableHeader>
           <TableRow class="border-b border-[#EEEEEE]">
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              N° Pièce
+            </TableHead>
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Référence
             </TableHead>
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
@@ -123,6 +126,9 @@ const handleDelete = (achat: Achat) => {
               Quantité
             </TableHead>
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              Montant facture
+            </TableHead>
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Date
             </TableHead>
             <TableHead class="w-[80px] text-center font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
@@ -133,10 +139,12 @@ const handleDelete = (achat: Achat) => {
         <TableBody>
           <template v-if="loading">
             <TableRow v-for="i in (pageSize || 8)" :key="i">
+              <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-20 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-32 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-16 mx-auto" /></TableCell>
+              <TableCell class="text-center"><Skeleton class="h-4 w-20 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-28 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-8 mx-auto" /></TableCell>
             </TableRow>
@@ -148,6 +156,9 @@ const handleDelete = (achat: Achat) => {
               class="border-b border-[#EEEEEE] hover:bg-gray-50"
             >
               <TableCell class="text-[14px] font-medium text-[#5932EA] text-center" style="font-family: Poppins">
+                {{ achat.receipt_number || '-' }}
+              </TableCell>
+              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
                 {{ achat.reference || '-' }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
@@ -160,6 +171,9 @@ const handleDelete = (achat: Achat) => {
                 {{ formatQuantity(achat.quantity) }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+                {{ (achat.invoice_amount || 0).toLocaleString('fr-FR') }} FCFA
+              </TableCell>
+              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
                 {{ formatDate(achat.created_at) }}
               </TableCell>
               <TableCell class="text-center">
@@ -170,13 +184,13 @@ const handleDelete = (achat: Achat) => {
                       <span class="sr-only">Ouvrir le menu</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" class="w-[130px]">
-                    <DropdownMenuItem @select="handleEdit(achat)" class="cursor-pointer">
+                  <DropdownMenuContent align="end" class="w-[150px]">
+                    <DropdownMenuItem @click="handleEdit(achat)" class="cursor-pointer">
                       <Pencil class="mr-2 h-4 w-4" />
                       <span>Modifier</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @select="handleDelete(achat)"
+                      @click="handleDelete(achat)"
                       class="cursor-pointer text-red-600 focus:text-red-600"
                     >
                       <Trash2 class="mr-2 h-4 w-4" />
@@ -189,7 +203,7 @@ const handleDelete = (achat: Achat) => {
           </template>
           <template v-else>
             <TableRow>
-              <TableCell colspan="6" class="text-center text-muted-foreground py-8">
+              <TableCell colspan="8" class="text-center text-muted-foreground py-8">
                 Aucune entrée de stock trouvée
               </TableCell>
             </TableRow>

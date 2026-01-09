@@ -207,4 +207,5 @@ Axios.interceptors.response.use(
     }
 )
 
+export { Axios }
 export default Axios;

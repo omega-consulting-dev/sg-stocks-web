@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { MoreVertical, Eye, Plus } from 'lucide-vue-next'
+import { MoreVertical, FileText, History } from 'lucide-vue-next'
 import type { SupplierDebt } from '@/stores/fournisseurs'
 import {
   Table,
@@ -37,8 +37,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  viewDetails: [debt: SupplierDebt]
-  addPayment: [debt: SupplierDebt]
+  viewDebts: [debt: SupplierDebt]
+  viewHistory: [debt: SupplierDebt]
   pageChange: [page: number]
 }>()
 
@@ -171,13 +171,13 @@ const getPageNumbers = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="w-[180px]">
-                    <DropdownMenuItem @select="emit('viewDetails', debt)" class="cursor-pointer">
-                      <Eye class="mr-2 h-4 w-4" />
-                      <span>Voir commandes</span>
+                    <DropdownMenuItem @click="emit('viewDebts', debt)" class="cursor-pointer">
+                      <FileText class="mr-2 h-4 w-4" />
+                      <span>Voir les dettes</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem @select="emit('addPayment', debt)" class="cursor-pointer">
-                      <Plus class="mr-2 h-4 w-4" />
-                      <span>Ajouter paiement</span>
+                    <DropdownMenuItem @click="emit('viewHistory', debt)" class="cursor-pointer">
+                      <History class="mr-2 h-4 w-4" />
+                      <span>Historique</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

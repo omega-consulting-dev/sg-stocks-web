@@ -78,19 +78,19 @@ const emit = defineEmits<{
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="rounded-lg">
-                    <DropdownMenuItem @select="emit('edit', client)">
+                    <DropdownMenuItem @click="emit('edit', client)">
                       <Edit class="mr-2 h-4 w-4" />
                       Modifier
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @select="emit('delete', client)"
+                      @click="emit('delete', client)"
                       class="text-destructive focus:text-destructive"
                     >
                       <Trash2 class="mr-2 h-4 w-4" />
                       Supprimer
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @select="emit('suiviClient', client)"
+                      @click="emit('suiviClient', client)"
                       class="text-primary focus:text-primary"
                     >
                       <UserCheck class="mr-2 h-4 w-4" />

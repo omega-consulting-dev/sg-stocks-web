@@ -2,55 +2,36 @@ import Axios from '../axios.service'
 import type { AxiosResponse } from 'axios'
 
 /**
- * Interface pour Supplier (liste) - correspond au backend UserListSerializer
+ * Interface pour Supplier (liste) - correspond au backend Supplier model
  */
 export interface Supplier {
   id: number
-  username: string
+  name: string // Raison sociale (nom de l'entreprise)
+  supplier_code: string
+  contact_person: string // Nom du contact principal
   email: string
-  first_name: string
-  last_name: string
-  display_name: string
-  user_type: string
-  user_type_display: string
   phone: string
-  avatar: string | null
-  role_name: string | null
-  is_collaborator: boolean
-  is_customer: boolean
-  is_supplier: boolean
-  is_active: boolean
-  is_active_employee: boolean
-  date_joined: string
-  // Champs additionnels
-  city: string
-  supplier_code: string | null
-  customer_code: string | null
-  supplier_company_name: string
-  customer_company_name: string
-}
-
-/**
- * Interface pour Supplier détaillé - correspond au backend UserDetailSerializer
- */
-export interface SupplierDetail extends Supplier {
-  alternative_phone: string
+  mobile: string
+  website: string
   address: string
   city: string
   postal_code: string
   country: string
-  // Champs spécifiques fournisseur
-  supplier_code: string
-  supplier_company_name: string
-  supplier_tax_id: string
-  supplier_bank_account: string
-  supplier_rating: number | null
-  supplier_balance: number
-  // Timestamps
-  last_login: string | null
+  tax_id: string
+  bank_account: string
+  rating: number | null
+  balance: number
+  is_active: boolean
+  notes: string
   created_at: string
   updated_at: string
-  notes: string
+}
+
+/**
+ * Interface pour Supplier détaillé - identique à Supplier
+ */
+export interface SupplierDetail extends Supplier {
+  // Tous les champs sont déjà dans Supplier
 }
 
 /**
@@ -65,30 +46,22 @@ interface PaginatedResponse<T> {
 
 /**
  * Type pour créer un nouveau fournisseur
- *
- * Note: username, password sont optionnels pour les fournisseurs.
- * Le username sera généré automatiquement si non fourni.
- * Sans mot de passe, le fournisseur ne pourra pas se connecter.
  */
 export interface CreateSupplierDto {
-  username?: string              // Optionnel - généré auto si non fourni
-  email: string
-  password?: string              // Optionnel pour fournisseur
-  password_confirm?: string      // Optionnel pour fournisseur
-  first_name?: string
-  last_name?: string
+  name: string // Raison sociale (obligatoire)
+  supplier_code: string // Code fournisseur (obligatoire)
+  contact_person?: string
+  email?: string
   phone?: string
-  alternative_phone?: string
+  mobile?: string
+  website?: string
   address?: string
   city?: string
   postal_code?: string
   country?: string
-  is_supplier: true
-  supplier_code: string
-  supplier_company_name?: string
-  supplier_tax_id?: string
-  supplier_bank_account?: string
-  supplier_rating?: number
+  tax_id?: string
+  bank_account?: string
+  rating?: number
   notes?: string
 }
 
@@ -96,19 +69,19 @@ export interface CreateSupplierDto {
  * Type pour mettre à jour un fournisseur
  */
 export interface UpdateSupplierDto {
+  name?: string
+  contact_person?: string
   email?: string
-  first_name?: string
-  last_name?: string
   phone?: string
-  alternative_phone?: string
+  mobile?: string
+  website?: string
   address?: string
   city?: string
   postal_code?: string
   country?: string
-  supplier_company_name?: string
-  supplier_tax_id?: string
-  supplier_bank_account?: string
-  supplier_rating?: number
+  tax_id?: string
+  bank_account?: string
+  rating?: number
   is_active?: boolean
   notes?: string
 }
@@ -139,7 +112,8 @@ export interface ImportResult {
 export interface SupplierDebt {
   id: number
   supplier_code: string
-  name: string
+  name: string // Nom de l'entreprise
+  contact_person: string
   email: string
   phone: string
   total_ordered: number
@@ -175,22 +149,21 @@ export interface SupplierPayment {
   notes: string
   created_at: string
   created_by: number | null
+  created_by_name?: string | null
 }
 
 /**
  * Service API pour la gestion des fournisseurs
  *
- * Note: Le CRUD utilise /auth/users/ car les fournisseurs sont des User avec is_supplier=true
- * Les exports/imports utilisent /suppliers/ pour les fonctionnalités spécifiques
+ * Note: Tous les endpoints utilisent /suppliers/suppliers/ pour les opérations CRUD
  */
 export const suppliersApi = {
   /**
    * Récupérer tous les fournisseurs avec filtres optionnels
-   * Utilise l'endpoint spécialisé /auth/users/suppliers/
    */
   async fetchAll(filters?: SupplierFilters): Promise<Supplier[]> {
     const response: AxiosResponse<Supplier[] | PaginatedResponse<Supplier>> = await Axios.get(
-      '/auth/users/suppliers/',
+      '/suppliers/suppliers/',
       { params: filters }
     )
 
@@ -205,7 +178,7 @@ export const suppliersApi = {
    * Récupérer un fournisseur par son ID
    */
   async fetchById(id: number): Promise<SupplierDetail> {
-    const response: AxiosResponse<SupplierDetail> = await Axios.get(`/auth/users/${id}/`)
+    const response: AxiosResponse<SupplierDetail> = await Axios.get(`/suppliers/suppliers/${id}/`)
     return response.data
   },
 
@@ -213,12 +186,7 @@ export const suppliersApi = {
    * Créer un nouveau fournisseur
    */
   async create(data: CreateSupplierDto): Promise<SupplierDetail> {
-    const response: AxiosResponse<SupplierDetail> = await Axios.post('/auth/users/', {
-      ...data,
-      is_supplier: true,
-      is_collaborator: false,
-      is_customer: false
-    })
+    const response: AxiosResponse<SupplierDetail> = await Axios.post('/suppliers/suppliers/', data)
     return response.data
   },
 
@@ -226,7 +194,7 @@ export const suppliersApi = {
    * Mettre à jour un fournisseur
    */
   async update(id: number, data: UpdateSupplierDto): Promise<SupplierDetail> {
-    const response: AxiosResponse<SupplierDetail> = await Axios.patch(`/auth/users/${id}/`, data)
+    const response: AxiosResponse<SupplierDetail> = await Axios.patch(`/suppliers/suppliers/${id}/`, data)
     return response.data
   },
 
@@ -234,14 +202,14 @@ export const suppliersApi = {
    * Supprimer un fournisseur (soft delete - désactivation)
    */
   async delete(id: number): Promise<void> {
-    await Axios.delete(`/auth/users/${id}/`)
+    await Axios.delete(`/suppliers/suppliers/${id}/`)
   },
 
   /**
    * Activer un fournisseur
    */
   async activate(id: number): Promise<{ message: string }> {
-    const response = await Axios.post(`/auth/users/${id}/activate/`)
+    const response = await Axios.post(`/suppliers/suppliers/${id}/activate/`)
     return response.data
   },
 
@@ -249,7 +217,7 @@ export const suppliersApi = {
    * Désactiver un fournisseur
    */
   async deactivate(id: number): Promise<{ message: string }> {
-    const response = await Axios.post(`/auth/users/${id}/deactivate/`)
+    const response = await Axios.post(`/suppliers/suppliers/${id}/deactivate/`)
     return response.data
   },
 
@@ -320,6 +288,21 @@ export const suppliersApi = {
     const params = supplierId ? { supplier: supplierId } : {}
     const response: AxiosResponse<SupplierPayment[]> = await Axios.get('/suppliers/payments/', { params })
     return response.data
+  },
+
+  /**
+   * Récupérer l'historique détaillé des paiements d'un fournisseur
+   */
+  async fetchSupplierPayments(supplierId: number): Promise<SupplierPayment[]> {
+    const response: AxiosResponse<SupplierPayment[] | PaginatedResponse<SupplierPayment>> = await Axios.get('/suppliers/payments/', {
+      params: { supplier: supplierId, ordering: '-payment_date' }
+    })
+
+    // Gérer réponse paginée ou non
+    if (Array.isArray(response.data)) {
+      return response.data
+    }
+    return response.data.results
   }
 }
 

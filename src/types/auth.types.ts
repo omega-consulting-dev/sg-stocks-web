@@ -12,9 +12,20 @@ export interface User {
   email: string
   username?: string
   name?: string
+  first_name?: string
+  last_name?: string
+  tenant_name?: string
   is_staff?: boolean
+  is_superuser?: boolean
   is_active?: boolean
   role?: string
+  default_store?: {
+    id: number
+    name: string
+    code: string
+  } | null
+  has_assigned_stores?: boolean
+  is_store_restricted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }

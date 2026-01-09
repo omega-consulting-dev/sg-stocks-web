@@ -178,4 +178,11 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Custom placeholder styling with #787878 at 48% opacity */
+  input::placeholder,
+  textarea::placeholder,
+  [data-placeholder] {
+    color: rgba(120, 120, 120, 0.48) !important;
+  }
 }

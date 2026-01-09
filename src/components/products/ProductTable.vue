@@ -43,10 +43,12 @@ const formatPrice = (price: number) => {
 }
 
 const handleEdit = (product: Product) => {
+  console.log('ProductTable handleEdit appelé avec:', product)
   emit('edit', product)
 }
 
 const handleDelete = (product: Product) => {
+  console.log('ProductTable handleDelete appelé avec:', product)
   emit('delete', product)
 }
 
@@ -69,7 +71,9 @@ const paginationInfo = computed(() => {
           <TableHead class="font-semibold">Famille</TableHead>
           <!-- <TableHead class="text-right font-semibold">Prix Achat</TableHead> -->
           <TableHead class="text-right font-semibold">Prix Vente</TableHead>
-          <TableHead class="text-right font-semibold">Stock</TableHead>
+          <TableHead class="text-right font-semibold">Stock Min</TableHead>
+          <TableHead class="text-right font-semibold">Stock Opt</TableHead>
+          <TableHead class="text-right font-semibold">Stock Actuel</TableHead>
           <TableHead class="w-[80px] text-center font-semibold">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -81,7 +85,8 @@ const paginationInfo = computed(() => {
             <TableCell><Skeleton class="h-4 w-32" /></TableCell>
             <TableCell><Skeleton class="h-4 w-24" /></TableCell>
             <TableCell><Skeleton class="h-4 w-20 ml-auto" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-20 ml-auto" /></TableCell>
+            <TableCell><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
+            <TableCell><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
             <TableCell><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
             <TableCell><Skeleton class="h-8 w-8 mx-auto" /></TableCell>
           </TableRow>
@@ -117,10 +122,16 @@ const paginationInfo = computed(() => {
             <TableCell class="text-right font-medium">
               {{ formatPrice(product.selling_price) }}
             </TableCell>
+            <TableCell class="text-right text-muted-foreground">
+              {{ product.minimum_stock }}
+            </TableCell>
+            <TableCell class="text-right text-muted-foreground">
+              {{ product.optimal_stock }}
+            </TableCell>
             <TableCell class="text-right">
               <span
                 :class="[
-                  'font-medium',
+                  'font-semibold',
                   product.is_low_stock || product.current_stock <= product.minimum_stock
                     ? 'text-red-600'
                     : 'text-green-600',
@@ -138,12 +149,12 @@ const paginationInfo = computed(() => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" class="w-[130px]">
-                  <DropdownMenuItem @select="handleEdit(product)" class="cursor-pointer">
+                  <DropdownMenuItem @click="handleEdit(product)" class="cursor-pointer">
                     <Edit class="mr-2 h-4 w-4" />
                     <span>Modifier</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    @select="handleDelete(product)"
+                    @click="handleDelete(product)"
                     class="cursor-pointer text-red-600 focus:text-red-600"
                   >
                     <Trash2 class="mr-2 h-4 w-4" />

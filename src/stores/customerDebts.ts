@@ -1,0 +1,131 @@
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import Axios from '@/services/axios.service'
+
+export interface CustomerDebt {
+  id: number
+  customer_code: string
+  name: string
+  email?: string
+  phone?: string
+  total_invoiced: number
+  total_paid: number
+  balance: number
+  user_id: number | null
+}
+
+export interface CustomerPayment {
+  id: number
+  payment_number: string
+  invoice_number: string
+  payment_date: string
+  amount: number
+  payment_method: string
+  payment_method_display: string
+  reference?: string
+  notes?: string
+}
+
+export interface CustomerInvoice {
+  id: number
+  invoice_number: string
+  invoice_date: string
+  total_amount: number
+  paid_amount: number
+  balance_due: number
+  status: string
+}
+
+export const useCustomerDebtsStore = defineStore('customerDebts', () => {
+  const debts = ref<CustomerDebt[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+
+  // Récupérer les dettes clients
+  async function fetchDebts(force = false) {
+    // Éviter les appels multiples simultanés (sauf si force=true)
+    if (loading.value && !force) return
+
+    loading.value = true
+    error.value = null
+    try {
+      // Ajouter un timestamp pour éviter le cache
+      const timestamp = new Date().getTime()
+      const response = await Axios.get(`/customers/customers/debts/?_t=${timestamp}`)
+      debts.value = response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Erreur lors du chargement des dettes'
+      console.error('Erreur chargement dettes clients:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Récupérer l'historique des paiements d'un client
+  async function fetchCustomerPayments(customerId: number): Promise<CustomerPayment[]> {
+    try {
+      const response = await Axios.get(`/customers/customers/${customerId}/payment_history/`)
+      return response.data
+    } catch (err: any) {
+      console.error('Erreur chargement historique paiements:', err)
+      throw err
+    }
+  }
+
+  // Récupérer les factures impayées d'un client
+  async function fetchCustomerInvoices(customerId: number): Promise<CustomerInvoice[]> {
+    try {
+      const response = await Axios.get(`/invoicing/invoices/?customer=${customerId}`)
+      // Filtrer les factures avec balance_due > 0
+      const invoices = response.data.results || response.data
+      return invoices.filter((inv: CustomerInvoice) => inv.balance_due > 0)
+    } catch (err: any) {
+      console.error('Erreur chargement factures client:', err)
+      throw err
+    }
+  }
+
+  // Créer un paiement pour un client
+  async function createPayment(customerId: number, paymentData: {
+    invoice_id?: number
+    amount: number
+    payment_method: string
+    payment_date?: string
+    reference?: string
+    notes?: string
+  }) {
+    try {
+      console.log('Store: Creating payment for customer', customerId, 'with data:', paymentData)
+      const response = await Axios.post(
+        `/customers/customers/${customerId}/create-payment/`,
+        paymentData
+      )
+
+      console.log('Payment created successfully:', response.data)
+
+      // Attendre un peu pour que le backend mette à jour les totaux
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // Forcer le rafraîchissement des dettes (ignorer le flag loading)
+      loading.value = false // Reset loading pour forcer un nouveau fetch
+      await fetchDebts(true) // Force refresh
+
+      return response.data
+    } catch (err: any) {
+      console.error('Erreur création paiement:', err)
+      console.error('Error response:', err.response?.data)
+      console.error('Error status:', err.response?.status)
+      throw err
+    }
+  }
+
+  return {
+    debts,
+    loading,
+    error,
+    fetchDebts,
+    fetchCustomerPayments,
+    fetchCustomerInvoices,
+    createPayment,
+  }
+})

@@ -134,7 +134,30 @@ export const productsApi = {
   /**
    * Créer un nouveau produit
    */
-  async create(data: CreateProductDto): Promise<Product> {
+  async create(data: CreateProductDto & { image?: File }): Promise<Product> {
+    // Si une image est fournie, utiliser FormData
+    if (data.image) {
+      const formData = new FormData()
+
+      // Ajouter tous les champs sauf l'image
+      Object.keys(data).forEach(key => {
+        if (key !== 'image' && data[key as keyof typeof data] !== undefined) {
+          formData.append(key, String(data[key as keyof typeof data]))
+        }
+      })
+
+      // Ajouter l'image
+      formData.append('primary_image', data.image)
+
+      const response: AxiosResponse<Product> = await Axios.post('/products/products/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      return response.data
+    }
+
+    // Sinon, envoyer en JSON comme avant
     const response: AxiosResponse<Product> = await Axios.post('/products/products/', data)
     return response.data
   },
@@ -142,7 +165,30 @@ export const productsApi = {
   /**
    * Mettre à jour un produit existant
    */
-  async update(id: number, data: UpdateProductDto): Promise<Product> {
+  async update(id: number, data: UpdateProductDto & { image?: File }): Promise<Product> {
+    // Si une image est fournie, utiliser FormData
+    if (data.image) {
+      const formData = new FormData()
+
+      // Ajouter tous les champs sauf l'image
+      Object.keys(data).forEach(key => {
+        if (key !== 'image' && data[key as keyof typeof data] !== undefined) {
+          formData.append(key, String(data[key as keyof typeof data]))
+        }
+      })
+
+      // Ajouter l'image
+      formData.append('primary_image', data.image)
+
+      const response: AxiosResponse<Product> = await Axios.patch(`/products/products/${id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      return response.data
+    }
+
+    // Sinon, envoyer en JSON comme avant
     const response: AxiosResponse<Product> = await Axios.patch(`/products/products/${id}/`, data)
     return response.data
   },

@@ -17,13 +17,14 @@ import {
   CreditCard as CreditCardIcon
 } from 'lucide-vue-next'
 import { useFournisseursStore, type SupplierDebt, type CreateSupplierPaymentDto } from '@/stores/fournisseurs'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 const props = defineProps<{
   open: boolean
   supplier?: SupplierDebt | null
+  order?: any | null
 }>()
 
 const emit = defineEmits<{
@@ -41,6 +42,7 @@ const formData = ref({
   reference: '',
   notes: '',
   piece_jointe: null as string | null,
+  purchase_order: null as number | null,
 })
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -73,12 +75,13 @@ watch(() => props.open, (newValue) => {
 
     formData.value = {
       supplier_id: initialSupplier?.id || 0,
-      montant: 0,
+      montant: props.order ? props.order.balance_due : 0,
       payment_method: 'cash',
       date_reglement: new Date().toISOString().split('T')[0],
       reference: '',
-      notes: '',
+      notes: props.order ? `Règlement commande N°${props.order.order_number}` : '',
       piece_jointe: null,
+      purchase_order: props.order?.id || null,
     }
     fileName.value = ''
   }
@@ -152,7 +155,8 @@ const handleSubmit = async () => {
       payment_method: formData.value.payment_method,
       payment_date: formData.value.date_reglement,
       reference: formData.value.reference || undefined,
-      notes: formData.value.notes || undefined
+      notes: formData.value.notes || undefined,
+      purchase_order: formData.value.purchase_order || undefined
     }
 
     await store.createPayment(paymentData)
@@ -176,16 +180,16 @@ const handleClose = () => {
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent class="w-[95vw] sm:w-auto max-w-[650px] p-0 gap-0 border-0 rounded-2xl max-h-[90vh] overflow-hidden shadow-2xl">
       <!-- Header avec gradient -->
-      <div class="relative bg-gradient-to-r from-[#0769CF] to-[#0891B2] px-6 py-5">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            <CreditCard class="w-6 h-6 text-white" />
+      <div class="relative bg-gradient-to-r from-blue-600 to-purple-600 px-4 sm:px-6 py-4 sm:py-5">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <CreditCard class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
           <div>
-            <h2 class="text-xl font-bold text-white">
-              Nouveau règlement
-            </h2>
-            <p class="text-white/70 text-sm">Enregistrer un paiement fournisseur</p>
+            <DialogTitle class="text-lg sm:text-xl font-bold text-white">
+              Règlement Fournisseur
+            </DialogTitle>
+            <DialogDescription class="text-white/80 text-xs sm:text-sm">Enregistrer un paiement fournisseur</DialogDescription>
           </div>
         </div>
         <!-- Decorative circles -->
@@ -193,11 +197,26 @@ const handleClose = () => {
         <div class="absolute bottom-0 right-20 w-16 h-16 bg-white/5 rounded-full translate-y-1/2"></div>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="p-6 overflow-y-auto max-h-[calc(90vh-180px)] bg-gray-50">
+      <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-180px)] bg-gray-50">
+        <!-- Info commande spécifique -->
+        <div v-if="order" class="mb-5 p-4 rounded-xl bg-blue-50 border border-blue-200">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+              <FileText class="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-blue-900">Règlement commande spécifique</p>
+              <p class="text-xs text-blue-700 mt-0.5">
+                Commande N°{{ order.order_number }} - Solde: {{ formatMontant(order.balance_due) }}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <!-- Fournisseur -->
         <div class="mb-5">
           <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-            <Building2 class="w-4 h-4 text-[#0769CF]" />
+            <Building2 class="w-4 h-4 text-blue-600" />
             Fournisseur
           </label>
 
@@ -216,16 +235,17 @@ const handleClose = () => {
             </div>
           </div>
 
-          <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             <div
               v-for="supplier in suppliersWithDebts"
               :key="supplier.id"
               @click="formData.supplier_id = supplier.id"
               :class="[
-                'relative p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 text-center',
+                'relative p-3 sm:p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 text-center',
+
                 formData.supplier_id === supplier.id
-                  ? 'border-[#0769CF] bg-[#0769CF] text-white shadow-lg shadow-[#0769CF]/25'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-[#0769CF]/50 hover:shadow-md'
+                  ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-600/25'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-blue-400 hover:shadow-md'
               ]"
             >
               <div class="flex items-center justify-center gap-2">
@@ -241,12 +261,12 @@ const handleClose = () => {
 
         <!-- Détails du fournisseur sélectionné -->
         <div v-if="selectedSupplier" class="mb-5">
-          <div class="p-4 rounded-xl border-2 border-[#0769CF]/20 bg-gradient-to-r from-[#F0F7FF] to-[#E8F4FD]">
+          <div class="p-4 rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-purple-50">
             <!-- En-tête avec statut -->
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-                  <User class="w-4 h-4 text-[#0769CF]" />
+                  <User class="w-4 h-4 text-blue-600" />
                 </div>
                 <span class="text-sm font-semibold text-gray-700">{{ selectedSupplier.name }}</span>
               </div>
@@ -267,17 +287,17 @@ const handleClose = () => {
             </div>
 
             <!-- Montants -->
-            <div class="grid grid-cols-3 gap-3 mb-3">
-              <div class="bg-white rounded-lg p-2">
-                <p class="text-[10px] text-gray-400 uppercase tracking-wider font-medium">Total commandé</p>
-                <p class="text-sm font-bold text-gray-800">{{ formatMontant(selectedSupplier.total_ordered) }}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3">
+              <div class="bg-white rounded-lg p-3 sm:p-2">
+                <p class="text-xs sm:text-[10px] text-gray-400 uppercase tracking-wider font-medium">Total commandé</p>
+                <p class="text-base sm:text-sm font-bold text-gray-800">{{ formatMontant(selectedSupplier.total_ordered) }}</p>
               </div>
-              <div class="bg-emerald-50 rounded-lg p-2">
-                <p class="text-[10px] text-emerald-600 uppercase tracking-wider font-medium">Total payé</p>
-                <p class="text-sm font-bold text-emerald-600">{{ formatMontant(selectedSupplier.total_paid) }}</p>
+              <div class="bg-emerald-50 rounded-lg p-3 sm:p-2">
+                <p class="text-xs sm:text-[10px] text-emerald-600 uppercase tracking-wider font-medium">Total payé</p>
+                <p class="text-base sm:text-sm font-bold text-emerald-600">{{ formatMontant(selectedSupplier.total_paid) }}</p>
               </div>
-              <div :class="['rounded-lg p-2', selectedSupplier.balance > 0 ? 'bg-rose-50' : 'bg-emerald-50']">
-                <p :class="['text-[10px] uppercase tracking-wider font-medium', selectedSupplier.balance > 0 ? 'text-rose-600' : 'text-emerald-600']">Solde dû</p>
+              <div :class="['rounded-lg p-3 sm:p-2', selectedSupplier.balance > 0 ? 'bg-rose-50' : 'bg-emerald-50']">
+                <p :class="['text-xs sm:text-[10px] uppercase tracking-wider font-medium', selectedSupplier.balance > 0 ? 'text-rose-600' : 'text-emerald-600']">Solde dû</p>
                 <p :class="['text-sm font-bold', selectedSupplier.balance > 0 ? 'text-rose-600' : 'text-emerald-600']">
                   {{ formatMontant(selectedSupplier.balance) }}
                 </p>
@@ -318,19 +338,20 @@ const handleClose = () => {
         <!-- Mode de paiement -->
         <div class="mb-4">
           <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-            <CreditCard class="w-4 h-4 text-[#0769CF]" />
+            <CreditCard class="w-4 h-4 text-purple-600" />
             Mode de paiement
           </label>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             <div
               v-for="method in paymentMethods"
               :key="method.value"
               @click="formData.payment_method = method.value as any"
               :class="[
-                'p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 text-center',
+                'p-3 sm:p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 text-center',
+
                 formData.payment_method === method.value
-                  ? 'border-[#0769CF] bg-[#0769CF]/10 text-[#0769CF]'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-[#0769CF]/50'
+                  ? 'border-blue-600 bg-gradient-to-br from-blue-50 to-purple-50 text-blue-700 font-semibold'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-blue-400'
               ]"
             >
               <component :is="method.icon" class="w-5 h-5 mx-auto mb-1" />
@@ -344,7 +365,7 @@ const handleClose = () => {
           <!-- Montant -->
           <div>
             <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-              <DollarSign class="w-4 h-4 text-[#0769CF]" />
+              <DollarSign class="w-4 h-4 text-green-600" />
               Montant
             </label>
             <div class="relative">
@@ -353,12 +374,12 @@ const handleClose = () => {
                 v-model.number="formData.montant"
                 type="number"
                 min="1"
-                step="1"
+                step="0.01"
                 :max="selectedSupplier?.balance"
                 placeholder="0"
                 required
                 :disabled="submitting"
-                class="h-12 w-full pl-4 pr-16 border-gray-200 rounded-xl text-sm bg-white focus:border-[#0769CF] focus:ring-[#0769CF]/20 transition-all font-semibold text-lg"
+                class="h-12 w-full pl-4 pr-16 border-gray-200 rounded-xl text-sm bg-white focus:border-blue-600 focus:ring-blue-600/20 transition-all font-semibold text-lg"
               />
               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-400">FCFA</span>
             </div>
@@ -370,7 +391,7 @@ const handleClose = () => {
           <!-- Date règlement -->
           <div>
             <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-              <Calendar class="w-4 h-4 text-[#0769CF]" />
+              <Calendar class="w-4 h-4 text-blue-600" />
               Date du règlement
             </label>
             <Input
@@ -379,7 +400,7 @@ const handleClose = () => {
               type="date"
               required
               :disabled="submitting"
-              class="h-12 w-full px-4 border-gray-200 rounded-xl text-sm bg-white focus:border-[#0769CF] focus:ring-[#0769CF]/20 transition-all"
+              class="h-12 w-full px-4 border-gray-200 rounded-xl text-sm bg-white focus:border-blue-600 focus:ring-blue-600/20 transition-all"
             />
           </div>
         </div>
@@ -387,7 +408,7 @@ const handleClose = () => {
         <!-- Référence -->
         <div class="mb-4">
           <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <FileText class="w-4 h-4 text-[#0769CF]" />
+            <FileText class="w-4 h-4 text-purple-600" />
             Référence
             <span class="text-xs font-normal text-gray-400">(optionnel)</span>
           </label>
@@ -403,7 +424,7 @@ const handleClose = () => {
         <!-- Pièce jointe -->
         <div class="mb-6">
           <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <Paperclip class="w-4 h-4 text-[#0769CF]" />
+            <Paperclip class="w-4 h-4 text-blue-600" />
             Pièce jointe
             <span class="text-xs font-normal text-gray-400">(optionnel)</span>
           </label>
@@ -417,18 +438,18 @@ const handleClose = () => {
 
           <div v-if="!fileName"
             @click="triggerFileInput"
-            class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-[#0769CF]/50 hover:bg-[#0769CF]/5 transition-all group"
+            class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group"
           >
-            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3 group-hover:bg-[#0769CF]/10 transition-all">
-              <Paperclip class="w-5 h-5 text-gray-400 group-hover:text-[#0769CF] transition-all" />
+            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-100 transition-all">
+              <Paperclip class="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-all" />
             </div>
             <p class="text-sm font-medium text-gray-600">Cliquez pour ajouter un fichier</p>
             <p class="text-xs text-gray-400 mt-1">PDF, JPG, PNG, DOC (max 5MB)</p>
           </div>
 
-          <div v-else class="flex items-center gap-3 p-3 bg-[#0769CF]/5 border border-[#0769CF]/20 rounded-xl">
-            <div class="w-10 h-10 rounded-lg bg-[#0769CF]/10 flex items-center justify-center">
-              <FileText class="w-5 h-5 text-[#0769CF]" />
+          <div v-else class="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <FileText class="w-5 h-5 text-blue-600" />
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-700 truncate">{{ fileName }}</p>
@@ -446,13 +467,13 @@ const handleClose = () => {
       </form>
 
       <!-- Footer avec boutons -->
-      <div class="px-6 py-4 bg-white border-t border-gray-100 flex items-center justify-end gap-3">
+      <div class="px-4 sm:px-6 py-3 sm:py-4 bg-white border-t border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3">
         <Button
           type="button"
           variant="outline"
           @click="handleClose"
           :disabled="submitting"
-          class="h-11 px-6 rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50"
+          class="h-11 px-6 rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 order-2 sm:order-1"
         >
           Annuler
         </Button>
@@ -460,7 +481,7 @@ const handleClose = () => {
           type="submit"
           @click="handleSubmit"
           :disabled="submitting || !isValid"
-          class="h-11 px-8 rounded-xl bg-gradient-to-r from-[#0769CF] to-[#0891B2] hover:from-[#0558b0] hover:to-[#0782a3] text-white font-semibold shadow-lg shadow-[#0769CF]/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          class="h-11 px-8 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg shadow-blue-600/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all order-1 sm:order-2"
         >
           <CheckCircle2 class="w-4 h-4 mr-2" />
           {{ submitting ? 'Enregistrement...' : 'Valider le règlement' }}

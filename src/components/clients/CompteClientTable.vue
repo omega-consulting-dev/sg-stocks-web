@@ -100,19 +100,19 @@ const formatDate = (dateString: string) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="rounded-lg">
-                    <DropdownMenuItem @select="emit('edit', compte)">
+                    <DropdownMenuItem @click="emit('edit', compte)">
                       <Edit class="mr-2 h-4 w-4" />
                       Modifier
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @select="emit('delete', compte)"
+                      @click="emit('delete', compte)"
                       class="text-destructive focus:text-destructive"
                     >
                       <Trash2 class="mr-2 h-4 w-4" />
                       Supprimer
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @select="emit('suiviClient', compte)"
+                      @click="emit('suiviClient', compte)"
                       class="text-primary focus:text-primary"
                     >
                       <UserCheck class="mr-2 h-4 w-4" />

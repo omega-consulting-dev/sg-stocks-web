@@ -21,6 +21,11 @@ export const useUserStore = defineStore('user', () => {
   const isAuthenticated = computed(() => !!access_token.value && !!user.value)
   const isAdmin = computed(() => !!user.value?.is_staff)
 
+  // Store assignment computed properties
+  const defaultStore = computed(() => user.value?.default_store || null)
+  const isStoreRestricted = computed(() => user.value?.is_store_restricted || false)
+  const hasAssignedStores = computed(() => user.value?.has_assigned_stores || false)
+
   // ========== Actions d'Authentification ==========
 
   /**
@@ -83,7 +88,7 @@ export const useUserStore = defineStore('user', () => {
     const storedRefreshToken = localStorage.getItem('refresh_token')
     const storedUser = localStorage.getItem('user')
 
-    if (storedToken && storedUser) {
+    if (storedToken && storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
       access_token.value = storedToken
       refresh_token.value = storedRefreshToken
       try {
@@ -92,6 +97,9 @@ export const useUserStore = defineStore('user', () => {
         console.error('Erreur lors du parsing de l\'utilisateur:', e)
         clearUser()
       }
+    } else if (storedUser === 'undefined' || storedUser === 'null') {
+      // Nettoyer le localStorage si les données sont invalides
+      localStorage.removeItem('user')
     }
   }
 
@@ -173,6 +181,9 @@ export const useUserStore = defineStore('user', () => {
     // Computed
     isAuthenticated,
     isAdmin,
+    defaultStore,
+    isStoreRestricted,
+    hasAssignedStores,
 
     // Actions d'authentification
     login,

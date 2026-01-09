@@ -57,10 +57,9 @@ const paginationInfo = computed(() => {
 
 // Helper pour afficher le nom du fournisseur
 const getDisplayName = (fournisseur: Supplier): string => {
-  // Priorité : display_name > first_name > username
-  if (fournisseur.display_name) return fournisseur.display_name
-  if (fournisseur.first_name) return `${fournisseur.first_name} ${fournisseur.last_name || ''}`.trim()
-  return fournisseur.username
+  // Priorité : contact_person > name
+  if (fournisseur.contact_person) return fournisseur.contact_person
+  return fournisseur.name
 }
 
 // Pagination
@@ -159,10 +158,10 @@ const handleDelete = (fournisseur: Supplier) => {
                 {{ fournisseur.supplier_code || '-' }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ fournisseur.supplier_company_name || '-' }}
+                {{ fournisseur.name || '-' }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ fournisseur.username || '-' }}
+                {{ fournisseur.contact_person || '-' }}
               </TableCell>
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
                 {{ fournisseur.phone || '-' }}
@@ -193,17 +192,17 @@ const handleDelete = (fournisseur: Supplier) => {
                       <span class="sr-only">Ouvrir le menu</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" class="w-[130px]">
-                    <DropdownMenuItem @select="handleView(fournisseur)" class="cursor-pointer">
+                  <DropdownMenuContent align="end" class="w-[160px]">
+                    <DropdownMenuItem @click="handleView(fournisseur)" class="cursor-pointer">
                       <Eye class="mr-2 h-4 w-4" />
-                      <span>Voir</span>
+                      <span>Voir détails</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem @select="handleEdit(fournisseur)" class="cursor-pointer">
-                      <Pencil class="mr-2 h-4 w-4" />
+                    <DropdownMenuItem @click="handleEdit(fournisseur)" class="cursor-pointer">
+                      <Edit class="mr-2 h-4 w-4" />
                       <span>Modifier</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      @select="handleDelete(fournisseur)"
+                      @click="handleDelete(fournisseur)"
                       class="cursor-pointer text-red-600 focus:text-red-600"
                     >
                       <Trash2 class="mr-2 h-4 w-4" />
@@ -242,13 +241,14 @@ const handleDelete = (fournisseur: Supplier) => {
           &lt;
         </Button>
 
-        <template v-for="(page, index) in getPageNumbers()" :key="index">
-          <span v-if="page === '...'" class="px-2 text-[12px] text-[#404B52]">...</span>
+        <template v-for="(page, index) in getPageNumbers()">
+          <span v-if="page === '...'" :key="`ellipsis-${index}`" class="px-2 text-[12px] text-[#404B52]">...</span>
           <Button
             v-else
+            :key="`page-${index}`"
             variant="outline"
             size="sm"
-            @click="emit('pageChange', page as number)"
+            @click="emit('pageChange', Number(page))"
             :class="[
               'h-[26px] w-[26px] p-0 rounded-[4px] text-[12px] font-medium',
               currentPage === page

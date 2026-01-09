@@ -1,184 +1,112 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { encaissementsApi, type Encaissement, type EncaissementsFilters, type CaisseSolde } from '@/services/api/encaissements.api'
 
-export interface Encaissement {
-  id: number
-  code: string
-  date: string
-  referenceFacture: string
-  montant: number
-  createdAt: string
-  updatedAt: string
-}
+export type { Encaissement }
 
 export const useEncaissementsStore = defineStore('encaissements', () => {
-  const encaissements = ref<Encaissement[]>([
-    {
-      id: 1,
-      code: '1',
-      date: '2025-01-23',
-      referenceFacture: 'RF2025001',
-      montant: 25000,
-      createdAt: '2025-01-23T10:00:00',
-      updatedAt: '2025-01-23T10:00:00'
-    },
-    {
-      id: 2,
-      code: '2',
-      date: '2025-01-23',
-      referenceFacture: 'RF2025001',
-      montant: 25000,
-      createdAt: '2025-01-23T11:00:00',
-      updatedAt: '2025-01-23T11:00:00'
-    },
-    {
-      id: 3,
-      code: '3',
-      date: '2025-01-23',
-      referenceFacture: 'RF2025001',
-      montant: 250000,
-      createdAt: '2025-01-23T12:00:00',
-      updatedAt: '2025-01-23T12:00:00'
-    },
-    {
-      id: 4,
-      code: '4',
-      date: '2025-01-23',
-      referenceFacture: 'RF2025001',
-      montant: 12000,
-      createdAt: '2025-01-23T13:00:00',
-      updatedAt: '2025-01-23T13:00:00'
-    },
-    {
-      id: 5,
-      code: '5',
-      date: '2025-01-23',
-      referenceFacture: 'RF2025001',
-      montant: 12000,
-      createdAt: '2025-01-23T14:00:00',
-      updatedAt: '2025-01-23T14:00:00'
-    },
-    {
-      id: 6,
-      code: '6',
-      date: '2025-01-23',
-      referenceFacture: 'RF2025001',
-      montant: 1000,
-      createdAt: '2025-01-23T15:00:00',
-      updatedAt: '2025-01-23T15:00:00'
-    }
-  ])
-
+  const encaissements = ref<Encaissement[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const totalCount = ref(0)
+  const caisseSolde = ref<CaisseSolde | null>(null)
 
   // Computed properties
   const totalEncaisse = computed(() =>
     encaissements.value.reduce((sum, e) => sum + e.montant, 0)
   )
 
-  const encaissementsFiltered = computed(() => {
-    return (startDate?: string, endDate?: string) => {
-      if (!startDate && !endDate) return encaissements.value
-
-      return encaissements.value.filter((e) => {
-        const encDate = new Date(e.date)
-        if (startDate && encDate < new Date(startDate)) return false
-        if (endDate && encDate > new Date(endDate)) return false
-        return true
-      })
-    }
+  const soldeCaisse = computed(() => {
+    return caisseSolde.value?.solde_actuel || 0
   })
 
   // Actions
-  async function fetchEncaissements() {
+  async function fetchEncaissements(filters?: EncaissementsFilters) {
     loading.value = true
     error.value = null
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      // Data already loaded in ref
+      const response = await encaissementsApi.getEncaissements(filters)
+      encaissements.value = response.results
+      totalCount.value = response.count
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Une erreur est survenue'
+      console.error('Error fetching encaissements:', e)
     } finally {
       loading.value = false
     }
   }
 
-  async function addEncaissement(encaissement: Omit<Encaissement, 'id' | 'createdAt' | 'updatedAt'>) {
-    loading.value = true
-    error.value = null
+  async function fetchCaisseSolde(storeId?: number | string) {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      const newEncaissement: Encaissement = {
-        ...encaissement,
-        id: Math.max(...encaissements.value.map((e) => e.id)) + 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-
-      encaissements.value.push(newEncaissement)
+      caisseSolde.value = await encaissementsApi.getCaisseSolde(storeId)
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Une erreur est survenue'
-      throw e
-    } finally {
-      loading.value = false
+      console.error('Error fetching caisse solde:', e)
     }
   }
 
-  async function updateEncaissement(id: number, data: Partial<Encaissement>) {
-    loading.value = true
-    error.value = null
+  async function fetchStores() {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      const index = encaissements.value.findIndex((e) => e.id === id)
-      if (index !== -1) {
-        encaissements.value[index] = {
-          ...encaissements.value[index],
-          ...data,
-          updatedAt: new Date().toISOString()
-        }
-      }
+      return await encaissementsApi.getStores()
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Une erreur est survenue'
-      throw e
-    } finally {
-      loading.value = false
+      console.error('Error fetching stores:', e)
+      return []
     }
   }
 
-  async function deleteEncaissement(id: number) {
-    loading.value = true
-    error.value = null
+  async function exportToExcel(filters?: EncaissementsFilters) {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const blob = await encaissementsApi.exportToExcel(filters)
 
-      const index = encaissements.value.findIndex((e) => e.id === id)
-      if (index !== -1) {
-        encaissements.value.splice(index, 1)
+      // Créer un lien pour télécharger le fichier
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+
+      // Générer le nom du fichier
+      let filename = 'encaissements'
+      if (filters?.start_date && filters?.end_date) {
+        filename += `_${filters.start_date}_au_${filters.end_date}`
+      } else if (filters?.start_date) {
+        filename += `_depuis_${filters.start_date}`
+      } else if (filters?.end_date) {
+        filename += `_jusquau_${filters.end_date}`
       }
+      filename += '.xlsx'
+
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Une erreur est survenue'
+      error.value = e instanceof Error ? e.message : 'Erreur lors de l\'export'
+      console.error('Error exporting encaissements:', e)
       throw e
-    } finally {
-      loading.value = false
+    }
+  }
+
+  async function deleteEncaissement(id: string) {
+    // Note: L'API de suppression n'est pas encore implémentée
+    // Supprimer localement pour l'instant
+    const index = encaissements.value.findIndex((e) => e.id === id)
+    if (index !== -1) {
+      encaissements.value.splice(index, 1)
+      totalCount.value--
     }
   }
 
   return {
     encaissements,
     totalEncaisse,
-    encaissementsFiltered,
+    soldeCaisse,
+    caisseSolde,
+    totalCount,
     loading,
     error,
     fetchEncaissements,
-    addEncaissement,
-    updateEncaissement,
+    fetchCaisseSolde,
+    fetchStores,
+    exportToExcel,
     deleteEncaissement
   }
 })

@@ -30,12 +30,12 @@ const isEditMode = computed(() => !!props.fournisseur)
 // Données du formulaire
 const formData = ref({
   supplier_code: '',
-  supplier_company_name: '',
-  first_name: '',
+  name: '',
+  contact_person: '',
   phone: '',
   email: '',
   city: '',
-  supplier_bank_account: '',
+  bank_account: '',
 })
 
 // Générer un code fournisseur séquentiel (FOURN--001, FOURN--002, etc.)
@@ -71,12 +71,12 @@ const generateSupplierCode = async () => {
 const resetForm = () => {
   formData.value = {
     supplier_code: '',
-    supplier_company_name: '',
-    first_name: '',
+    name: '',
+    contact_person: '',
     phone: '',
     email: '',
     city: '',
-    supplier_bank_account: '',
+    bank_account: '',
   }
   formError.value = null
 }
@@ -93,12 +93,12 @@ watch(
           const detail = await store.fetchFournisseurById(props.fournisseur.id)
           formData.value = {
             supplier_code: detail.supplier_code || '',
-            supplier_company_name: detail.supplier_company_name || '',
-            first_name: detail.first_name || '',
+            name: detail.name || '',
+            contact_person: detail.contact_person || '',
             phone: detail.phone || '',
             email: detail.email || '',
             city: detail.city || '',
-            supplier_bank_account: detail.supplier_bank_account || '',
+            bank_account: detail.bank_account || '',
           }
         } catch (e) {
           console.error('Erreur chargement:', e)
@@ -119,7 +119,7 @@ watch(
 const isFormValid = computed(() => {
   return (
     formData.value.supplier_code &&
-    formData.value.supplier_company_name &&
+    formData.value.name &&
     formData.value.email
   )
 })
@@ -135,26 +135,25 @@ const handleSubmit = async () => {
     if (isEditMode.value && props.fournisseur) {
       // Modification
       const updateData: UpdateSupplierDto = {
+        name: formData.value.name,
+        contact_person: formData.value.contact_person,
         email: formData.value.email,
-        first_name: formData.value.first_name,
         phone: formData.value.phone,
-        supplier_company_name: formData.value.supplier_company_name,
-        supplier_bank_account: formData.value.supplier_bank_account,
+        bank_account: formData.value.bank_account,
         city: formData.value.city,
       }
       const updated = await store.updateFournisseur(props.fournisseur.id, updateData)
       emit('saved', updated)
       handleClose()
     } else {
-      // Création - sans mot de passe (optionnel)
+      // Création
       const createData: CreateSupplierDto = {
-        email: formData.value.email,
-        first_name: formData.value.first_name,
-        phone: formData.value.phone,
-        is_supplier: true,
+        name: formData.value.name,
         supplier_code: formData.value.supplier_code,
-        supplier_company_name: formData.value.supplier_company_name,
-        supplier_bank_account: formData.value.supplier_bank_account,
+        contact_person: formData.value.contact_person,
+        email: formData.value.email,
+        phone: formData.value.phone,
+        bank_account: formData.value.bank_account,
         city: formData.value.city,
       }
       const created = await store.createFournisseur(createData)
@@ -178,46 +177,23 @@ const handleClose = () => {
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent class="sm:max-w-[450px] p-0 gap-0 overflow-hidden">
       <!-- Header -->
-      <div class="flex items-center justify-between p-6 pb-4">
+      <div class="flex items-center justify-between p-4 pb-3">
         <div class="flex items-center gap-3">
-          <div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
-            <Building2 class="w-6 h-6 text-muted-foreground" />
+          <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+            <Building2 class="w-5 h-5 text-muted-foreground" />
           </div>
-          <h2 class="text-xl font-semibold">
+          <h2 class="text-lg font-semibold">
             {{ isEditMode ? 'Modifier Fournisseur' : 'Nouveau Fournisseur' }}
           </h2>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          class="h-8 w-8 rounded-full"
-          @click="handleClose"
-        >
-          <X class="h-4 w-4" />
-        </Button>
+
       </div>
 
       <!-- Form -->
-      <form @submit.prevent="handleSubmit" class="px-6 pb-6 space-y-4">
+      <form @submit.prevent="handleSubmit" class="px-6 pb-4 space-y-3">
         <!-- Message d'erreur -->
         <div v-if="formError" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
           {{ formError }}
-        </div>
-
-        <!-- Nom / Raison sociale -->
-        <div class="space-y-2">
-          <Label for="supplier_company_name" class="font-semibold">Nom / Raison sociale :</Label>
-          <div class="relative">
-            <Building2 class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="supplier_company_name"
-              v-model="formData.supplier_company_name"
-              placeholder="Ex : SARL Distribution Plus"
-              class="pl-10 h-12"
-              required
-              :disabled="loading"
-            />
-          </div>
         </div>
 
         <!-- Code fournisseur -->
@@ -229,21 +205,38 @@ const handleClose = () => {
               id="supplier_code"
               v-model="formData.supplier_code"
               placeholder="FRN-XXXXX"
-              class="pl-10 h-12"
+              class="pl-10 h-10 bg-gray-50 cursor-not-allowed"
               required
-              :disabled="loading || isEditMode"
+              :disabled="true"
+              readonly
+            />
+          </div>
+        </div>
+
+        <!-- Nom / Raison sociale -->
+        <div class="space-y-2">
+          <Label for="name" class="font-semibold">Nom / Raison sociale :</Label>
+          <div class="relative">
+            <Building2 class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="name"
+              v-model="formData.name"
+              placeholder="Ex : SARL Distribution Plus"
+              class="pl-10 h-10"
+              required
+              :disabled="loading"
             />
           </div>
         </div>
 
         <!-- Contact -->
         <div class="space-y-2">
-          <Label for="first_name" class="font-semibold">Contact :</Label>
+          <Label for="contact_person" class="font-semibold">Contact :</Label>
           <div class="relative">
             <User class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              id="first_name"
-              v-model="formData.first_name"
+              id="contact_person"
+              v-model="formData.contact_person"
               placeholder="Ex : Jean Dupont"
               class="pl-10 h-12"
               :disabled="loading"
@@ -260,7 +253,7 @@ const handleClose = () => {
               id="phone"
               v-model="formData.phone"
               placeholder="+237 6xx xx xx xx"
-              class="pl-10 h-12"
+              class="pl-10 h-10"
               :disabled="loading"
             />
           </div>
@@ -276,7 +269,7 @@ const handleClose = () => {
               v-model="formData.email"
               type="email"
               placeholder="Ex : contact@fournisseur.com"
-              class="pl-10 h-12"
+              class="pl-10 h-10"
               required
               :disabled="loading"
             />
@@ -292,7 +285,7 @@ const handleClose = () => {
               id="city"
               v-model="formData.city"
               placeholder="Ex : Douala, Akwa"
-              class="pl-10 h-12"
+              class="pl-10 h-10"
               :disabled="loading"
             />
           </div>
@@ -305,9 +298,9 @@ const handleClose = () => {
             <CreditCard class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="supplier_bank_account"
-              v-model="formData.supplier_bank_account"
+              v-model="formData.bank_account"
               placeholder="Ex : CM21 10005 00001 12345678901 23"
-              class="pl-10 h-12"
+              class="pl-10 h-10"
               :disabled="loading"
             />
           </div>
@@ -316,7 +309,7 @@ const handleClose = () => {
         <!-- Submit button -->
         <Button
           type="submit"
-          class="w-full h-12 mt-6 text-base font-semibold"
+          class="w-full h-10 mt-4 text-sm font-semibold"
           :disabled="loading || !isFormValid"
         >
           {{ loading ? 'Enregistrement...' : 'SAUVER' }}

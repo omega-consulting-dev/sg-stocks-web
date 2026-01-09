@@ -1,11 +1,14 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { InvoiceServices } from '@/services'
+import type { Invoice } from '@/types/invoice.types'
 
 export interface Facturation {
   id: number
   intitule: string
   dateVente: string
   client: string
+  produits?: string
   quantite: number
   montantFacture: number
   type: 'produit' | 'service'
@@ -14,77 +17,42 @@ export interface Facturation {
 }
 
 export const useFacturationsStore = defineStore('facturations', () => {
-  const facturations = ref<Facturation[]>([
-    {
-      id: 1,
-      intitule: 'Achat bidon',
-      dateVente: '2025-01-20',
-      client: 'nova plastique Sarl',
-      quantite: 5,
-      montantFacture: 25000,
-      type: 'produit',
-      createdAt: '2025-01-20T10:00:00',
-      updatedAt: '2025-01-20T10:00:00'
-    },
-    {
-      id: 2,
-      intitule: 'Achat etiquette',
-      dateVente: '2025-01-20',
-      client: 'graphic design',
-      quantite: 23,
-      montantFacture: 23000,
-      type: 'produit',
-      createdAt: '2025-01-20T11:00:00',
-      updatedAt: '2025-01-20T11:00:00'
-    },
-    {
-      id: 3,
-      intitule: 'Achat matiere',
-      dateVente: '2025-01-20',
-      client: 'zone sarl',
-      quantite: 6,
-      montantFacture: 15000,
-      type: 'produit',
-      createdAt: '2025-01-20T12:00:00',
-      updatedAt: '2025-01-20T12:00:00'
-    },
-    {
-      id: 4,
-      intitule: 'Service de design',
-      dateVente: '2025-01-21',
-      client: 'creative studio',
-      quantite: 2,
-      montantFacture: 45000,
-      type: 'service',
-      createdAt: '2025-01-21T09:00:00',
-      updatedAt: '2025-01-21T09:00:00'
-    },
-    {
-      id: 5,
-      intitule: 'Consultation technique',
-      dateVente: '2025-01-21',
-      client: 'tech solutions',
-      quantite: 8,
-      montantFacture: 32000,
-      type: 'service',
-      createdAt: '2025-01-21T14:00:00',
-      updatedAt: '2025-01-21T14:00:00'
-    },
-    {
-      id: 6,
-      intitule: 'Formation staff',
-      dateVente: '2025-01-22',
-      client: 'business corp',
-      quantite: 12,
-      montantFacture: 28000,
-      type: 'service',
-      createdAt: '2025-01-22T10:00:00',
-      updatedAt: '2025-01-22T10:00:00'
-    }
-  ])
+  const facturations = ref<Facturation[]>([])
+  const invoices = ref<Invoice[]>([])
 
   const loading = ref(false)
   const error = ref<string | null>(null)
+
+  // Mapper Invoice vers Facturation pour compatibilité
+  function mapInvoiceToFacturation(invoice: Invoice): Facturation {
+    // Utiliser total_items si disponible, sinon calculer depuis les lignes
+    const totalQuantity = invoice.total_items !== undefined
+      ? Number(invoice.total_items)
+      : invoice.lines?.reduce((sum, line) => sum + Number(line.quantity), 0) || 0
+
+    // Déterminer le type en fonction de la première ligne
+    const hasService = invoice.lines?.some(line => line.service !== undefined && line.service !== null)
+    const type: 'produit' | 'service' = hasService ? 'service' : 'produit'
+
+    // Extraire les noms de produits/services depuis les lignes
+    const produits = invoice.lines
+      ?.map(line => line.description || line.product_name || line.service_name)
+      .filter(Boolean)
+      .join(', ') || 'N/A'
+
+    return {
+      id: invoice.id,
+      intitule: invoice.invoice_number,
+      dateVente: invoice.invoice_date,
+      client: invoice.customer_name,
+      produits: produits,
+      quantite: totalQuantity,
+      montantFacture: Number(invoice.total_amount),
+      type: type,
+      createdAt: invoice.created_at,
+      updatedAt: invoice.updated_at || invoice.created_at
+    }
+  }
 
   // Computed properties
   const facturationsProduits = computed(() =>
@@ -110,11 +78,28 @@ export const useFacturationsStore = defineStore('facturations', () => {
     loading.value = true
     error.value = null
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      // Data already loaded in ref
+      // Récupérer toutes les factures en gérant la pagination
+      let allInvoices: Invoice[] = []
+      let page = 1
+      let hasMore = true
+
+      while (hasMore) {
+        const response = await InvoiceServices.getInvoices({ page, page_size: 100 })
+        allInvoices = [...allInvoices, ...response.data.results]
+
+        // Vérifier s'il y a d'autres pages
+        const totalCount = response.data.count
+        hasMore = allInvoices.length < totalCount
+        page++
+      }
+
+      invoices.value = allInvoices
+
+      // Mapper les invoices vers le format Facturation
+      facturations.value = invoices.value.map(mapInvoiceToFacturation)
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Une erreur est survenue'
+      console.error('Erreur lors du chargement des facturations:', e)
     } finally {
       loading.value = false
     }
@@ -124,17 +109,17 @@ export const useFacturationsStore = defineStore('facturations', () => {
     loading.value = true
     error.value = null
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
+      // TODO: Créer vraie facture via API
+      // Pour l'instant, ajoute en local
       const newFacturation: Facturation = {
         ...facturation,
-        id: Math.max(...facturations.value.map((f) => f.id)) + 1,
+        id: Math.max(0, ...facturations.value.map((f) => f.id)) + 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
 
       facturations.value.push(newFacturation)
+      return newFacturation
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Une erreur est survenue'
       throw e
@@ -147,8 +132,7 @@ export const useFacturationsStore = defineStore('facturations', () => {
     loading.value = true
     error.value = null
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await InvoiceServices.updateInvoice(id, {} as any)
 
       const index = facturations.value.findIndex((f) => f.id === id)
       if (index !== -1) {
@@ -170,8 +154,7 @@ export const useFacturationsStore = defineStore('facturations', () => {
     loading.value = true
     error.value = null
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await InvoiceServices.deleteInvoice(id)
 
       const index = facturations.value.findIndex((f) => f.id === id)
       if (index !== -1) {
@@ -187,6 +170,7 @@ export const useFacturationsStore = defineStore('facturations', () => {
 
   return {
     facturations,
+    invoices,
     facturationsProduits,
     facturationsServices,
     totalMontantProduits,

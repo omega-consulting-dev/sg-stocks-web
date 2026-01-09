@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { Search, Calendar, Plus } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
-defineProps<{
-  onExport?: () => void
-  onNew?: () => void
-}>()
 
 const emit = defineEmits<{
   search: [value: string]
@@ -15,8 +10,8 @@ const emit = defineEmits<{
 }>()
 
 const searchQuery = ref('')
-const startDateInput = ref('2025-04-01')
-const endDateInput = ref('2025-04-31')
+const startDateInput = ref('')
+const endDateInput = ref('')
 
 function handleSearch() {
   emit('search', searchQuery.value)
@@ -27,83 +22,79 @@ function handleDateChange() {
   const end = endDateInput.value ? new Date(endDateInput.value) : undefined
   emit('dateRangeChange', start, end)
 }
+
+// Validation: la date "Du" ne peut pas être supérieure à la date "Au"
+watch(startDateInput, (newStartDate) => {
+  if (newStartDate && endDateInput.value) {
+    const start = new Date(newStartDate)
+    const end = new Date(endDateInput.value)
+
+    if (start > end) {
+      // Si la date de début est supérieure à la date de fin, réinitialiser la date de fin
+      endDateInput.value = newStartDate
+    }
+  }
+})
+
+watch(endDateInput, (newEndDate) => {
+  if (newEndDate && startDateInput.value) {
+    const start = new Date(startDateInput.value)
+    const end = new Date(newEndDate)
+
+    if (end < start) {
+      // Si la date de fin est inférieure à la date de début, ajuster la date de début
+      startDateInput.value = newEndDate
+    }
+  }
+})
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Buttons Row -->
-    <div class="flex justify-end gap-[31px]">
-      <Button
-        variant="outline"
-        class="h-auto px-[10.64px] py-[7.09px] border-[rgba(7,105,207,0.23)] text-[#0769CF] hover:bg-[#0769CF]/5 text-[18.41px] font-medium rounded-[10px]"
-        @click="onExport"
-      >
-        Exporter
-      </Button>
-      <Button
-        class="gap-2 rounded-[10px] bg-[#0769CF] px-[10.64px] py-[7.09px] text-white hover:bg-[#0558b0]"
-        @click="onNew"
-      >
-        <Plus class="h-[14.19px] w-[14.19px]" />
-        <span class="text-[18.41px] font-medium leading-[1.5]">Nouveau</span>
-      </Button>
-    </div>
-
-    <!-- Filters Row -->
-    <div class="flex items-center gap-6">
-      <!-- Period Label -->
-      <div class="text-[18.76px] font-normal text-[#0E1420] font-['Palanquin_Dark']">
-        Periode
-      </div>
-
-      <!-- Date Range -->
-      <div class="flex items-center gap-4">
-        <!-- Du Label -->
-        <span class="text-[14.76px] font-normal text-[#696060]">Du</span>
-
-        <!-- Start Date Input -->
+  <div class="border-none bg-white/80 shadow-xl backdrop-blur-sm rounded-lg p-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-end">
+      <!-- Recherche -->
+      <div class="flex-1 space-y-2">
+        <label class="text-sm font-medium text-slate-700">Rechercher</label>
         <div class="relative">
-          <input
-            v-model="startDateInput"
-            type="date"
-            class="w-[138px] h-[30px] border border-[#007ACE] rounded bg-[#FFFEFF] text-[#696060] text-[14.76px] px-3 pr-10"
-            @change="handleDateChange"
-          />
-          <Calendar
-            class="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none"
-          />
-        </div>
-
-        <!-- Au Label -->
-        <span class="text-[14.76px] font-normal text-[#696060]">Au</span>
-
-        <!-- End Date Input -->
-        <div class="relative">
-          <input
-            v-model="endDateInput"
-            type="date"
-            class="w-[138px] h-[30px] border border-[#007ACE] rounded bg-[#FFFEFF] text-[#696060] text-[14.76px] px-3 pr-10"
-            @change="handleDateChange"
-          />
-          <Calendar
-            class="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none"
-          />
-        </div>
-      </div>
-
-      <!-- Search Bar with Dropdown -->
-      <div class="relative flex-1 max-w-[424px] ml-auto">
-        <div class="absolute left-0 top-0 bottom-0 w-[18px] flex items-center justify-center">
-          <div class="w-3 h-3 border-l border-t border-b border-gray-300" />
-        </div>
-        <div class="relative">
-          <Search class="absolute left-[32px] top-1/2 -translate-y-1/2 h-5 w-5 text-[#7E7E7E]" />
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             v-model="searchQuery"
-            type="text"
-            placeholder="Search"
-            class="pl-[60px] bg-[#F9FBFF] border-0 h-[38px] text-[12px] text-[#B5B7C0] placeholder:text-[#B5B7C0] rounded-[10px]"
+            placeholder="Rechercher une facture..."
+            class="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
             @input="handleSearch"
+          />
+        </div>
+      </div>
+
+      <!-- Date de début -->
+      <div class="flex-1 space-y-2">
+        <label class="text-sm font-medium text-slate-700">Date de début</label>
+        <div class="relative">
+          <Input
+            v-model="startDateInput"
+            type="date"
+            class="border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+            @change="handleDateChange"
+          />
+          <Calendar
+            class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none"
+          />
+        </div>
+      </div>
+
+      <!-- Date de fin -->
+      <div class="flex-1 space-y-2">
+        <label class="text-sm font-medium text-slate-700">Date de fin</label>
+        <div class="relative">
+          <Input
+            v-model="endDateInput"
+            type="date"
+            :min="startDateInput"
+            class="border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+            @change="handleDateChange"
+          />
+          <Calendar
+            class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none"
           />
         </div>
       </div>

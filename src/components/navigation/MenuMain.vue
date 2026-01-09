@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { LucideIcon } from 'lucide-vue-next'
 import { ChevronRight } from 'lucide-vue-next'
+import { computed } from 'vue'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   SidebarGroup,
@@ -14,7 +15,7 @@ import {
 
 import { useRoute } from 'vue-router'
 
-defineProps<{
+const props = defineProps<{
   items: {
     title: string
     url?: string
@@ -27,6 +28,19 @@ defineProps<{
 }>()
 
 const route = useRoute()
+
+// Fonction pour vérifier si un menu parent est actif
+const isParentActive = (item: typeof props.items[0]) => {
+  if (!item.children) return false
+
+  // Vérifier si la route actuelle correspond exactement à l'un des enfants
+  return item.children.some((child) => route.path === child.url)
+}
+
+// Fonction pour vérifier si une route correspond (correspondance exacte uniquement)
+const isRouteActive = (url: string) => {
+  return route.path === url
+}
 </script>
 
 <template>
@@ -36,12 +50,12 @@ const route = useRoute()
         <Collapsible
           v-if="item.children"
           as-child
-          :default-open="item.children.some((c) => c.url === route.path)"
+          :default-open="isParentActive(item)"
           class="group/collapsible"
         >
           <SidebarMenuItem>
             <CollapsibleTrigger as-child>
-              <SidebarMenuButton :tooltip="item.title">
+              <SidebarMenuButton :tooltip="item.title" :is-active="isParentActive(item)">
                 <component :is="item.icon" v-if="item.icon" />
                 <span>{{ item.title }}</span>
                 <ChevronRight
@@ -52,7 +66,7 @@ const route = useRoute()
             <CollapsibleContent>
               <SidebarMenuSub>
                 <SidebarMenuSubItem v-for="subItem in item.children" :key="subItem.title">
-                  <SidebarMenuSubButton as-child :is-active="route.path === subItem.url">
+                  <SidebarMenuSubButton as-child :is-active="isRouteActive(subItem.url)">
                     <RouterLink :to="subItem.url">
                       <span>{{ subItem.title }}</span>
                     </RouterLink>
@@ -64,7 +78,7 @@ const route = useRoute()
         </Collapsible>
 
         <SidebarMenuItem v-else>
-          <SidebarMenuButton as-child :tooltip="item.title" :is-active="route.path === item.url">
+          <SidebarMenuButton as-child :tooltip="item.title" :is-active="isRouteActive(item.url ?? '')">
             <RouterLink :to="item.url ?? ''">
               <component :is="item.icon" v-if="item.icon" />
               <span>{{ item.title }}</span>

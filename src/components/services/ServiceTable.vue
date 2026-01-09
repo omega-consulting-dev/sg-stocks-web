@@ -121,6 +121,9 @@ const goToNextPage = () => {
             Désignation
           </TableHead>
           <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
+            Description
+          </TableHead>
+          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
             Catégorie
           </TableHead>
           <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-right" style="font-family: Inter">
@@ -139,6 +142,7 @@ const goToNextPage = () => {
           <TableRow v-for="i in (pageSize || 8)" :key="i">
             <TableCell><Skeleton class="h-4 w-20" /></TableCell>
             <TableCell><Skeleton class="h-4 w-40" /></TableCell>
+            <TableCell><Skeleton class="h-4 w-32" /></TableCell>
             <TableCell><Skeleton class="h-4 w-24" /></TableCell>
             <TableCell><Skeleton class="h-4 w-24 ml-auto" /></TableCell>
             <TableCell><Skeleton class="h-4 w-16 mx-auto" /></TableCell>
@@ -156,6 +160,9 @@ const goToNextPage = () => {
             </TableCell>
             <TableCell class="text-[14px] font-medium text-[#292D32]" style="font-family: Poppins">
               {{ service.name }}
+            </TableCell>
+            <TableCell class="text-[14px] text-[#292D32] max-w-xs truncate" style="font-family: Poppins" :title="service.description || 'Aucune description'">
+              {{ service.description || '-' }}
             </TableCell>
             <TableCell class="text-[14px] font-medium text-[#292D32]" style="font-family: Poppins">
               {{ service.category_name }}
@@ -184,12 +191,12 @@ const goToNextPage = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" class="w-[130px]">
-                  <DropdownMenuItem @select="handleEdit(service)" class="cursor-pointer">
+                  <DropdownMenuItem @click="handleEdit(service)" class="cursor-pointer">
                     <Edit class="mr-2 h-4 w-4" />
                     <span>Modifier</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    @select="handleDelete(service)"
+                    @click="handleDelete(service)"
                     class="cursor-pointer text-red-600 focus:text-red-600"
                   >
                     <Trash2 class="mr-2 h-4 w-4" />
