@@ -67,7 +67,7 @@ export const useMouvementsStore = defineStore('mouvements', () => {
     try {
       // Récupérer tous les mouvements avec un page_size élevé pour avoir le stock final correct
       const response = await inventoryApi.getMovements({ ...filters, page_size: 10000 }, 1)
-      
+
       allMouvements.value = response.results
       totalCount.value = response.count
 

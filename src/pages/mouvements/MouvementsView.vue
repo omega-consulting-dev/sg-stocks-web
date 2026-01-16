@@ -118,7 +118,7 @@ const loadMouvements = async (page: number = 1) => {
   if (filters.value.product) apiFilters.product = filters.value.product
   if (filters.value.movement_type) apiFilters.movement_type = filters.value.movement_type
   if (searchQuery.value) apiFilters.search = searchQuery.value
-  
+
   await store.fetchMouvements(apiFilters, page, pageSize.value)
   currentPage.value = page
 
@@ -211,9 +211,9 @@ const loadAllProductMouvements = async () => {
     if (filters.value.store) {
       productFilters.store = filters.value.store
     }
-    
+
     // NE PAS filtrer par movement_type ici car on a besoin de tous les types pour calculer le stock
-    
+
     const response = await inventoryApi.getMovements(productFilters, 1)
     allProductMouvements.value = response.results
   } catch (error) {
@@ -228,7 +228,7 @@ const calculateMovementTypeFilter = (movementType: string, storeType: string): s
     // Pas de type de magasin ou type spécial → retourner tel quel
     return movementType
   }
-  
+
   if (storeType === 'warehouse') {
     // ENTREPÔT
     if (movementType === 'in') {
@@ -257,18 +257,18 @@ const calculateMovementTypeFilter = (movementType: string, storeType: string): s
       return 'out,transfer'
     }
   }
-  
+
   return movementType
 }
 
 // Gestion du changement de store
 const handleStoreChange = () => {
   filters.value.store = selectedStoreId.value === '' ? undefined : selectedStoreId.value
-  
+
   // Récupérer le type de magasin sélectionné
   const selectedStore = stores.value.find(s => s.id === Number(selectedStoreId.value))
   selectedStoreType.value = selectedStore?.store_type || ''
-  
+
   // Recalculer le filtre movement_type selon le type de magasin
   if (selectedMovementType.value && selectedStoreId.value) {
     filters.value.movement_type = calculateMovementTypeFilter(selectedMovementType.value, selectedStoreType.value)
@@ -277,7 +277,7 @@ const handleStoreChange = () => {
   } else {
     filters.value.movement_type = undefined
   }
-  
+
   currentPage.value = 1
   loadMouvements(1)
 }
@@ -291,7 +291,7 @@ const handleMovementTypeChange = () => {
     // Calculer le filtre selon le type de magasin et le type de mouvement
     filters.value.movement_type = calculateMovementTypeFilter(selectedMovementType.value, selectedStoreType.value)
   }
-  
+
   currentPage.value = 1
   loadMouvements(1)
 }
