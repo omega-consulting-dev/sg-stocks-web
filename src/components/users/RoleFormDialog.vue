@@ -558,15 +558,18 @@ const handleSubmit = async () => {
 
   try {
     if (isEditMode.value && props.role) {
+      console.log('📤 Données envoyées pour mise à jour rôle:', formData)
       await usersStore.updateRole(props.role.id, { ...formData })
     } else {
+      console.log('📤 Données envoyées pour création rôle:', formData)
       await usersStore.createRole({ ...formData })
     }
 
     emit('saved')
     closeDialog()
   } catch (e: any) {
-    error.value = e.response?.data?.message || "Une erreur s'est produite"
+    console.error('❌ Erreur création/modification rôle:', e.response?.data)
+    error.value = e.response?.data?.message || e.response?.data?.detail || JSON.stringify(e.response?.data) || "Une erreur s'est produite"
   } finally {
     loading.value = false
   }

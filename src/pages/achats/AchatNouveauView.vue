@@ -6,6 +6,7 @@ import { useProductsStore } from '@/stores/products'
 import { useFournisseursStore } from '@/stores/fournisseurs'
 import { useStoresStore } from '@/stores/stores.store'
 import { useUserStore } from '@/stores/user'
+import { useFieldConfigStore } from '@/stores/field-config.store'
 import { useStoreAssignment } from '@/composables/useStoreAssignment'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,6 +43,7 @@ const productsStore = useProductsStore()
 const fournisseursStore = useFournisseursStore()
 const storesStore = useStoresStore()
 const userStore = useUserStore()
+const fieldConfigStore = useFieldConfigStore()
 
 // Messages de notification
 const successMessage = ref('')
@@ -88,21 +90,14 @@ const isConfirmDialogOpen = ref(false)
 const showFournisseurModal = ref(false)
 const showProductModal = ref(false)
 
-// Erreurs de validation par champ
-const errors = ref({
-  storeId: '',
-  numeroPiece: '',
-  intitule: '',
-  produitsAjoutes: '',
-  montantVerse: '',
-  naturePayement: '',
-  dateLimiteReglement: ''
-})
+// Erreurs dynamiques pour tous les champs configurables
+const fieldErrors = ref<Record<string, string>>({})
 
-// Fonction pour effacer une erreur spécifique
-const clearError = (field: keyof typeof errors.value) => {
-  errors.value[field] = ''
+const clearFieldError = (fieldName: string) => {
+  delete fieldErrors.value[fieldName]
 }
+
+const getFieldError = (fieldName: string) => fieldErrors.value[fieldName] || ''
 
 const montantTotal = computed(() => montantFacture.value || 0)
 const montantPaye = computed(() => montantVerse.value || 0)
@@ -110,7 +105,66 @@ const montantRestant = computed(() => montantTotal.value - montantPaye.value)
 const hasSelectedProducts = computed(() => produitsAjoutes.value.some(p => p.selected))
 const canAddProduct = computed(() => produitSelectionne.value !== null && quantiteAjoutee.value !== null && quantiteAjoutee.value > 0)
 
+// Field configuration helpers
+const fieldConfigs = computed(() => {
+  const configs: Record<string, { visible: boolean; required: boolean }> = {}
+
+  fieldConfigStore.configurations
+    .filter(c => c.form_name === 'purchase')
+    .forEach(config => {
+      configs[config.field_name] = {
+        visible: config.is_visible,
+        required: config.is_required
+      }
+    })
+
+  return configs
+})
+
+const isFieldVisible = (fieldName: string): boolean => {
+  return fieldConfigs.value[fieldName]?.visible ?? true
+}
+
+const isFieldRequired = (fieldName: string): boolean => {
+  return fieldConfigs.value[fieldName]?.required ?? false
+}
+
+// Validate only visible and required fields
+const isFormValid = computed(() => {
+  // receipt_number est toujours requis
+  if (isFieldVisible('receipt_number') && isFieldRequired('receipt_number') && !numeroPiece.value) {
+    return false
+  }
+
+  // store est toujours requis
+  if (isFieldVisible('store') && isFieldRequired('store') && !storeId.value) {
+    return false
+  }
+
+  // supplier si visible et requis
+  if (isFieldVisible('supplier') && isFieldRequired('supplier') && !fournisseurId.value) {
+    return false
+  }
+
+  // date si visible et requis
+  if (isFieldVisible('date') && isFieldRequired('date') && !dateAchat.value) {
+    return false
+  }
+
+  // Vérifier qu'au moins un produit est ajouté
+  if (produitsAjoutes.value.length === 0) {
+    return false
+  }
+
+  return true
+})
+
 onMounted(async () => {
+  // Load field configurations
+  if (!fieldConfigStore.configurations || fieldConfigStore.configurations.length === 0) {
+    await fieldConfigStore.fetchConfigurations()
+  }
+
   if (productsStore.products.length === 0) await productsStore.fetchProducts()
   if (fournisseursStore.fournisseurs.length === 0) await fournisseursStore.fetchFournisseurs()
   if (storesStore.stores.length === 0) await storesStore.fetchStores()
@@ -376,9 +430,7 @@ const resetForm = async () => {
   quantiteAjoutee.value = null
 
   // Réinitialiser les erreurs
-  Object.keys(errors.value).forEach(key => {
-    errors.value[key as keyof typeof errors.value] = ''
-  })
+  fieldErrors.value = {}
 
   // Générer un nouveau numéro de pièce
   try {
@@ -400,54 +452,75 @@ const handleSubmit = async () => {
   console.log('📊 isEditMode:', isEditMode.value)
   console.log('🆔 editingId:', editingId.value)
 
-  // Réinitialiser toutes les erreurs
-  Object.keys(errors.value).forEach(key => {
-    errors.value[key as keyof typeof errors.value] = ''
-  })
+  // Réinitialiser les erreurs
+  fieldErrors.value = {}
 
   let hasError = false
 
-  // Validation de base
-  if (!storeId.value) {
-    errors.value.storeId = 'Le magasin est obligatoire'
-    hasError = true
+  // Mapping des champs configurables avec leurs valeurs
+  const fieldMapping: Record<string, { value: any; label: string }> = {
+    'receipt_number': { value: numeroPiece.value?.trim(), label: 'N° de pièce' },
+    'store': { value: storeId.value, label: 'Magasin' },
+    'supplier': { value: fournisseurId.value, label: 'Fournisseur' },
+    'reference': { value: deliveryReference.value?.trim(), label: 'Référence du bon de livraison' },
+    'date': { value: dateAchat.value, label: 'Date de réalisation' },
+    'notes': { value: intitule.value?.trim(), label: 'Intitulé de l\'opération' },
+    'invoice_amount': { value: montantFacture.value, label: 'Montant de la facture' },
+    'unit_cost': { value: unitCost.value, label: 'Coût unitaire' },
+    'payment_amount': { value: montantVerse.value, label: 'Montant versé' },
+    'payment_method': { value: naturePayement.value, label: 'Nature du paiement' },
+    'due_date': { value: dateLimiteReglement.value, label: 'Date limite de règlement' },
   }
 
-  if (!numeroPiece.value.trim()) {
-    errors.value.numeroPiece = 'Le numéro de pièce est obligatoire'
-    hasError = true
+  // Vérifier tous les champs configurés comme obligatoires
+  for (const [fieldName, fieldData] of Object.entries(fieldMapping)) {
+    const isVisible = isFieldVisible(fieldName)
+    const isRequired = isFieldRequired(fieldName)
+
+    console.log(`🔍 Champ ${fieldName}:`, { isVisible, isRequired, value: fieldData.value })
+
+    if (isVisible && isRequired && !fieldData.value) {
+      fieldErrors.value[fieldName] = `Le champ "${fieldData.label}" est obligatoire`
+      hasError = true
+      console.log(`❌ Erreur sur ${fieldName}:`, fieldErrors.value[fieldName])
+    }
   }
 
-  if (!intitule.value.trim()) {
-    errors.value.intitule = 'L\'intitulé est obligatoire'
-    hasError = true
-  }
-
+  // Vérification spécifique : au moins un produit
   if (produitsAjoutes.value.length === 0) {
-    errors.value.produitsAjoutes = 'Veuillez ajouter au moins un produit'
+    fieldErrors.value.produitsAjoutes = 'Veuillez ajouter au moins un produit'
     hasError = true
+    console.log('❌ Erreur: Aucun produit ajouté')
   }
 
   // Si montant facture est renseigné, certains champs deviennent obligatoires
   if (montantFacture.value !== null && montantFacture.value > 0) {
-    if (montantVerse.value === null) {
-      errors.value.montantVerse = 'Le montant versé est obligatoire lorsque le montant de la facture est renseigné'
+    if (montantVerse.value === null && !fieldErrors.value['payment_amount']) {
+      fieldErrors.value['payment_amount'] = 'Le montant versé est obligatoire lorsque le montant de la facture est renseigné'
       hasError = true
+      console.log('❌ Erreur: Montant versé manquant')
     }
-    if (!naturePayement.value) {
-      errors.value.naturePayement = 'La nature du paiement est obligatoire lorsque le montant de la facture est renseigné'
+    if (!naturePayement.value && !fieldErrors.value['payment_method']) {
+      fieldErrors.value['payment_method'] = 'La nature du paiement est obligatoire lorsque le montant de la facture est renseigné'
       hasError = true
+      console.log('❌ Erreur: Nature du paiement manquante')
     }
-    if (!dateLimiteReglement.value && montantRestant.value > 0) {
-      errors.value.dateLimiteReglement = 'La date limite de règlement est obligatoire en cas de crédit (montant restant > 0)'
+    if (!dateLimiteReglement.value && montantRestant.value > 0 && !fieldErrors.value['due_date']) {
+      fieldErrors.value['due_date'] = 'La date limite de règlement est obligatoire en cas de crédit (montant restant > 0)'
       hasError = true
+      console.log('❌ Erreur: Date limite de règlement manquante')
     }
   }
 
+  console.log('📋 Erreurs détectées:', { hasError, fieldErrors: fieldErrors.value })
+
   // Si des erreurs, ne pas continuer
   if (hasError) {
+    console.log('⛔ Soumission bloquée à cause des erreurs')
     return
   }
+
+  console.log('✅ Validation OK, ouverture du dialog de confirmation')
 
   // Ouvrir le dialog de confirmation
   isConfirmDialogOpen.value = true
@@ -598,32 +671,63 @@ const handleFileUpload = (e: Event) => {
       <div class="p-5 space-y-4">
         <!-- Section 1: Informations principales -->
         <div class="grid grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1.5">N° de la piece (Obligatoire) :</label>
-            <Input v-model="numeroPiece" placeholder="No reference" class="h-9 text-xs border-slate-300 w-full bg-slate-50" readonly />
-            <p v-if="errors.numeroPiece" class="text-red-500 text-xs mt-1">{{ errors.numeroPiece }}</p>
+          <div v-if="isFieldVisible('receipt_number')">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              N° de la piece <span v-if="isFieldRequired('receipt_number')">(Obligatoire)</span><span v-else class="text-slate-400">(Facultatif)</span> :
+            </label>
+            <Input
+              v-model="numeroPiece"
+              placeholder="No reference"
+              :class="['h-9 text-xs w-full bg-slate-50', getFieldError('receipt_number') ? 'border-red-500' : 'border-slate-300']"
+              readonly
+            />
+            <p v-if="getFieldError('receipt_number')" class="text-red-500 text-xs mt-1">{{ getFieldError('receipt_number') }}</p>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1.5">Intitulé de l'opération (Obligatoire) :</label>
-            <Input v-model="intitule" placeholder="Ex : Achat de Merchandises" class="h-9 text-xs border-slate-300 w-full" @focus="clearError('intitule')" />
-            <p v-if="errors.intitule" class="text-red-500 text-xs mt-1">{{ errors.intitule }}</p>
+          <div v-if="isFieldVisible('notes')">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              Intitulé de l'opération <span v-if="isFieldRequired('notes')">(Obligatoire)</span><span v-else class="text-slate-400">(Facultatif)</span> :
+            </label>
+            <Input
+              v-model="intitule"
+              @input="clearFieldError('notes')"
+              placeholder="Ex : Achat de Merchandises"
+              :class="['h-9 text-xs w-full', getFieldError('notes') ? 'border-red-500' : 'border-slate-300']"
+            />
+            <p v-if="getFieldError('notes')" class="text-red-500 text-xs mt-1">{{ getFieldError('notes') }}</p>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1.5">Date de réalisation de l'achat</label>
-            <Input v-model="dateAchat" type="date" class="h-9 text-xs border-slate-300 w-full" />
+          <div v-if="isFieldVisible('date')">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              Date de réalisation de l'achat <span v-if="isFieldRequired('date')">(Obligatoire)</span><span v-else class="text-slate-400">(Facultatif)</span>
+            </label>
+            <Input
+              v-model="dateAchat"
+              @input="clearFieldError('date')"
+              type="date"
+              :class="['h-9 text-xs w-full', getFieldError('date') ? 'border-red-500' : 'border-slate-300']"
+            />
+            <p v-if="getFieldError('date')" class="text-red-500 text-xs mt-1">{{ getFieldError('date') }}</p>
           </div>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1.5">Montant de la facture <span class="text-slate-400">(Facultatif)</span> :</label>
-            <Input v-model.number="montantFacture" type="number" placeholder="Ex : 50000" class="h-9 text-xs border-slate-300 w-full" />
-          </div>
-          <div>
+          <div v-if="isFieldVisible('invoice_amount')">
             <label class="block text-xs font-medium text-slate-700 mb-1.5">
-              Nature du paiement <span v-if="!montantFacture" class="text-slate-400">(Facultatif)</span><span v-else class="text-red-500">*</span> :
+              Montant de la facture <span v-if="isFieldRequired('invoice_amount')">(Obligatoire)</span><span v-else class="text-slate-400">(Facultatif)</span> :
             </label>
-            <Select v-model="naturePayement" @update:modelValue="clearError('naturePayement')">
+            <Input
+              v-model.number="montantFacture"
+              @input="clearFieldError('invoice_amount')"
+              type="number"
+              placeholder="Ex : 50000"
+              :class="['h-9 text-xs w-full', getFieldError('invoice_amount') ? 'border-red-500' : 'border-slate-300']"
+            />
+            <p v-if="getFieldError('invoice_amount')" class="text-red-500 text-xs mt-1">{{ getFieldError('invoice_amount') }}</p>
+          </div>
+          <div v-if="isFieldVisible('payment_method')">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              Nature du paiement <span v-if="isFieldRequired('payment_method')">(Obligatoire)</span><span v-else class="text-slate-400">(Facultatif)</span> :
+            </label>
+            <Select v-model="naturePayement" @update:modelValue="clearFieldError('naturePayement')">
               <SelectTrigger class="h-9 text-xs border-slate-300 w-full">
                 <SelectValue placeholder="Sélectionner une méthode" />
               </SelectTrigger>
@@ -634,14 +738,14 @@ const handleFileUpload = (e: Event) => {
                 <SelectItem value="virement">Virement</SelectItem>
               </SelectContent>
             </Select>
-            <p v-if="errors.naturePayement" class="text-red-500 text-xs mt-1">{{ errors.naturePayement }}</p>
+            <p v-if="getFieldError('payment_method')" class="text-red-500 text-xs mt-1">{{ getFieldError('payment_method') }}</p>
           </div>
-          <div>
+          <div v-if="isFieldVisible('supplier')">
             <label class="block text-xs font-medium text-slate-700 mb-1.5">
-              Sélectionner le Fournisseur <span class="text-slate-400">(Facultatif)</span> :
+              Sélectionner le Fournisseur <span v-if="isFieldRequired('supplier')">(Obligatoire)</span><span v-else class="text-slate-400">(Facultatif)</span> :
             </label>
-            <Select v-model="fournisseurId">
-              <SelectTrigger class="h-9 text-xs border-slate-300 w-full">
+            <Select v-model="fournisseurId" @update:modelValue="clearFieldError('supplier')">
+              <SelectTrigger :class="['h-9 text-xs w-full', getFieldError('supplier') ? 'border-red-500' : 'border-slate-300']">
                 <SelectValue placeholder="Liste des Fournisseurs" />
               </SelectTrigger>
               <SelectContent>
@@ -650,25 +754,38 @@ const handleFileUpload = (e: Event) => {
                 </SelectItem>
               </SelectContent>
             </Select>
+            <p v-if="getFieldError('supplier')" class="text-red-500 text-xs mt-1">{{ getFieldError('supplier') }}</p>
           </div>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
-          <div>
+          <div v-if="isFieldVisible('payment_amount')">
             <label class="block text-xs font-medium text-slate-700 mb-1.5">
-              Montant Versé <span v-if="!montantFacture" class="text-slate-400">(Facultatif)</span><span v-else class="text-red-500">*</span> :
+              Montant Versé <span v-if="isFieldRequired('payment_amount')">(Obligatoire)</span><span v-else class="text-slate-400">(Facultatif)</span> :
             </label>
-            <Input v-model.number="montantVerse" type="number" placeholder="Ex : 30000" class="h-9 text-xs border-slate-300 w-full" @focus="clearError('montantVerse')" />
-            <p v-if="errors.montantVerse" class="text-red-500 text-xs mt-1">{{ errors.montantVerse }}</p>
+            <Input
+              v-model.number="montantVerse"
+              @input="clearFieldError('payment_amount')"
+              type="number"
+              placeholder="Ex : 30000"
+              :class="['h-9 text-xs w-full', getFieldError('payment_amount') ? 'border-red-500' : 'border-slate-300']"
+            />
+            <p v-if="getFieldError('payment_amount')" class="text-red-500 text-xs mt-1">{{ getFieldError('payment_amount') }}</p>
           </div>
-          <div>
+          <div v-if="isFieldVisible('due_date')">
             <label class="block text-xs font-medium text-slate-700 mb-1.5">
-              Date limite de règlement <span v-if="!montantFacture || montantRestant <= 0" class="text-slate-400">(Facultatif)</span><span v-else class="text-red-500">* (crédit)</span> :
+              Date limite de règlement <span v-if="isFieldRequired('due_date')">(Obligatoire)</span><span v-else class="text-slate-400">(Facultatif)</span> :
             </label>
-            <Input v-model="dateLimiteReglement" type="date" placeholder="JJ/mm/aaaa" class="h-9 text-xs border-slate-300 w-full" @focus="clearError('dateLimiteReglement')" />
-            <p v-if="errors.dateLimiteReglement" class="text-red-500 text-xs mt-1">{{ errors.dateLimiteReglement }}</p>
+            <Input
+              v-model="dateLimiteReglement"
+              @input="clearFieldError('due_date')"
+              type="date"
+              placeholder="JJ/mm/aaaa"
+              :class="['h-9 text-xs w-full', getFieldError('due_date') ? 'border-red-500' : 'border-slate-300']"
+            />
+            <p v-if="getFieldError('due_date')" class="text-red-500 text-xs mt-1">{{ getFieldError('due_date') }}</p>
           </div>
-          <div>
+          <div v-if="isFieldVisible('supplier')">
             <label class="block text-xs font-medium text-slate-700 mb-1.5">Le fournisseur n'existe pas encore ?</label>
             <Button @click="showFournisseurModal = true" type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 font-medium">
               Créer ici
@@ -679,9 +796,11 @@ const handleFileUpload = (e: Event) => {
         <div class="grid grid-cols-2 gap-3">
           <!-- Afficher le sélecteur uniquement pour les admin/superadmin -->
           <div v-if="shouldShowStoreSelector">
-            <label class="block text-xs font-medium text-slate-700 mb-1.5">Sélectionner le Store (magasin ou point de vente) :</label>
-            <Select v-model="storeId" @update:modelValue="clearError('storeId')">
-              <SelectTrigger class="h-9 text-xs border-slate-300 w-full">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              Sélectionner le Store (magasin ou point de vente) <span v-if="isFieldRequired('store')" class="text-red-500">*</span> :
+            </label>
+            <Select v-model="storeId" @update:modelValue="clearFieldError('store')">
+              <SelectTrigger :class="['h-9 text-xs w-full', getFieldError('store') ? 'border-red-500' : 'border-slate-300']">
                 <SelectValue placeholder="Liste des stores" />
               </SelectTrigger>
               <SelectContent>
@@ -690,7 +809,7 @@ const handleFileUpload = (e: Event) => {
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p v-if="errors.storeId" class="text-red-500 text-xs mt-1">{{ errors.storeId }}</p>
+            <p v-if="getFieldError('store')" class="text-red-500 text-xs mt-1">{{ getFieldError('store') }}</p>
           </div>
 
           <!-- Badge informatif pour les utilisateurs restreints -->
@@ -702,14 +821,18 @@ const handleFileUpload = (e: Event) => {
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1.5">Référence du bon de livraison :</label>
+          <div v-if="isFieldVisible('reference')">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              Référence du bon de livraison <span v-if="isFieldRequired('reference')">(Obligatoire)</span><span v-else class="text-slate-400">(Facultatif)</span> :
+            </label>
             <Input
               v-model="deliveryReference"
+              @input="clearFieldError('reference')"
               type="text"
               placeholder="Ex: BL-DELL-2025-001"
-              class="h-9 text-xs border-slate-300 w-full"
+              :class="['h-9 text-xs w-full', getFieldError('reference') ? 'border-red-500' : 'border-slate-300']"
             />
+            <p v-if="getFieldError('reference')" class="text-red-500 text-xs mt-1">{{ getFieldError('reference') }}</p>
           </div>
         </div>
 
@@ -767,7 +890,7 @@ const handleFileUpload = (e: Event) => {
                 Supprimer
               </button>
             </div>
-            <p v-if="errors.produitsAjoutes" class="text-red-500 text-xs mb-2">{{ errors.produitsAjoutes }}</p>
+            <p v-if="fieldErrors.produitsAjoutes" class="text-red-500 text-xs mb-2">{{ fieldErrors.produitsAjoutes }}</p>
             <div class="border border-slate-200 rounded overflow-hidden">
               <table class="w-full text-xs">
                 <thead>

@@ -7,6 +7,8 @@ import { useProductsStore } from '@/stores/products'
 import { useCustomersStore } from '@/stores/customers.store'
 import { useStoresStore } from '@/stores/stores.store'
 import { useUserStore } from '@/stores/user'
+import { useFieldConfigStore } from '@/stores/field-config.store'
+import { useTenantStore } from '@/stores/tenant.store'
 import { useStoreAssignment } from '@/composables/useStoreAssignment'
 import { useToast } from '@/composables/useToast'
 import { InvoiceServices } from '@/services/invoices.service'
@@ -44,10 +46,12 @@ const productsStore = useProductsStore()
 const customersStore = useCustomersStore()
 const storesStore = useStoresStore()
 const userStore = useUserStore()
+const fieldConfigStore = useFieldConfigStore()
+const tenantStore = useTenantStore()
 const toast = useToast()
 
 // Composable pour l'assignation de magasin
-const { shouldShowStoreSelector, getDefaultStoreId, getDefaultStore } = useStoreAssignment()
+const { shouldShowStoreSelector, getDefaultStoreId, getDefaultStore, getStoreLabel } = useStoreAssignment()
 
 const searchQuery = ref('')
 const statusFilter = ref('')
@@ -68,6 +72,9 @@ const showConfirmationModal = ref(false) // Modal de confirmation avant validati
 const showAssignCustomerDialog = ref(false) // Dialog pour assigner un client
 const saleWithoutCustomer = ref<number | null>(null) // ID de la vente sans client
 const selectedCustomerForSale = ref('') // Client sélectionné pour la vente
+const editingSaleId = ref<number | null>(null) // ID de la vente en cours de modification
+const isEditMode = computed(() => editingSaleId.value !== null) // Mode édition activé
+
 
 // Line items for invoice
 interface LineItem {
@@ -76,6 +83,7 @@ interface LineItem {
   productName: string
   quantity: number
   unitPrice: number
+  customUnitPrice?: number // Prix personnalisé si prix flexibles activés
   stock: number
   totalStock: number
 }
@@ -90,6 +98,7 @@ const productSearchQuery = ref('') // Recherche de produit
 // Form data for step 2
 const formData = ref({
   customer: '',
+  saleDate: new Date().toISOString().split('T')[0], // Date de vente par défaut = aujourd'hui
   paymentMethod: 'cash',
   paymentTerm: 'immediate',
   amountPaid: 0,
@@ -103,6 +112,40 @@ const formData = ref({
 const stores = computed(() => storesStore.stores)
 const customers = computed(() => customersStore.customers)
 const isSuperAdmin = computed(() => userStore.user?.is_superuser || false)
+
+// Vérifier si les prix flexibles sont activés
+const allowFlexiblePricing = computed(() => {
+  return tenantStore.currentTenant?.allow_flexible_pricing || false
+})
+
+// Field configurations pour invoice
+const fieldConfigs = computed(() => {
+  return fieldConfigStore.configurations.filter((config: any) => config.form_name === 'invoice')
+})
+
+const isFieldVisible = (fieldName: string): boolean => {
+  const config = fieldConfigs.value.find((c: any) => c.field_name === fieldName)
+  return config ? config.is_visible : true
+}
+
+const isFieldRequired = (fieldName: string): boolean => {
+  const config = fieldConfigs.value.find((c: any) => c.field_name === fieldName)
+  return config ? config.is_required : false
+}
+
+// Erreurs de validation
+const fieldErrors = ref<Record<string, string>>({})
+
+const clearFieldError = (fieldName: string) => {
+  if (fieldErrors.value[fieldName]) {
+    delete fieldErrors.value[fieldName]
+    fieldErrors.value = { ...fieldErrors.value }
+  }
+}
+
+const getFieldError = (fieldName: string): string => {
+  return fieldErrors.value[fieldName] || ''
+}
 
 // Filtrer les produits qui ont du stock dans le magasin sélectionné
 const availableProducts = computed(() => {
@@ -151,10 +194,20 @@ const availableProducts = computed(() => {
 })
 
 const subtotal = computed(() => {
-  return Math.round(lines.value.reduce((sum, line) => sum + (line.quantity * line.unitPrice), 0) * 100) / 100
+  return Math.round(lines.value.reduce((sum, line) => {
+    // Utiliser customUnitPrice si prix flexibles activés et prix personnalisé défini
+    const price = (allowFlexiblePricing.value && line.customUnitPrice !== undefined)
+      ? line.customUnitPrice
+      : line.unitPrice
+    return sum + (line.quantity * price)
+  }, 0) * 100) / 100
 })
 
 const taxAmount = computed(() => {
+  // N'appliquer la TVA que si le champ est visible/activé
+  if (!isFieldVisible('tax')) {
+    return 0
+  }
   return Math.round(subtotal.value * (formData.value.tax / 100) * 100) / 100
 })
 
@@ -185,7 +238,8 @@ onMounted(async () => {
       salesStore.fetchSales(),
       productsStore.fetchProducts(),
       customersStore.fetchCustomers(),
-      storesStore.fetchStores()
+      storesStore.fetchStores(),
+      tenantStore.fetchCurrentTenant() // Charger les informations du tenant pour allow_flexible_pricing
     ])
 
     // Charger les stocks automatiquement si un store est déjà sélectionné
@@ -252,6 +306,7 @@ const filteredFacturations = computed(() => {
     })
   }
 
+  // Le tri par sale_number est fait côté backend (ordering = ['sale_number'])
   return result
 })
 
@@ -401,6 +456,7 @@ const resetForm = () => {
   lines.value = []
   selectedProduct.value = ''
   selectedQuantity.value = 1
+  editingSaleId.value = null // Réinitialiser le mode édition
   // Ne pas réinitialiser le store pour les utilisateurs restreints (caissier/magasinier)
   // Les admin peuvent changer le store librement
   if (shouldShowStoreSelector.value) {
@@ -411,6 +467,7 @@ const resetForm = () => {
   productSearchQuery.value = ''
   formData.value = {
     customer: '',
+    saleDate: new Date().toISOString().split('T')[0], // Date de vente par défaut = aujourd'hui
     paymentMethod: 'cash',
     paymentTerm: 'immediate',
     amountPaid: 0,
@@ -484,6 +541,11 @@ const removeLine = (lineId: string) => {
 
 // Submit sale (create as draft)
 const submitSale = async () => {
+  console.log('submitSale - Validation des champs obligatoires...')
+
+  // Réinitialiser les erreurs
+  fieldErrors.value = {}
+
   if (!selectedStore.value) {
     toast.warning('Veuillez sélectionner un point de vente pour continuer', 'Point de vente requis')
     return
@@ -494,23 +556,110 @@ const submitSale = async () => {
     return
   }
 
-  // Vérifier si c'est une vente à crédit et si la date d'échéance est renseignée
-  if (isCreditSale.value && !formData.value.dueDate) {
+  // Valider TOUS les champs configurés comme obligatoires
+  const fieldsToValidate = [
+    { name: 'customer', value: formData.value.customer, label: 'Client' },
+    { name: 'saleDate', value: formData.value.saleDate, label: 'Date de vente' },
+    { name: 'paymentMethod', value: formData.value.paymentMethod, label: 'Méthode de paiement' },
+    { name: 'paymentTerm', value: formData.value.paymentTerm, label: 'Conditions de paiement' },
+    { name: 'amountPaid', value: formData.value.amountPaid, label: 'Montant payé' },
+    { name: 'tax', value: formData.value.tax, label: 'TVA (%)' },
+    { name: 'acompte', value: formData.value.acompte, label: 'Acompte' },
+    { name: 'notes', value: formData.value.notes, label: 'Notes' },
+    { name: 'dueDate', value: formData.value.dueDate, label: "Date d'échéance" },
+  ]
+
+  let hasErrors = false
+  for (const field of fieldsToValidate) {
+    if (isFieldRequired(field.name)) {
+      // Validation spéciale pour les nombres (amountPaid, tax, acompte)
+      if (field.name === 'amountPaid' || field.name === 'tax' || field.name === 'acompte') {
+        if (field.value === null || field.value === undefined || field.value === '') {
+          fieldErrors.value[field.name] = `${field.label} est obligatoire`
+          hasErrors = true
+          console.log(`Erreur: ${field.name} est obligatoire mais vide`)
+        }
+      }
+      // Validation pour les dates
+      else if (field.name === 'saleDate' || field.name === 'dueDate') {
+        if (!field.value || field.value === '' || field.value === null) {
+          fieldErrors.value[field.name] = `${field.label} est obligatoire`
+          hasErrors = true
+          console.log(`Erreur: ${field.name} est obligatoire mais vide`)
+        }
+      }
+      // Validation pour les champs texte et select
+      else {
+        if (!field.value || (typeof field.value === 'string' && field.value.trim() === '')) {
+          fieldErrors.value[field.name] = `${field.label} est obligatoire`
+          hasErrors = true
+          console.log(`Erreur: ${field.name} est obligatoire mais vide`)
+        }
+      }
+    }
+  }
+
+  if (hasErrors) {
+    console.log('Validation échouée - Erreurs:', fieldErrors.value)
+    toast.warning('Veuillez remplir tous les champs obligatoires', 'Champs manquants')
+    return
+  }
+
+  // Vérifier si c'est un client de passage (No Name)
+  let isNoNameCustomer = false
+  if (formData.value.customer) {
+    const selectedCustomer = customers.value.find(c => c.id === parseInt(formData.value.customer))
+    if (selectedCustomer) {
+      const customerName = selectedCustomer.name.toLowerCase()
+      isNoNameCustomer = customerName.includes('no name') ||
+                        customerName.includes('client no name') ||
+                        customerName.includes('client de passage') ||
+                        customerName.includes('passage')
+    }
+  } else {
+    // Aucun client sélectionné = client de passage
+    isNoNameCustomer = true
+  }
+
+  // VALIDATION: Si client de passage et crédit, bloquer immédiatement
+  if (isNoNameCustomer && isCreditSale.value) {
+    toast.error(
+      'Les clients de passage ne peuvent pas avoir de crédit. Veuillez payer la totalité ou sélectionner/créer un client réel.',
+      'Paiement requis'
+    )
+    fieldErrors.value.amountPaid = 'Le montant payé doit être égal au total pour un client de passage'
+    return
+  }
+
+  // Vérifier si c'est une vente à crédit (pour les VRAIS clients uniquement) et si la date d'échéance est renseignée
+  if (!isNoNameCustomer && isCreditSale.value && !formData.value.dueDate) {
+    fieldErrors.value.dueDate = "Date d'échéance requise pour une vente à crédit"
     toast.warning('Veuillez sélectionner une date d\'échéance pour cette vente à crédit', 'Date d\'échéance requise')
     return
   }
 
+  console.log('Validation réussie - Affichage du modal de confirmation')
   // Afficher le modal de confirmation avant de créer la vente
   showConfirmationModal.value = true
 }
 
 const confirmAndCreateSale = async () => {
+  if (isEditMode.value) {
+    await updateSale()
+  } else {
+    await createNewSale()
+  }
+}
+
+// Fonction pour créer une nouvelle vente
+const createNewSale = async () => {
   showConfirmationModal.value = false
   isSubmitting.value = true
 
   try {
     // Si aucun client n'est sélectionné, assigner automatiquement "Client No Name"
     let customerId = formData.value.customer ? parseInt(formData.value.customer) : null
+    let isNoNameCustomer = false
 
     if (!customerId) {
       const noNameCustomerId = await getOrCreateNoNameCustomer()
@@ -520,13 +669,38 @@ const confirmAndCreateSale = async () => {
         return
       }
       customerId = noNameCustomerId
+      isNoNameCustomer = true
       toast.info('Client "No Name" assigné automatiquement', 'Client de passage')
+    } else {
+      // Vérifier si le client sélectionné est "No Name"
+      const selectedCustomer = customers.value.find(c => c.id === customerId)
+      if (selectedCustomer) {
+        const customerName = selectedCustomer.name.toLowerCase()
+        isNoNameCustomer = customerName.includes('no name') ||
+                          customerName.includes('client no name') ||
+                          customerName.includes('client de passage') ||
+                          customerName.includes('passage')
+      }
+    }
+
+    // VALIDATION: Client de passage ne peut pas avoir de crédit
+    const totalAmount = subtotal.value
+    const paidAmount = formData.value.amountPaid || 0
+
+    if (isNoNameCustomer && paidAmount < totalAmount) {
+      toast.error(
+        'Les clients de passage ne peuvent pas avoir de crédit. Veuillez payer la totalité ou sélectionner/créer un client réel.',
+        'Paiement requis'
+      )
+      isSubmitting.value = false
+      showConfirmationModal.value = true // Réafficher le modal
+      return
     }
 
     const saleData: SaleCreateData = {
       customer: customerId,
       store: parseInt(selectedStore.value),
-      sale_date: new Date().toISOString().split('T')[0],
+      sale_date: formData.value.saleDate || new Date().toISOString().split('T')[0], // Utiliser la date sélectionnée ou aujourd'hui par défaut
       notes: formData.value.notes,
       paid_amount: formData.value.amountPaid,
       due_date: formData.value.dueDate || undefined, // Ajouter la date d'échéance si définie
@@ -535,11 +709,16 @@ const confirmAndCreateSale = async () => {
         product: line.product,
         description: line.productName,
         quantity: line.quantity,
-        unit_price: line.unitPrice,
+        // Utiliser customUnitPrice si prix flexibles activés, sinon unitPrice
+        unit_price: (allowFlexiblePricing.value && line.customUnitPrice !== undefined)
+          ? line.customUnitPrice
+          : line.unitPrice,
         tax_rate: formData.value.tax,
         discount_percentage: 0
       }))
     }
+
+    console.log('Données de vente à envoyer:', saleData)
 
     const newSale = await salesStore.createSale(saleData)
 
@@ -590,6 +769,108 @@ const confirmAndCreateSale = async () => {
     }
 
     toast.error(errorMessage, 'Erreur lors de la création de la vente', 8000)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// Fonction pour mettre à jour une vente existante
+const updateSale = async () => {
+  showConfirmationModal.value = false
+  isSubmitting.value = true
+
+  try {
+    if (!editingSaleId.value) {
+      throw new Error('ID de vente manquant')
+    }
+
+    let customerId = formData.value.customer ? parseInt(formData.value.customer) : null
+    let isNoNameCustomer = false
+
+    if (!customerId) {
+      const noNameCustomerId = await getOrCreateNoNameCustomer()
+      if (!noNameCustomerId) {
+        toast.error('Erreur lors de la création du client par défaut', 'Erreur')
+        isSubmitting.value = false
+        return
+      }
+      customerId = noNameCustomerId
+      isNoNameCustomer = true
+    } else {
+      const selectedCustomer = customers.value.find(c => c.id === customerId)
+      if (selectedCustomer) {
+        const customerName = selectedCustomer.name.toLowerCase()
+        isNoNameCustomer = customerName.includes('no name') ||
+                          customerName.includes('client no name') ||
+                          customerName.includes('client de passage') ||
+                          customerName.includes('passage')
+      }
+    }
+
+    // VALIDATION: Client de passage ne peut pas avoir de crédit
+    const totalAmount = subtotal.value
+    const paidAmount = formData.value.amountPaid || 0
+
+    if (isNoNameCustomer && paidAmount < totalAmount) {
+      toast.error(
+        'Les clients de passage ne peuvent pas avoir de crédit. Veuillez payer la totalité ou sélectionner/créer un client réel.',
+        'Paiement requis'
+      )
+      isSubmitting.value = false
+      showConfirmationModal.value = true
+      return
+    }
+
+    const saleData: any = {
+      customer: customerId,
+      store: parseInt(selectedStore.value),
+      sale_date: formData.value.saleDate || new Date().toISOString().split('T')[0],
+      notes: formData.value.notes,
+      paid_amount: formData.value.amountPaid,
+      due_date: formData.value.dueDate || undefined,
+      lines: lines.value.map(line => ({
+        line_type: 'product',
+        product: line.product,
+        description: line.productName,
+        quantity: line.quantity,
+        unit_price: (allowFlexiblePricing.value && line.customUnitPrice !== undefined)
+          ? line.customUnitPrice
+          : line.unitPrice,
+        tax_rate: formData.value.tax,
+        discount_percentage: 0
+      }))
+    }
+
+    await salesStore.updateSale(editingSaleId.value, saleData)
+
+    await salesStore.fetchSales()
+    await productsStore.fetchProducts()
+    if (selectedStore.value) {
+      await loadStoreStocks(selectedStore.value)
+    }
+
+    closeModal()
+    toast.success('Facture modifiée avec succès !', 'Modification réussie')
+
+  } catch (error: unknown) {
+    const axiosError = error as { config?: { url?: string; data?: string }; response?: { status?: number; data?: unknown }; message?: string }
+    console.error('Erreur lors de la modification de la vente:', error)
+
+    let errorMessage = 'Erreur inconnue'
+    if (axiosError?.response?.data) {
+      const backendErrors = axiosError.response.data as { detail?: string; error?: string; [key: string]: any }
+      if (backendErrors.error) {
+        errorMessage = backendErrors.error
+      } else if (backendErrors.detail) {
+        errorMessage = backendErrors.detail
+      } else {
+        errorMessage = JSON.stringify(backendErrors, null, 2)
+      }
+    } else if (axiosError?.message) {
+      errorMessage = axiosError.message
+    }
+
+    toast.error(errorMessage, 'Erreur lors de la modification', 8000)
   } finally {
     isSubmitting.value = false
   }
@@ -757,6 +1038,64 @@ function handleViewDetails(id: number) {
   isDetailOpen.value = true
 }
 
+// Fonction pour éditer une facture existante
+async function handleEdit(id: number) {
+  try {
+    editingSaleId.value = id
+
+    // Récupérer les détails de la vente
+    const sale = await salesStore.fetchSale(id)
+
+    if (!sale) {
+      toast.error('Vente introuvable', 'Erreur')
+      return
+    }
+
+    // Charger les données dans le formulaire
+    const storeId = typeof sale.store === 'object' ? sale.store.id : sale.store
+    selectedStore.value = String(storeId)
+
+    const customerId = typeof sale.customer === 'object' ? sale.customer.id : sale.customer
+
+    formData.value = {
+      customer: String(customerId),
+      saleDate: sale.sale_date || new Date().toISOString().split('T')[0],
+      paymentMethod: sale.payment_method || 'cash',
+      paymentTerm: sale.payment_term || 'immediate',
+      amountPaid: sale.paid_amount || 0,
+      tax: sale.lines?.[0]?.tax_rate || 19.25,
+      acompte: 0,
+      notes: sale.notes || '',
+      dueDate: sale.due_date || ''
+    }
+
+    // Charger les stocks du magasin sélectionné
+    await loadStoreStocks(selectedStore.value)
+
+    // Charger les lignes de la vente
+    if (sale.lines && sale.lines.length > 0) {
+      lines.value = sale.lines.map((line: any, index: number) => ({
+        id: String(Date.now() + index),
+        product: line.product,
+        productName: line.item_name || line.description || 'Produit',
+        quantity: line.quantity,
+        unitPrice: line.unit_price,
+        customUnitPrice: line.unit_price,
+        stock: 0,
+        totalStock: 0
+      }))
+    }
+
+    // Ouvrir le modal
+    isModalOpen.value = true
+    modalStep.value = 1
+
+  } catch (error) {
+    console.error('❌ Erreur lors du chargement de la vente:', error)
+    toast.error('Impossible de charger la vente', 'Erreur')
+  }
+}
+
 function handleExportAll() {
   console.log('Export all facturations produit to Excel')
 
@@ -894,8 +1233,10 @@ async function handleNew() {
         :page-size="pageSize"
         @generate-invoice="handleGenerateInvoice"
         @view-details="handleViewDetails"
+        @edit="handleEdit"
         @page-change="handlePageChange"
       />
+
 
       <FacturationProduitDetailDialog
         :open="isDetailOpen"
@@ -960,12 +1301,23 @@ async function handleNew() {
       <DialogContent class="modal-facturation sm:max-w-[98vw] md:max-w-[90vw] lg:max-w-[1300px] w-full p-2 sm:p-4 md:p-6 max-h-[85vh]">
         <!-- En-tête du modal -->
         <DialogHeader>
-          <DialogTitle class="modal-title">
-            {{ modalStep === 1 ? 'Nouvelle opération de vente' : 'Informations supplémentaires' }}
-          </DialogTitle>
-          <DialogDescription>
-            {{ modalStep === 1 ? 'Sélectionnez les produits et renseignez les quantités' : 'Complétez les informations de la vente' }}
-          </DialogDescription>
+          <div class="flex items-center justify-between">
+            <div>
+              <DialogTitle class="modal-title">
+                {{ isEditMode ? (modalStep === 1 ? 'Modifier la facture' : 'Informations supplémentaires') : (modalStep === 1 ? 'Nouvelle opération de vente' : 'Informations supplémentaires') }}
+              </DialogTitle>
+              <DialogDescription>
+                {{ modalStep === 1 ? 'Sélectionnez les produits et renseignez les quantités' : 'Complétez les informations de la vente' }}
+              </DialogDescription>
+            </div>
+            <!-- Indicateur de prix flexibles -->
+            <div v-if="allowFlexiblePricing" class="flex items-center gap-2 px-3 py-1.5 bg-green-100 border border-green-300 rounded-lg">
+              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span class="text-xs font-medium text-green-700">Prix flexibles activés</span>
+            </div>
+          </div>
         </DialogHeader>
 
         <!-- Étape 1: Sélection des produits -->
@@ -977,7 +1329,7 @@ async function handleNew() {
 
               <!-- Sélection du magasin - Conditionnel -->
               <div class="form-group-vertical">
-                <Label class="form-label">Magasin (Obligatoire) :</Label>
+                <Label class="form-label">{{ getStoreLabel }} (Obligatoire) :</Label>
 
                 <!-- Admin: Sélecteur complet -->
                 <Select v-if="shouldShowStoreSelector" :model-value="selectedStore" @update:model-value="selectedStore = $event">
@@ -1017,7 +1369,7 @@ async function handleNew() {
                 <div class="stock-label">en stock</div>
               </div>
 
-              <div class="form-group-vertical" v-if="selectedProduct">
+              <div class="form-group-vertical" v-if="selectedProduct && !allowFlexiblePricing">
                 <Label class="form-label">Prix unitaire : {{ formatCurrency(getProductPrice(selectedProduct)) }}</Label>
               </div>
 
@@ -1048,6 +1400,7 @@ async function handleNew() {
                       <th>Produit</th>
                       <th>En stock</th>
                       <th>Ajoutée</th>
+                      <th>Prix unit.</th>
                       <th>Total</th>
                       <th>Action</th>
                     </tr>
@@ -1057,7 +1410,20 @@ async function handleNew() {
                       <td>{{ line.productName }}</td>
                       <td>{{ line.stock }}</td>
                       <td>{{ line.quantity }}</td>
-                      <td>{{ formatCurrencyShort(line.quantity * line.unitPrice) }}</td>
+                      <td>
+                        <!-- Prix modifiable si allowFlexiblePricing -->
+                        <Input
+                          v-if="allowFlexiblePricing"
+                          v-model.number="line.customUnitPrice"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          class="w-24 h-8 text-sm"
+                          :placeholder="String(line.unitPrice)"
+                        />
+                        <span v-else class="text-sm">{{ formatCurrencyShort(line.unitPrice) }}</span>
+                      </td>
+                      <td>{{ formatCurrencyShort(line.quantity * ((allowFlexiblePricing && line.customUnitPrice !== undefined) ? line.customUnitPrice : line.unitPrice)) }}</td>
                       <td>
                         <Button
                           variant="ghost"
@@ -1070,7 +1436,7 @@ async function handleNew() {
                       </td>
                     </tr>
                     <tr v-if="lines.length === 0">
-                      <td colspan="5" class="text-center text-gray-400 py-6 text-sm">
+                      <td colspan="6" class="text-center text-gray-400 py-6 text-sm">
                         Aucune vente ajoutée
                       </td>
                     </tr>
@@ -1108,14 +1474,35 @@ async function handleNew() {
 
 
               <!-- Nom du client -->
-              <SearchableSelect
-                v-model="formData.customer"
-                :items="customers"
-                label="Nom du client (Optionnel - Client de passage)"
-                placeholder="Rechercher un client ou laisser vide pour client de passage..."
-                :show-add-button="true"
-                @add-new="handleAddCustomer"
-              />
+              <div v-if="isFieldVisible('customer')" class="form-group-vertical">
+                <SearchableSelect
+                  v-model="formData.customer"
+                  :items="customers"
+                  :label="'Nom du client' + (isFieldRequired('customer') ? ' (Obligatoire)' : ' (Optionnel - Client de passage)')"
+                  placeholder="Rechercher un client ou laisser vide pour client de passage..."
+                  :show-add-button="true"
+                  :class="{ 'border-red-500': getFieldError('customer') }"
+                  @add-new="handleAddCustomer"
+                  @update:model-value="clearFieldError('customer')"
+                />
+                <span v-if="getFieldError('customer')" class="text-red-500 text-sm mt-1">{{ getFieldError('customer') }}</span>
+              </div>
+
+              <!-- Date de vente -->
+              <div v-if="isFieldVisible('saleDate')" class="form-group-vertical">
+                <Label class="form-label">
+                  <span v-if="!isFieldRequired('saleDate')">Date de vente :</span>
+                  <span v-else>Date de vente (Obligatoire) :</span>
+                </Label>
+                <Input
+                  v-model="formData.saleDate"
+                  type="date"
+                  :class="['quantity-input', { 'border-red-500': getFieldError('saleDate') }]"
+                  :max="new Date().toISOString().split('T')[0]"
+                  @input="clearFieldError('saleDate')"
+                />
+                <span v-if="getFieldError('saleDate')" class="text-red-500 text-sm mt-1">{{ getFieldError('saleDate') }}</span>
+              </div>
 
               <!-- Mode de paiement -->
               <div class="form-group-vertical">
@@ -1135,10 +1522,13 @@ async function handleNew() {
               </div>
 
               <!-- Terme de paiement -->
-              <div class="form-group-vertical">
-                <Label class="form-label">Terme de paiement :</Label>
-                <Select :model-value="formData.paymentTerm" @update:model-value="formData.paymentTerm = $event">
-                  <SelectTrigger class="select-trigger">
+              <div v-if="isFieldVisible('paymentTerm')" class="form-group-vertical">
+                <Label class="form-label">
+                  <span v-if="!isFieldRequired('paymentTerm')">Terme de paiement :</span>
+                  <span v-else>Terme de paiement (Obligatoire) :</span>
+                </Label>
+                <Select :model-value="formData.paymentTerm" @update:model-value="(val: any) => { formData.paymentTerm = val; clearFieldError('paymentTerm'); }">
+                  <SelectTrigger :class="['select-trigger', { 'border-red-500': getFieldError('paymentTerm') }]">
                     <SelectValue placeholder="Terme" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1148,11 +1538,15 @@ async function handleNew() {
                     <SelectItem value="60_days">60 jours</SelectItem>
                   </SelectContent>
                 </Select>
+                <span v-if="getFieldError('paymentTerm')" class="text-red-500 text-sm mt-1">{{ getFieldError('paymentTerm') }}</span>
               </div>
 
               <!-- TVA -->
-              <div class="form-group-vertical">
-                <Label class="form-label">TVA (%) :</Label>
+              <div v-if="isFieldVisible('tax')" class="form-group-vertical">
+                <Label class="form-label">
+                  <span v-if="!isFieldRequired('tax')">TVA (%) :</span>
+                  <span v-else>TVA (%) (Obligatoire) :</span>
+                </Label>
                 <Input
                   v-model.number="formData.tax"
                   type="number"
@@ -1160,54 +1554,76 @@ async function handleNew() {
                   max="100"
                   step="0.01"
                   placeholder="19.25"
-                  class="quantity-input"
+                  :class="['quantity-input', { 'border-red-500': getFieldError('tax') }]"
+                  @input="clearFieldError('tax')"
                 />
+                <span v-if="getFieldError('tax')" class="text-red-500 text-sm mt-1">{{ getFieldError('tax') }}</span>
               </div>
 
               <!-- Montant payé -->
-              <div class="form-group-vertical">
-                <Label class="form-label">Montant payé (XOF) :</Label>
+              <div v-if="isFieldVisible('amountPaid')" class="form-group-vertical">
+                <Label class="form-label">
+                  <span v-if="!isFieldRequired('amountPaid')">Montant payé (XOF) :</span>
+                  <span v-else>Montant payé (XOF) (Obligatoire) :</span>
+                </Label>
                 <Input
                   v-model.number="formData.amountPaid"
                   type="number"
                   min="0"
                   placeholder="0"
-                  class="quantity-input"
+                  :class="['quantity-input', { 'border-red-500': getFieldError('amountPaid') }]"
+                  @input="clearFieldError('amountPaid')"
                 />
+                <span v-if="getFieldError('amountPaid')" class="text-red-500 text-sm mt-1">{{ getFieldError('amountPaid') }}</span>
               </div>
 
               <!-- Acompte -->
-              <div class="form-group-vertical">
-                <Label class="form-label">Acompte (XOF) :</Label>
+              <div v-if="isFieldVisible('acompte')" class="form-group-vertical">
+                <Label class="form-label">
+                  <span v-if="!isFieldRequired('acompte')">Acompte (XOF) :</span>
+                  <span v-else>Acompte (XOF) (Obligatoire) :</span>
+                </Label>
                 <Input
                   v-model.number="formData.acompte"
                   type="number"
                   min="0"
                   placeholder="0"
-                  class="quantity-input"
+                  :class="['quantity-input', { 'border-red-500': getFieldError('acompte') }]"
+                  @input="clearFieldError('acompte')"
                 />
+                <span v-if="getFieldError('acompte')" class="text-red-500 text-sm mt-1">{{ getFieldError('acompte') }}</span>
               </div>
 
               <!-- Date d'échéance (seulement pour vente à crédit) -->
-              <div v-if="isCreditSale" class="form-group-vertical">
-                <Label class="form-label">Date d'échéance (Obligatoire pour crédit) :</Label>
+              <div v-if="isCreditSale && isFieldVisible('dueDate')" class="form-group-vertical">
+                <Label class="form-label">
+                  <span v-if="!isFieldRequired('dueDate')">Date d'échéance :</span>
+                  <span v-else>Date d'échéance (Obligatoire pour crédit) :</span>
+                </Label>
                 <Input
                   v-model="formData.dueDate"
                   type="date"
-                  class="quantity-input"
+                  :class="['quantity-input', { 'border-red-500': getFieldError('dueDate') }]"
                   :min="new Date().toISOString().split('T')[0]"
+                  @input="clearFieldError('dueDate')"
                 />
+                <span v-if="getFieldError('dueDate')" class="text-red-500 text-sm mt-1">{{ getFieldError('dueDate') }}</span>
               </div>
 
               <!-- Notes -->
-              <div class="form-group-vertical">
-                <Label class="form-label">Notes :</Label>
+              <div v-if="isFieldVisible('notes')" class="form-group-vertical">
+                <Label class="form-label">
+                  <span v-if="!isFieldRequired('notes')">Notes :</span>
+                  <span v-else>Notes (Obligatoire) :</span>
+                </Label>
                 <Textarea
                   v-model="formData.notes"
                   placeholder="Notes additionnelles..."
                   rows="3"
-                  class="quantity-input"
+                  :class="['quantity-input', { 'border-red-500': getFieldError('notes') }]"
+                  @input="clearFieldError('notes')"
                 />
+                <span v-if="getFieldError('notes')" class="text-red-500 text-sm mt-1">{{ getFieldError('notes') }}</span>
               </div>
             </div>
 
@@ -1222,6 +1638,7 @@ async function handleNew() {
                       <th>Produit</th>
                       <th>En stock</th>
                       <th>Ajoutée</th>
+                      <th>Prix unit.</th>
                       <th>Total</th>
                       <th>Action</th>
                     </tr>
@@ -1231,7 +1648,10 @@ async function handleNew() {
                       <td>{{ line.productName }}</td>
                       <td>{{ line.stock }}</td>
                       <td>{{ line.quantity }}</td>
-                      <td>{{ formatCurrencyShort(line.quantity * line.unitPrice) }}</td>
+                      <td>
+                        <span class="text-sm">{{ formatCurrencyShort((allowFlexiblePricing && line.customUnitPrice !== undefined) ? line.customUnitPrice : line.unitPrice) }}</span>
+                      </td>
+                      <td>{{ formatCurrencyShort(line.quantity * ((allowFlexiblePricing && line.customUnitPrice !== undefined) ? line.customUnitPrice : line.unitPrice)) }}</td>
                       <td>
                         <Button
                           variant="ghost"
@@ -1253,7 +1673,7 @@ async function handleNew() {
               </div>
 
               <div class="amounts-summary-step2">
-                <div class="amount-row">
+                <div v-if="isFieldVisible('tax')" class="amount-row">
                   <span class="label">TVA ({{ formData.tax }}%):</span>
                   <span class="value">{{ formatCurrencyShort(taxAmount) }}</span>
                 </div>
@@ -1292,7 +1712,7 @@ async function handleNew() {
 
     <!-- Modal de confirmation avant la création de la vente -->
     <Dialog :open="showConfirmationModal" @update:open="showConfirmationModal = $event">
-      <DialogContent class="sm:max-w-[600px]">
+      <DialogContent class="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle class="text-xl font-bold text-blue-600">
             🔔 Confirmer la vente

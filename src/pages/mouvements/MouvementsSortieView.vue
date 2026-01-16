@@ -22,8 +22,10 @@ import {
 import { PackageMinus, Upload, FileText, Sheet } from 'lucide-vue-next'
 import { encaissementsApi } from '@/services/api/encaissements.api'
 import MouvementsSortieTable from '@/components/mouvements/MouvementsSortieTable.vue'
+import { useStoreAssignment } from '@/composables/useStoreAssignment'
 
 const store = useSortiesStore()
+const { shouldShowStoreSelector, getDefaultStoreId, getStoreLabel } = useStoreAssignment()
 
 // État local
 const searchQuery = ref('')
@@ -59,6 +61,12 @@ const filteredSorties = computed(() => store.sorties)
 onMounted(async () => {
   // Charger la liste des stores
   stores.value = await encaissementsApi.getStores()
+
+  // Si l'utilisateur a un magasin par défaut, le sélectionner automatiquement
+  if (getDefaultStoreId.value) {
+    selectedStoreId.value = getDefaultStoreId.value
+    filters.value.store = getDefaultStoreId.value
+  }
 
   loadSorties()
 })
@@ -103,6 +111,7 @@ const handleExportPdf = async () => {
     if (filters.value.end_date) apiFilters.date_to = filters.value.end_date
     if (filters.value.store) apiFilters.store = filters.value.store
     if (filters.value.product) apiFilters.product = filters.value.product
+    if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportPdf(apiFilters)
   } catch (error) {
     console.error('Erreur lors de l\'export PDF:', error)
@@ -118,6 +127,7 @@ const handleExportExcel = async () => {
     if (filters.value.end_date) apiFilters.date_to = filters.value.end_date
     if (filters.value.store) apiFilters.store = filters.value.store
     if (filters.value.product) apiFilters.product = filters.value.product
+    if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportExcel(apiFilters)
   } catch (error) {
     console.error('Erreur lors de l\'export Excel:', error)
@@ -174,7 +184,7 @@ const handlePageChange = async (page: number) => {
       </div>
 
       <!-- Statistiques -->
-      <div class="grid gap-6 md:grid-cols-3">
+      <div class="grid gap-6 md:grid-cols-2">
         <Card class="border-none bg-white/80 shadow-xl backdrop-blur-sm transition-all hover:shadow-2xl">
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle class="text-sm font-medium text-slate-600">Total Sorties</CardTitle>
@@ -184,7 +194,7 @@ const handlePageChange = async (page: number) => {
           </CardHeader>
           <CardContent>
             <div class="text-3xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
-              {{ filteredSorties.length }}
+              {{ store.totalCount }}
             </div>
             <p class="mt-1 text-xs text-slate-500">
               Sorties de stock
@@ -208,31 +218,14 @@ const handlePageChange = async (page: number) => {
             </p>
           </CardContent>
         </Card>
-
-        <Card class="border-none bg-white/80 shadow-xl backdrop-blur-sm transition-all hover:shadow-2xl">
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle class="text-sm font-medium text-slate-600">Stock Impact</CardTitle>
-            <div class="rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 p-2.5">
-              <FileText class="h-5 w-5 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div class="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              -{{ store.totalQuantity.toLocaleString('fr-FR') }}
-            </div>
-            <p class="mt-1 text-xs text-slate-500">
-              Impact sur le stock
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       <!-- Filtres de recherche -->
       <div class="border-none bg-white/80 shadow-xl backdrop-blur-sm rounded-lg p-4 space-y-4">
         <!-- Ligne 1: Store et Recherche -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <Label for="store-select" class="text-sm font-medium text-slate-700">Point de Vente</Label>
+        <div class="grid grid-cols-1 gap-4" :class="shouldShowStoreSelector ? 'md:grid-cols-2' : 'md:grid-cols-1'">
+          <div v-if="shouldShowStoreSelector" class="space-y-2">
+            <Label for="store-select" class="text-sm font-medium text-slate-700">{{ getStoreLabel }}</Label>
             <select
               id="store-select"
               v-model="selectedStoreId"

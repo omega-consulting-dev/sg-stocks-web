@@ -23,9 +23,11 @@ import {
 import { Package, Upload, FileText, Sheet } from 'lucide-vue-next'
 import { encaissementsApi } from '@/services/api/encaissements.api'
 import MouvementsEntreeTable from '@/components/mouvements/MouvementsEntreeTable.vue'
+import { useStoreAssignment } from '@/composables/useStoreAssignment'
 
 const router = useRouter()
 const store = useAchatsStore()
+const { shouldShowStoreSelector, getDefaultStoreId, getStoreLabel } = useStoreAssignment()
 
 // État local
 const searchQuery = ref('')
@@ -59,6 +61,12 @@ const paginatedAchats = computed(() => {
 onMounted(async () => {
   // Charger la liste des stores
   stores.value = await encaissementsApi.getStores()
+
+  // Si l'utilisateur a un magasin par défaut, le sélectionner automatiquement
+  if (getDefaultStoreId.value) {
+    selectedStoreId.value = getDefaultStoreId.value
+    filters.value.store = getDefaultStoreId.value
+  }
 
   loadAchats()
 })
@@ -101,6 +109,7 @@ const handleExportPdf = async () => {
     if (filters.value.end_date) apiFilters.date_to = filters.value.end_date
     if (filters.value.store) apiFilters.store = filters.value.store
     if (filters.value.product) apiFilters.product = filters.value.product
+    if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportPdf(apiFilters)
   } catch (error) {
     console.error('Erreur lors de l\'export PDF:', error)
@@ -116,6 +125,7 @@ const handleExportExcel = async () => {
     if (filters.value.end_date) apiFilters.date_to = filters.value.end_date
     if (filters.value.store) apiFilters.store = filters.value.store
     if (filters.value.product) apiFilters.product = filters.value.product
+    if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportExcel(apiFilters)
   } catch (error) {
     console.error('Erreur lors de l\'export Excel:', error)
@@ -206,9 +216,9 @@ const confirmDelete = async () => {
       <!-- Filtres de recherche -->
       <div class="border-none bg-white/80 shadow-xl backdrop-blur-sm rounded-lg p-4 space-y-4">
         <!-- Ligne 1: Store et Produit -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <Label for="store-select" class="text-sm font-medium text-slate-700">Point de Vente</Label>
+        <div class="grid grid-cols-1 gap-4" :class="shouldShowStoreSelector ? 'md:grid-cols-2' : 'md:grid-cols-1'">
+          <div v-if="shouldShowStoreSelector" class="space-y-2">
+            <Label for="store-select" class="text-sm font-medium text-slate-700">{{ getStoreLabel }}</Label>
             <select
               id="store-select"
               v-model="selectedStoreId"

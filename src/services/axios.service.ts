@@ -56,7 +56,7 @@ function getBaseURL(): string {
 
 // Création de l'instance Axios SANS baseURL statique
 const Axios = axios.create({
-    timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 10000,
+    timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000, // 30 secondes au lieu de 10
     withCredentials: true
 })
 
@@ -117,7 +117,7 @@ Axios.interceptors.response.use(
     (res: AxiosResponse) => res,
     async (err: AxiosError) => {
         const userStore = useUserStore()
-        const originalRequest = err.config as CustomAxiosRequestConfig 
+        const originalRequest = err.config as CustomAxiosRequestConfig
 
         // Gestion des erreurs de réseau (pas de `err.response`)
         if (!err.response) {
@@ -132,7 +132,7 @@ Axios.interceptors.response.use(
 
         // Gestion de l'erreur 401
         if (err.response.status === 401 && !originalRequest._retry) {
-            
+
             // Si on est déjà en train de refresh, ajouter à la queue
             if (isRefreshing) {
                 return new Promise<string>((resolve, reject) => {
@@ -157,28 +157,28 @@ Axios.interceptors.response.use(
                 const res = await Axios.post<{ access: string }>('/auth/refresh/', {
                     refresh: userStore.refresh_token
                 }, { skipAuthRefresh: true } as CustomAxiosRequestConfig)
-                
+
                 const newToken: string = res.data.access
-                
+
                 userStore.setAccessToken(newToken)
-                
+
                 // Mettre à jour l'en-tête de la requête originale et de la queue
                 originalRequest.headers = originalRequest.headers || {}
                 originalRequest.headers.Authorization = `Bearer ${newToken}`
-                
+
                 processQueue(null, newToken)
 
                 return Axios(originalRequest)
             } catch (refreshError) {
                 console.error('Erreur lors du refresh du token:', refreshError)
-                
+
                 // Nettoyer la queue en cas d'erreur
                 processQueue(refreshError as AxiosError, null)
-                
+
                 // Nettoyer les données utilisateur et rediriger
                 userStore.clearUser()
                 router.push({ name: 'login' })
-                
+
                 return Promise.reject(refreshError)
             } finally {
                 isRefreshing = false

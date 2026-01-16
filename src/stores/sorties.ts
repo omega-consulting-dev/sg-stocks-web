@@ -15,16 +15,12 @@ export const useSortiesStore = defineStore('sorties', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const totalCount = ref(0)
+  const totalQuantity = ref(0) // Quantité totale globale (tous les enregistrements)
+  const totalAmount = ref(0) // Montant total global (tous les enregistrements)
   const currentPage = ref(1)
 
   // Computed
   const sortiesCount = computed(() => sorties.value.length)
-  const totalQuantity = computed(() =>
-    sorties.value.reduce((sum, sortie) => sum + Number(sortie.quantity), 0)
-  )
-  const totalAmount = computed(() =>
-    sorties.value.reduce((sum, sortie) => sum + Number(sortie.invoice_amount || sortie.total_value || 0), 0)
-  )
 
   // Actions
   const fetchSorties = async (filters?: Omit<MovementFilters, 'movement_type'>, page: number = 1, page_size: number = 10) => {
@@ -49,6 +45,34 @@ export const useSortiesStore = defineStore('sorties', () => {
       sorties.value = response.results
       totalCount.value = response.count
       currentPage.value = page
+
+      // Récupérer toutes les données pour calculer les statistiques globales
+      // uniquement si c'est la première page ou si les filtres changent
+      if (page === 1 || totalQuantity.value === 0) {
+        try {
+          // Faire un appel pour obtenir toutes les données (sans pagination)
+          const statsResponse = await inventoryApi.getMovements({
+            ...filters,
+            movement_type: 'out,transfer',
+            page_size: 10000 // Grande limite pour tout récupérer
+          }, 1)
+
+          // Calculer les totaux globaux
+          totalQuantity.value = statsResponse.results.reduce((sum, sortie) => sum + Number(sortie.quantity), 0)
+          totalAmount.value = statsResponse.results.reduce((sum, sortie) => sum + Number(sortie.invoice_amount || sortie.total_value || 0), 0)
+
+          console.log('[SORTIES] Statistiques globales calculées:', {
+            totalCount: statsResponse.count,
+            totalQuantity: totalQuantity.value,
+            totalAmount: totalAmount.value
+          })
+        } catch (statsError) {
+          console.error('[SORTIES] Erreur calcul statistiques:', statsError)
+          // Utiliser les valeurs de la page courante si le calcul échoue
+          totalQuantity.value = response.results.reduce((sum, sortie) => sum + Number(sortie.quantity), 0)
+          totalAmount.value = response.results.reduce((sum, sortie) => sum + Number(sortie.invoice_amount || sortie.total_value || 0), 0)
+        }
+      }
     } catch (e: any) {
       console.error('[SORTIES] Erreur:', e)
       error.value = 'Erreur lors du chargement des sorties de stock'
@@ -132,10 +156,10 @@ export const useSortiesStore = defineStore('sorties', () => {
     loading,
     error,
     totalCount,
-    currentPage,
-    sortiesCount,
     totalQuantity,
     totalAmount,
+    currentPage,
+    sortiesCount,
     fetchSorties,
     deleteSortie,
     exportExcel,

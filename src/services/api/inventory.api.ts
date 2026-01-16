@@ -214,11 +214,12 @@ export const inventoryApi = {
    */
   async getStockLevels(
     filters?: StockFilters,
-    page: number = 1
+    page: number = 1,
+    pageSize: number = 50
   ): Promise<PaginatedResponse<StockLevel>> {
     const response: AxiosResponse<PaginatedResponse<StockLevel>> = await Axios.get(
       '/inventory/stocks/',
-      { params: { ...filters, page } }
+      { params: { ...filters, page, page_size: pageSize } }
     )
     return response.data
   },

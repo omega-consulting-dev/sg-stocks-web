@@ -92,7 +92,7 @@
       <!-- Filtres de recherche -->
       <div class="border-none bg-white/80 shadow-xl backdrop-blur-sm rounded-lg p-4 space-y-4">
         <!-- Ligne 1: Recherche, Magasin et Produit -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 gap-4" :class="shouldShowStoreSelector ? 'md:grid-cols-3' : 'md:grid-cols-2'">
           <div class="space-y-2">
             <Label for="search" class="text-sm font-medium text-slate-700">Rechercher un produit</Label>
             <Input
@@ -105,8 +105,8 @@
             />
           </div>
 
-          <div class="space-y-2">
-            <Label for="store" class="text-sm font-medium text-slate-700">Magasin</Label>
+          <div v-if="shouldShowStoreSelector" class="space-y-2">
+            <Label for="store" class="text-sm font-medium text-slate-700">{{ getStoreLabel }}</Label>
             <select
               id="store"
               v-model="filters.store"
@@ -248,11 +248,13 @@ import {
 } from 'lucide-vue-next'
 import InventaireTable from '@/components/inventaire/InventaireTable.vue'
 import type { StockFilters } from '@/services/api/inventory.api'
+import { useStoreAssignment } from '@/composables/useStoreAssignment'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { CompanySettingsService } from '@/services/company-settings.service'
 
 const store = useInventaireStore()
+const { shouldShowStoreSelector, getDefaultStoreId, getStoreLabel } = useStoreAssignment()
 
 const filters = ref({
   search: '',
@@ -407,7 +409,7 @@ const handleExportPdf = async () => {
     // En-tête
     doc.setFontSize(20)
     doc.setFont('helvetica', 'bold')
-    doc.text('INVENTAIRE DES STOCKS', 105, 20, { align: 'center' })
+    doc.text('État d\'inventaire', 105, 20, { align: 'center' })
 
     // Date d'export
     doc.setFontSize(10)
@@ -551,7 +553,17 @@ const handleExportPdf = async () => {
 }
 
 onMounted(() => {
-  store.fetchStocks()
+  // Si l'utilisateur a un magasin par défaut, le sélectionner automatiquement
+  if (getDefaultStoreId.value) {
+    filters.value.store = String(getDefaultStoreId.value)
+    const apiFilters: StockFilters = {
+      store: getDefaultStoreId.value
+    }
+    store.fetchStocks(apiFilters, 1)
+  } else {
+    store.fetchStocks()
+  }
+
   store.fetchStores()
   store.fetchProducts()
 })

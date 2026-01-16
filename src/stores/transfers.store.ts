@@ -1,17 +1,18 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { transfersApi } from '@/services/api/transfers.api'
+import { useProductsStore } from './products'
 import type {
   StockTransfer,
   StockTransferDetail,
   CreateTransferData,
   UpdateTransferData,
   ReceiveTransferData,
-  TransferFilters,
-  TransferStatus
+  TransferFilters
 } from '@/services/api/transfers.api'
 
 export const useTransfersStore = defineStore('transfers', () => {
+  const productsStore = useProductsStore()
   // State
   const transfers = ref<StockTransfer[]>([])
   const currentTransfer = ref<StockTransferDetail | null>(null)
@@ -155,6 +156,9 @@ export const useTransfersStore = defineStore('transfers', () => {
       // Recharger la liste pour avoir les données complètes
       await fetchTransfers()
 
+      // Recharger les produits pour mettre à jour les stocks après validation
+      await productsStore.fetchProducts()
+
       // Si on visualise ce transfert, le recharger aussi
       if (currentTransfer.value?.id === id) {
         await fetchTransfer(id)
@@ -180,6 +184,9 @@ export const useTransfersStore = defineStore('transfers', () => {
 
       // Recharger la liste pour avoir les données complètes
       await fetchTransfers()
+
+      // Recharger les produits pour mettre à jour les stocks après réception
+      await productsStore.fetchProducts()
 
       // Si on visualise ce transfert, le recharger aussi
       if (currentTransfer.value?.id === id) {

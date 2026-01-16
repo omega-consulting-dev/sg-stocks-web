@@ -21,42 +21,42 @@ export const useMouvementsStore = defineStore('mouvements', () => {
   // Computed
   const mouvementsCount = computed(() => mouvements.value.length)
 
-  // Total des quantités entrées
+  // Total des quantités entrées (calculé sur TOUS les mouvements, pas juste la page courante)
   const totalQuantityIn = computed(() =>
-    mouvements.value
+    allMouvements.value
       .filter(m => m.movement_type === 'in')
       .reduce((sum, m) => sum + Number(m.quantity), 0)
   )
 
   // Total des quantités sorties (inclut les sorties et les transferts)
   const totalQuantityOut = computed(() =>
-    mouvements.value
+    allMouvements.value
       .filter(m => m.movement_type === 'out' || m.movement_type === 'transfer')
       .reduce((sum, m) => sum + Number(m.quantity), 0)
   )
 
   // Total des valeurs entrées
   const totalValueIn = computed(() =>
-    mouvements.value
+    allMouvements.value
       .filter(m => m.movement_type === 'in')
       .reduce((sum, m) => sum + Number(m.invoice_amount || m.total_value || 0), 0)
   )
 
   // Total des valeurs sorties (inclut les sorties et les transferts)
   const totalValueOut = computed(() =>
-    mouvements.value
+    allMouvements.value
       .filter(m => m.movement_type === 'out' || m.movement_type === 'transfer')
       .reduce((sum, m) => sum + Number(m.invoice_amount || m.total_value || 0), 0)
   )
 
-  // Nombre d'entrées
+  // Nombre d'entrées (calculé sur TOUS les mouvements)
   const entreeCount = computed(() =>
-    mouvements.value.filter(m => m.movement_type === 'in').length
+    allMouvements.value.filter(m => m.movement_type === 'in').length
   )
 
   // Nombre de sorties (inclut les sorties et les transferts)
   const sortieCount = computed(() =>
-    mouvements.value.filter(m => m.movement_type === 'out' || m.movement_type === 'transfer').length
+    allMouvements.value.filter(m => m.movement_type === 'out' || m.movement_type === 'transfer').length
   )
 
 
@@ -67,9 +67,10 @@ export const useMouvementsStore = defineStore('mouvements', () => {
     try {
       // Récupérer tous les mouvements avec un page_size élevé pour avoir le stock final correct
       const response = await inventoryApi.getMovements({ ...filters, page_size: 10000 }, 1)
+      
       allMouvements.value = response.results
       totalCount.value = response.count
-      
+
       // Paginer côté client
       const startIndex = (page - 1) * page_size
       const endIndex = startIndex + page_size

@@ -17,6 +17,7 @@ import { Trash2 } from 'lucide-vue-next'
 interface Props {
   mouvements: Mouvement[]
   allMouvements?: Mouvement[]  // Tous les mouvements pour calculer le stock final correctement
+  productStocks?: Record<number, number>  // Stocks actuels des produits (product_id -> quantity)
   loading?: boolean
   currentPage?: number
   pageSize?: number
@@ -30,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
   pageSize: 8,
   total: 0,
   allMouvements: () => [],
+  productStocks: () => ({}),
   showMovementTypeColumns: true,
 })
 
@@ -43,26 +45,73 @@ const emit = defineEmits<{
 const displayedMouvements = computed(() => {
   // Utiliser tous les mouvements pour calculer le stock cumulatif correct
   const allMovs = props.allMouvements && props.allMouvements.length > 0 ? props.allMouvements : props.mouvements
-  let stockCumulatif = 0
 
-  // Calculer le stock final pour TOUS les mouvements
-  const mouvementsAvecStock = allMovs.map(mouvement => {
-    if (mouvement.movement_type === 'in') {
-      stockCumulatif += Number(mouvement.quantity)
-    } else if (mouvement.movement_type === 'out' || mouvement.movement_type === 'transfer') {
-      stockCumulatif -= Number(mouvement.quantity)
+  if (allMovs.length === 0) return []
+
+  // Grouper les mouvements par produit
+  const mouvementsByProduct = new Map<number, any[]>()
+
+  allMovs.forEach(mouvement => {
+    const productId = mouvement.product
+    if (!mouvementsByProduct.has(productId)) {
+      mouvementsByProduct.set(productId, [])
     }
+    mouvementsByProduct.get(productId)!.push(mouvement)
+  })
 
-    return {
-      ...mouvement,
-      stock_final: stockCumulatif
+  // Calculer le stock final pour chaque produit séparément
+  const allMouvementsWithStock: any[] = []
+
+  mouvementsByProduct.forEach((productMovements, productId) => {
+    // Trier les mouvements de ce produit par date ET par ID pour garder l'ordre chronologique exact
+    const sortedMovs = [...productMovements].sort((a, b) => {
+      const dateA = new Date(a.date || a.created_at).getTime()
+      const dateB = new Date(b.date || b.created_at).getTime()
+      if (dateA !== dateB) {
+        return dateA - dateB
+      }
+      // Si même date, trier par ID pour garder l'ordre de création
+      return a.id - b.id
+    })
+
+    // Récupérer le stock actuel de CE produit
+    let stockActuel = Number(props.productStocks?.[productId] || 0)
+
+    // Parcourir dans l'ordre inverse pour calculer le stock à chaque étape
+    // On part du stock actuel et on "annule" chaque mouvement en remontant dans le temps
+    let stockCourant = stockActuel
+
+    for (let i = sortedMovs.length - 1; i >= 0; i--) {
+      const mouvement = sortedMovs[i]
+      allMouvementsWithStock.unshift({
+        ...mouvement,
+        stock_final: stockCourant
+      })
+
+      // Annuler ce mouvement pour obtenir le stock d'avant
+      if (mouvement.movement_type === 'in') {
+        stockCourant -= Number(mouvement.quantity)
+      } else if (mouvement.movement_type === 'out' || mouvement.movement_type === 'transfer') {
+        stockCourant += Number(mouvement.quantity)
+      }
     }
   })
 
   // Retourner uniquement les mouvements de la page actuelle avec leur stock final correct
-  return mouvementsAvecStock.filter(m =>
+  // MAIS les trier par date pour l'affichage (pas par référence)
+  const filteredMovements = allMouvementsWithStock.filter(m =>
     props.mouvements.some(pm => pm.id === m.id)
   )
+
+  // Trier par date et ID pour affichage chronologique CROISSANT (plus ancien en premier)
+  return filteredMovements.sort((a, b) => {
+    const dateA = new Date(a.date || a.created_at).getTime()
+    const dateB = new Date(b.date || b.created_at).getTime()
+    if (dateA !== dateB) {
+      return dateA - dateB  // Ordre croissant
+    }
+    return a.id - b.id  // Ordre croissant
+  })
 })
 
 const totalPages = computed(() => Math.ceil(props.total / props.pageSize))
@@ -83,8 +132,9 @@ const formatDate = (dateString: string) => {
 }
 
 // Formatage de la quantité
-const formatQuantity = (quantity: number) => {
-  return quantity.toLocaleString('fr-FR')
+const formatQuantity = (quantity: number | undefined) => {
+  if (quantity === undefined || quantity === null) return '0'
+  return Number(quantity).toLocaleString('fr-FR')
 }
 
 // Pagination
@@ -127,8 +177,12 @@ const handleDelete = (mouvement: Mouvement) => {
         <TableHeader>
           <TableRow class="border-b border-[#EEEEEE]">
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+              Référence
+            </TableHead>
+            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Date
             </TableHead>
+
             <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Désignation
             </TableHead>
@@ -155,6 +209,7 @@ const handleDelete = (mouvement: Mouvement) => {
           <template v-if="loading">
             <TableRow v-for="i in (pageSize || 8)" :key="i">
               <TableCell class="text-center"><Skeleton class="h-4 w-28 mx-auto" /></TableCell>
+              <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-32 mx-auto" /></TableCell>
               <template v-if="showMovementTypeColumns">
                 <TableCell class="text-center"><Skeleton class="h-4 w-16 mx-auto" /></TableCell>
@@ -171,9 +226,14 @@ const handleDelete = (mouvement: Mouvement) => {
               :key="mouvement.id"
               class="border-b border-[#EEEEEE] hover:bg-gray-50"
             >
+            <TableCell class="text-[14px] font-medium text-blue-600 text-center" style="font-family: Poppins">
+                {{ mouvement.reference || '-' }}
+              </TableCell>
+
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
                 {{ formatDate(mouvement.date || mouvement.created_at) }}
               </TableCell>
+
               <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
                 {{ mouvement.product_name }}
               </TableCell>
@@ -206,7 +266,7 @@ const handleDelete = (mouvement: Mouvement) => {
           </template>
           <template v-else>
             <TableRow>
-              <TableCell :colspan="showMovementTypeColumns ? 6 : 4" class="text-center text-muted-foreground py-8">
+              <TableCell :colspan="showMovementTypeColumns ? 7 : 5" class="text-center text-muted-foreground py-8">
                 Aucun mouvement de stock trouvé
               </TableCell>
             </TableRow>

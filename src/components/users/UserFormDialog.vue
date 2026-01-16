@@ -52,7 +52,10 @@
                 type="password"
                 placeholder="••••••••"
                 required
+                :class="{ 'border-red-500': passwordError }"
               />
+              <p v-if="passwordError" class="text-xs text-red-500 mt-1">{{ passwordError }}</p>
+              <p class="text-xs text-gray-500 mt-1">Min. 8 caractères, incluant lettres et chiffres</p>
             </div>
 
             <div class="space-y-2">
@@ -345,6 +348,7 @@ const isOpen = computed({
 const isEditMode = computed(() => !!props.user)
 const loading = ref(false)
 const error = ref<string | null>(null)
+const passwordError = ref<string | null>(null)
 const showEmergencyContact = ref(false)
 const confirmPassword = ref('')
 
@@ -476,6 +480,7 @@ const handleSubmit = async () => {
 
   loading.value = true
   error.value = null
+  passwordError.value = null
 
   try {
     // Préparer les données
@@ -506,13 +511,24 @@ const handleSubmit = async () => {
       // Mode création
       data.password = formData.value.password
       data.password_confirm = confirmPassword.value
+      console.log('📤 Données envoyées pour création utilisateur:', data)
       await usersStore.createUser(data as UserCreateData)
     }
 
     emit('saved')
     closeDialog()
   } catch (e: any) {
-    error.value = e.response?.data?.message || "Une erreur s'est produite"
+    console.error('❌ Erreur création utilisateur:', e.response?.data)
+
+    // Extraire les erreurs de validation
+    const validationErrors = e.response?.data
+    if (validationErrors?.password) {
+      passwordError.value = Array.isArray(validationErrors.password)
+        ? validationErrors.password[0]
+        : validationErrors.password
+    }
+
+    error.value = e.response?.data?.message || e.response?.data?.detail || "Une erreur s'est produite. Vérifiez les champs."
   } finally {
     loading.value = false
   }

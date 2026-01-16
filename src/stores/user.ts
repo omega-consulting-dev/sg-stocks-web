@@ -47,6 +47,15 @@ export const useUserStore = defineStore('user', () => {
       // Sauvegarder l'utilisateur dans localStorage
       localStorage.setItem('user', JSON.stringify(response.user))
 
+      // Debug: Vérifier les données de magasin
+      console.log('🔐 Connexion réussie - Données utilisateur:', {
+        username: response.user.username,
+        role: response.user.role,
+        default_store: response.user.default_store,
+        is_store_restricted: response.user.is_store_restricted,
+        has_assigned_stores: response.user.has_assigned_stores
+      })
+
       return response
     } catch (e: any) {
       const errorMessage =
@@ -81,12 +90,44 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
+   * Vérifier si le token JWT est expiré
+   */
+  const isTokenExpired = (token: string | null): boolean => {
+    if (!token) return true
+
+    try {
+      // Décoder le payload du JWT (sans vérifier la signature)
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const exp = payload.exp
+
+      if (!exp) return true
+
+      // Vérifier si le token expire dans moins de 5 minutes
+      const expirationTime = exp * 1000 // Convertir en millisecondes
+      const now = Date.now()
+      const fiveMinutes = 5 * 60 * 1000
+
+      return expirationTime < (now + fiveMinutes)
+    } catch (e) {
+      console.error('Erreur lors de la vérification du token:', e)
+      return true
+    }
+  }
+
+  /**
    * Charger l'utilisateur depuis localStorage au démarrage
    */
   const loadUserFromStorage = () => {
     const storedToken = localStorage.getItem('access_token')
     const storedRefreshToken = localStorage.getItem('refresh_token')
     const storedUser = localStorage.getItem('user')
+
+    // Vérifier si le token est expiré
+    if (isTokenExpired(storedToken)) {
+      console.warn('⚠️ Token expiré, déconnexion automatique')
+      clearUser()
+      return
+    }
 
     if (storedToken && storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
       access_token.value = storedToken

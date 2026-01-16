@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useProductsStore, type Product } from '@/stores/products'
 import { useProductFamiliesStore } from '@/stores/productFamilies'
+import { useStoresStore } from '@/stores/stores.store'
+import { inventoryApi, type StockLevel } from '@/services/api/inventory.api'
 import type { CreateProductDto } from '@/services/api/products.api'
 import ProductSearchBar from '@/components/products/ProductSearchBar.vue'
 import ProductTable from '@/components/products/ProductTable.vue'
@@ -22,13 +24,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent } from '@/components/ui/card'
+import { Store } from 'lucide-vue-next'
 
 const store = useProductsStore()
 const familiesStore = useProductFamiliesStore()
+const storesStore = useStoresStore()
 
 // État local
 const searchQuery = ref('')
+const selectedStoreId = ref<string>('all')
+const storeStocks = ref<Map<number, number>>(new Map()) // Map: productId -> quantity pour le magasin sélectionné
 const isFormOpen = ref(false)
 const isDeleteDialogOpen = ref(false)
 const isSuccessDialogOpen = ref(false)
@@ -38,11 +53,26 @@ const productToDelete = ref<Product | null>(null)
 
 // Computed
 const filteredProducts = computed(() => {
+  let products = store.products
+  
+  // Filtre par magasin : remplacer current_stock par le stock du magasin sélectionné
+  if (selectedStoreId.value !== 'all') {
+    products = products.map(product => {
+      const stockForStore = storeStocks.value.get(product.id) || 0
+      return {
+        ...product,
+        current_stock: stockForStore,
+        is_low_stock: stockForStore <= product.minimum_stock
+      }
+    })
+  }
+  
+  // Filtre par recherche
   if (!searchQuery.value) {
-    return store.products
+    return products
   }
   const query = searchQuery.value.toLowerCase()
-  return store.products.filter(
+  return products.filter(
     (product) =>
       product.reference.toLowerCase().includes(query) ||
       product.name.toLowerCase().includes(query) ||
@@ -51,9 +81,43 @@ const filteredProducts = computed(() => {
   )
 })
 
+// Fonction pour charger les stocks d'un magasin spécifique
+const loadStoreStocks = async (storeId: number) => {
+  try {
+    // Récupérer tous les stocks du magasin
+    const response = await inventoryApi.getStockLevels({ store: storeId }, 1)
+    
+    // Créer une Map productId -> quantity
+    const stocksMap = new Map<number, number>()
+    response.results.forEach((stock: StockLevel) => {
+      const productId = typeof stock.product === 'number' ? stock.product : stock.product.id
+      stocksMap.set(productId, stock.quantity)
+    })
+    
+    storeStocks.value = stocksMap
+    console.log(`Stocks chargés pour le magasin ${storeId}:`, stocksMap)
+  } catch (error) {
+    console.error('Erreur chargement stocks magasin:', error)
+    storeStocks.value.clear()
+  }
+}
+
 // Charger les données au montage
-onMounted(() => {
-  store.fetchProducts()
+onMounted(async () => {
+  await store.fetchProducts()
+  if (storesStore.stores.length === 0) {
+    await storesStore.fetchStores()
+  }
+})
+
+// Watcher pour recharger les stocks quand le magasin change
+watch(selectedStoreId, async (newValue) => {
+  if (newValue !== 'all') {
+    await loadStoreStocks(parseInt(newValue))
+  } else {
+    // Réinitialiser pour afficher les stocks globaux
+    storeStocks.value.clear()
+  }
 })
 
 // Gestion de la recherche
@@ -201,6 +265,43 @@ const handleFormSubmit = async (data: CreateProductDto) => {
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
+
+    <!-- Filtre par magasin -->
+    <Card class="border-none bg-white/80 shadow-xl backdrop-blur-sm">
+      <CardContent class="p-6">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 text-slate-700">
+            <Store class="h-5 w-5" />
+            <Label htmlFor="store-filter" class="font-semibold">
+              Filtrer par magasin :
+            </Label>
+          </div>
+          <Select v-model="selectedStoreId">
+            <SelectTrigger id="store-filter" class="w-[300px]">
+              <SelectValue placeholder="Sélectionner un magasin" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                <div class="flex items-center gap-2">
+                  <Store class="h-4 w-4" />
+                  <span class="font-medium">Tous les magasins (Stock global)</span>
+                </div>
+              </SelectItem>
+              <SelectItem
+                v-for="store in storesStore.stores"
+                :key="store.id"
+                :value="store.id.toString()"
+              >
+                <div class="flex items-center gap-2">
+                  <Store class="h-4 w-4" />
+                  <span>{{ store.name }}</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- Barre de recherche et actions -->
     <ProductSearchBar

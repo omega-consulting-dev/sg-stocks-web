@@ -26,6 +26,7 @@ const storesStore = useStoresStore()
 // État
 const loading = ref(false)
 const formError = ref<string | null>(null)
+const fieldErrors = ref<Record<string, string>>({})
 
 // Mode création ou édition
 const isEditMode = computed(() => !!props.store)
@@ -84,6 +85,7 @@ const resetForm = () => {
     is_active: true
   }
   formError.value = null
+  fieldErrors.value = {}
 }
 
 // Charger les données en mode édition
@@ -138,6 +140,7 @@ const handleSubmit = async () => {
 
   loading.value = true
   formError.value = null
+  fieldErrors.value = {}
 
   try {
     if (isEditMode.value && props.store) {
@@ -171,8 +174,37 @@ const handleSubmit = async () => {
       handleClose()
     }
   } catch (e) {
-    formError.value = storesStore.error || 'Une erreur est survenue'
     console.error('Erreur sauvegarde:', e)
+
+    const error = e as { response?: { data?: Record<string, unknown> } }
+
+    // Extraire les erreurs de validation par champ
+    if (error.response?.data) {
+      const errors = error.response.data
+
+      // Si c'est un objet avec des erreurs par champ
+      if (typeof errors === 'object' && !Array.isArray(errors)) {
+        fieldErrors.value = {}
+        for (const [field, messages] of Object.entries(errors)) {
+          if (Array.isArray(messages)) {
+            fieldErrors.value[field] = messages[0]
+          } else if (typeof messages === 'string') {
+            fieldErrors.value[field] = messages
+          }
+        }
+
+        // Si des erreurs de champs sont présentes, afficher un message général
+        if (Object.keys(fieldErrors.value).length > 0) {
+          formError.value = 'Veuillez corriger les erreurs dans le formulaire'
+        } else {
+          formError.value = storesStore.error || 'Une erreur est survenue'
+        }
+      } else {
+        formError.value = storesStore.error || 'Une erreur est survenue'
+      }
+    } else {
+      formError.value = storesStore.error || 'Une erreur est survenue'
+    }
   } finally {
     loading.value = false
   }
@@ -207,33 +239,35 @@ const handleClose = () => {
 
         <!-- Code magasin -->
         <div class="space-y-1">
-          <Label for="code" class="text-sm font-medium">Code magasin :</Label>
+          <Label for="code" class="text-sm font-medium">Code magasin <span class="text-red-500">*</span></Label>
           <div class="relative">
             <Input
               id="code"
               v-model="formData.code"
               placeholder="STR-001"
-              class="h-10 bg-muted"
+              :class="['h-10 bg-muted', fieldErrors.code ? 'border-red-500' : '']"
               required
               readonly
             />
           </div>
+          <p v-if="fieldErrors.code" class="text-xs text-red-500 mt-1">{{ fieldErrors.code }}</p>
         </div>
 
         <!-- Nom -->
         <div class="space-y-1">
-          <Label for="name" class="text-sm font-medium">Nom du magasin :</Label>
+          <Label for="name" class="text-sm font-medium">Nom du magasin <span class="text-red-500">*</span></Label>
           <div class="relative">
             <Building2 class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="name"
               v-model="formData.name"
               placeholder="Ex : Boutique Centre-Ville"
-              class="pl-10 h-10"
+              :class="['pl-10 h-10', fieldErrors.name ? 'border-red-500' : '']"
               required
               :disabled="loading"
             />
           </div>
+          <p v-if="fieldErrors.name" class="text-xs text-red-500 mt-1">{{ fieldErrors.name }}</p>
         </div>
 
         <!-- Type de magasin -->
@@ -253,33 +287,36 @@ const handleClose = () => {
 
         <!-- Ville -->
         <div class="space-y-1">
-          <Label for="city" class="text-sm font-medium">Ville :</Label>
+          <Label for="city" class="text-sm font-medium">Ville <span class="text-red-500">*</span></Label>
           <div class="relative">
             <MapPin class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="city"
               v-model="formData.city"
               placeholder="Ex : Douala"
-              class="pl-10 h-10"
+              :class="['pl-10 h-10', fieldErrors.city ? 'border-red-500' : '']"
               required
               :disabled="loading"
             />
           </div>
+          <p v-if="fieldErrors.city" class="text-xs text-red-500 mt-1">{{ fieldErrors.city }}</p>
         </div>
 
         <!-- Adresse -->
         <div class="space-y-1">
-          <Label for="address" class="text-sm font-medium">Adresse :</Label>
+          <Label for="address" class="text-sm font-medium">Adresse <span class="text-red-500">*</span></Label>
           <div class="relative">
             <MapPin class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="address"
               v-model="formData.address"
               placeholder="Ex : 123 Avenue de la République"
-              class="pl-10 h-10"
+              :class="['pl-10 h-10', fieldErrors.address ? 'border-red-500' : '']"
+              required
               :disabled="loading"
             />
           </div>
+          <p v-if="fieldErrors.address" class="text-xs text-red-500 mt-1">{{ fieldErrors.address }}</p>
         </div>
 
         <!-- Téléphone -->

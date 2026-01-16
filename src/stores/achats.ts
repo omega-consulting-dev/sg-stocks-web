@@ -47,10 +47,11 @@ export const useAchatsStore = defineStore('achats', () => {
     loading.value = true
     error.value = null
     try {
-      // Filtrer uniquement les mouvements de type "in" (entrées en stock/achats)
+      // Récupérer TOUS les mouvements pour pouvoir grouper correctement par receipt_number
+      // puis paginer les bons groupés côté client
       const response = await inventoryApi.getMovements(
-        { ...filters, movement_type: 'in', page_size },
-        page
+        { ...filters, movement_type: 'in', page_size: 1000 },
+        1
       )
       achats.value = response.results
       totalCount.value = response.count
@@ -214,7 +215,8 @@ export const useAchatsStore = defineStore('achats', () => {
     const grouped = new Map<string, StockMovement[]>()
 
     achats.value.forEach(achat => {
-      const key = achat.receipt_number || `UNGROUPED-${achat.id}`
+      // Utiliser le receipt_number s'il existe, sinon créer un identifiant temporaire
+      const key = achat.receipt_number || `NON-GROUPE-${achat.id}`
       if (!grouped.has(key)) {
         grouped.set(key, [])
       }
@@ -235,7 +237,7 @@ export const useAchatsStore = defineStore('achats', () => {
         products,
         created_at: first.created_at
       }
-    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) // Tri du plus ancien au plus récent
   })
 
   return {

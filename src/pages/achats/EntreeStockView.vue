@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAchatsStore, type Achat, type BonEntree } from '@/stores/achats'
+import { useFieldConfigStore } from '@/stores/field-config.store'
 import AchatTable from '@/components/achats/AchatTable.vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,28 @@ import autoTable from 'jspdf-autotable'
 const router = useRouter()
 const route = useRoute()
 const store = useAchatsStore()
+const fieldConfigStore = useFieldConfigStore()
+
+// Column configurations
+const columnConfigs = computed(() => {
+  const configs: Record<string, { visible: boolean; required: boolean }> = {}
+
+  fieldConfigStore.configurations
+    .filter(c => c.form_name === 'purchase_table')
+    .forEach(config => {
+      configs[config.field_name] = {
+        visible: config.is_visible,
+        required: config.is_required
+      }
+    })
+
+  return configs
+})
+
+// Check if a column is visible
+const isColumnVisible = (columnName: string): boolean => {
+  return columnConfigs.value[columnName]?.visible ?? true
+}
 
 // État local
 const searchQuery = ref('')
@@ -72,9 +95,14 @@ const filteredBons = computed(() => {
 })
 
 const paginatedBons = computed(() => {
-  // Utiliser directement les bons du store (déjà paginés par l'API)
-  return filteredBons.value
+  // Paginer côté client après le regroupement
+  const startIndex = (currentPage.value - 1) * pageSize.value
+  const endIndex = startIndex + pageSize.value
+  return filteredBons.value.slice(startIndex, endIndex)
 })
+
+// Nombre total de pages
+const totalPages = computed(() => Math.ceil(filteredBons.value.length / pageSize.value))
 
 // Fonctions pour la modale de détails du bon
 const viewBonDetails = (bon: BonEntree) => {
@@ -254,6 +282,11 @@ const exportBonToPdf = async () => {
 
 // Charger les données au montage
 onMounted(async () => {
+  // Charger les configurations de champs
+  if (!fieldConfigStore.configurations || fieldConfigStore.configurations.length === 0) {
+    await fieldConfigStore.fetchConfigurations()
+  }
+
   // Charger la liste des stores
   stores.value = await encaissementsApi.getStores()
 
@@ -299,6 +332,7 @@ const handleExportPdf = async () => {
     if (filters.value.end_date) apiFilters.date_to = filters.value.end_date
     if (filters.value.store) apiFilters.store = filters.value.store
     if (filters.value.product) apiFilters.product = filters.value.product
+    if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportPdf(apiFilters)
   } catch (error) {
     console.error('Erreur lors de l\'export PDF:', error)
@@ -314,6 +348,7 @@ const handleExportExcel = async () => {
     if (filters.value.end_date) apiFilters.date_to = filters.value.end_date
     if (filters.value.store) apiFilters.store = filters.value.store
     if (filters.value.product) apiFilters.product = filters.value.product
+    if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportExcel(apiFilters)
   } catch (error) {
     console.error('Erreur lors de l\'export Excel:', error)
@@ -348,8 +383,8 @@ const confirmDelete = async () => {
 }
 
 // Gestion de la pagination
-const handlePageChange = async (page: number) => {
-  await loadAchats(page)
+const handlePageChange = (page: number) => {
+  currentPage.value = page
 }
 
 </script>
@@ -485,13 +520,13 @@ const handlePageChange = async (page: number) => {
             <table class="w-full">
               <thead class="bg-gradient-to-r from-amber-50 to-orange-50">
                 <tr>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th v-if="isColumnVisible('receipt_number')" class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     N° Bon
                   </th>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th v-if="isColumnVisible('created_at')" class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Date
                   </th>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th v-if="isColumnVisible('store_name')" class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Point de vente
                   </th>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -500,10 +535,10 @@ const handlePageChange = async (page: number) => {
                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Produits
                   </th>
-                  <th class="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th v-if="isColumnVisible('quantity')" class="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Qté totale
                   </th>
-                  <th class="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th v-if="isColumnVisible('invoice_amount')" class="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Montant
                   </th>
                   <th class="px-6 py-4 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -527,7 +562,7 @@ const handlePageChange = async (page: number) => {
                   :key="bon.receipt_number"
                   class="hover:bg-amber-50/50 transition-colors"
                 >
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td v-if="isColumnVisible('receipt_number')" class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                       <div class="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
                         <FileText class="h-5 w-5 text-white" />
@@ -542,10 +577,10 @@ const handlePageChange = async (page: number) => {
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                  <td v-if="isColumnVisible('created_at')" class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
                     {{ new Date(bon.date).toLocaleDateString('fr-FR') }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                  <td v-if="isColumnVisible('store_name')" class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
                     {{ bon.store_name }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
@@ -556,10 +591,10 @@ const handlePageChange = async (page: number) => {
                       {{ bon.products.length }} produit{{ bon.products.length > 1 ? 's' : '' }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-slate-900">
+                  <td v-if="isColumnVisible('quantity')" class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-slate-900">
                     {{ bon.total_quantity.toLocaleString('fr-FR') }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-slate-900">
+                  <td v-if="isColumnVisible('invoice_amount')" class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-slate-900">
                     {{ bon.total_amount.toLocaleString('fr-FR') }} FCFA
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
@@ -603,8 +638,8 @@ const handlePageChange = async (page: number) => {
         <div v-if="store.totalCount > pageSize" class="mt-6 flex items-center justify-between border-t border-slate-200 pt-4">
           <div class="text-sm text-slate-700">
             Affichage de {{ (currentPage - 1) * pageSize + 1 }} à
-            {{ Math.min(currentPage * pageSize, store.totalCount) }} sur
-            {{ store.totalCount }} résultats
+            {{ Math.min(currentPage * pageSize, filteredBons.length) }} sur
+            {{ filteredBons.length }} bons
           </div>
           <div class="flex gap-2">
             <Button
@@ -618,7 +653,7 @@ const handlePageChange = async (page: number) => {
             <Button
               variant="outline"
               size="sm"
-              :disabled="currentPage * pageSize >= store.totalCount"
+              :disabled="currentPage >= totalPages"
               @click="handlePageChange(currentPage + 1)"
             >
               Suivant

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,16 @@ const userStore = useUserStore()
 const formData = ref({
   email: '',
   password: ''
+})
+
+// Vérifier si c'est une démo et pré-remplir les identifiants
+onMounted(() => {
+  if (route.query.demo === 'true') {
+    formData.value.email = 'demo@sgstock.cm'
+    formData.value.password = 'demo1234'
+    // Optionnel : connexion automatique
+    // handleSubmit()
+  }
 })
 
 const handleSubmit = async () => {

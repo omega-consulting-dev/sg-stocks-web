@@ -135,7 +135,7 @@ export default {
       phone: 'Téléphone',
       address: 'Adresse',
       namePlaceholder: 'Ex: Tenant du client 1',
-      emailPlaceholder: 'Ex: client1@tenant.com',
+      emailPlaceholder: "Ex: client1{'@'}tenant.com",
       phonePlaceholder: 'Ex: +221 XX XXX XX XX',
       addressPlaceholder: 'Adresse complète de l\'entreprise',
       updateButton: 'Mettre à jour les informations',

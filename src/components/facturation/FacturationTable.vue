@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { FileText, Eye } from 'lucide-vue-next'
+import { FileText, Eye, SquarePen } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import type { Sale } from '@/stores/sales.store'
 
@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   generateInvoice: [id: number]
   viewDetails: [id: number]
+  edit: [id: number]
   pageChange: [page: number]
 }>()
 
@@ -153,6 +154,7 @@ function formatMontant(montant: number | undefined) {
             </td>
             <td class="px-6 py-4">
               <div class="flex items-center gap-2">
+
                 <button
                   class="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all shadow-sm"
                   @click="emit('generateInvoice', facturation.id)"
@@ -166,6 +168,13 @@ function formatMontant(montant: number | undefined) {
                   title="Consulter les détails"
                 >
                   <Eye class="w-5 h-5 text-white" />
+                </button>
+                 <button
+                  class="p-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
+                  @click="emit('edit', facturation.id)"
+                  title="Modifier la facture"
+                >
+                  <SquarePen class="w-5 h-5 text-white" />
                 </button>
               </div>
             </td>

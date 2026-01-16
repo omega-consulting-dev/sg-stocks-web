@@ -9,11 +9,21 @@ import { useUserStore } from '@/stores/user'
 export function useStoreAssignment() {
   const userStore = useUserStore()
 
+  // Debug: Afficher les valeurs du store
+  console.log('🏪 useStoreAssignment - État actuel:', {
+    user: userStore.user,
+    defaultStore: userStore.defaultStore,
+    isStoreRestricted: userStore.isStoreRestricted,
+    hasAssignedStores: userStore.hasAssignedStores
+  })
+
   /**
    * Vérifie si l'utilisateur a un magasin par défaut assigné
    */
   const hasDefaultStore = computed(() => {
-    return userStore.defaultStore !== null
+    const result = userStore.defaultStore !== null
+    console.log('🏪 hasDefaultStore:', result, userStore.defaultStore)
+    return result
   })
 
   /**
@@ -70,6 +80,22 @@ export function useStoreAssignment() {
     return null
   })
 
+  /**
+   * Retourne le label approprié selon le rôle de l'utilisateur
+   * - Caissier: "Point de vente"
+   * - Magasinier: "Magasin"
+   * - Autres: "Magasin"
+   */
+  const getStoreLabel = computed(() => {
+    const roleName = userStore.user?.role?.name?.toLowerCase() || ''
+
+    if (roleName.includes('caissier') || roleName.includes('cashier')) {
+      return 'Point de vente'
+    }
+
+    return 'Magasin'
+  })
+
   return {
     // Computed properties
     hasDefaultStore,
@@ -78,6 +104,7 @@ export function useStoreAssignment() {
     getDefaultStoreId,
     getDefaultStore,
     getStoreAssignmentMessage,
+    getStoreLabel,
 
     // Methods
     getInitialStoreValue,

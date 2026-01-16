@@ -566,7 +566,7 @@ import { Button } from '@/components/ui/button'
 import UsersManagement from '@/components/users/UsersManagement.vue'
 
 // Icons
-import { Settings, Users as UsersIcon, FileText, CreditCard, Search, X, BookOpen, Globe, Check } from 'lucide-vue-next'
+import { Settings, Users as UsersIcon, FileText, CreditCard, Search, X, BookOpen, Globe, Check, Sliders, DollarSign } from 'lucide-vue-next'
 
 // Composables
 import { usePermissions } from '@/composables/usePermissions'
@@ -581,7 +581,9 @@ const toast = useToast()
 const allMenuItems = computed(() => [
   { id: 'general', title: t('settings.sections.general.title'), subtitle: t('settings.sections.general.subtitle'), icon: Settings },
   { id: 'facture', title: t('settings.sections.invoice.title'), subtitle: t('settings.sections.invoice.subtitle'), icon: FileText, route: '/settings/company' },
+  { id: 'invoice-config', title: 'Configuration de la facturation', subtitle: 'Gérer le comportement des prix en facturation', icon: DollarSign, route: '/settings/invoice-config' },
   { id: 'users-roles', title: t('settings.sections.users.title'), subtitle: t('settings.sections.users.subtitle'), icon: UsersIcon, route: '/settings/users-roles', permission: 'can_manage_users' },
+  { id: 'field-config', title: 'Configuration des formulaires', subtitle: 'Gérer la visibilité et l\'obligation des champs', icon: Sliders, route: '/settings/field-config' },
   { id: 'abonnement', title: t('settings.sections.subscription.title'), subtitle: t('settings.sections.subscription.subtitle'), icon: CreditCard, route: '/settings/subscription' },
   { id: 'documentation', title: t('settings.sections.documentation.title'), subtitle: t('settings.sections.documentation.subtitle'), icon: BookOpen }
 ])

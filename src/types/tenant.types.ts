@@ -30,6 +30,7 @@ export interface Tenant {
   total_products_count: number
   currency: string
   tax_rate: string
+  allow_flexible_pricing: boolean
   created_on: string
 }
 
@@ -38,4 +39,5 @@ export interface TenantUpdateData {
   email?: string
   phone?: string | null
   address?: string | null
+  allow_flexible_pricing?: boolean
 }

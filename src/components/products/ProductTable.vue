@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { MoreVertical, Edit, Trash2 } from 'lucide-vue-next'
 import type { Product } from '@/stores/products'
+import { useFieldConfigStore } from '@/stores/field-config.store'
 import {
   Table,
   TableBody,
@@ -19,6 +20,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
+const fieldConfigStore = useFieldConfigStore()
+
 const props = defineProps<{
   products: Product[]
   loading?: boolean
@@ -27,6 +30,33 @@ const props = defineProps<{
   total?: number
 }>()
 
+// Load field configurations on mount
+onMounted(async () => {
+  if (fieldConfigStore.configurations.length === 0) {
+    await fieldConfigStore.fetchConfigurations()
+  }
+})
+
+// Get column visibility configurations
+const columnConfigs = computed(() => {
+  const grouped = fieldConfigStore.getConfigsByForm()
+  const configs = grouped['product_table'] || []
+  const configMap: Record<string, { visible: boolean; required: boolean }> = {}
+
+  configs.forEach(config => {
+    configMap[config.field_name] = {
+      visible: config.is_visible,
+      required: config.is_required
+    }
+  })
+
+  return configMap
+})
+
+const isColumnVisible = (columnName: string) => {
+  return columnConfigs.value[columnName]?.visible ?? true
+}
+
 const emit = defineEmits<{
   edit: [product: Product]
   delete: [product: Product]
@@ -34,12 +64,17 @@ const emit = defineEmits<{
 
 const displayedProducts = computed(() => props.products)
 
-const formatPrice = (price: number) => {
+const formatPrice = (price: number | null | undefined) => {
+  const numericPrice = price ?? 0
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'XAF',
     minimumFractionDigits: 0,
-  }).format(price)
+  }).format(numericPrice)
+}
+
+const formatNumber = (value: number | null | undefined) => {
+  return value ?? 0
 }
 
 const handleEdit = (product: Product) => {
@@ -65,29 +100,30 @@ const paginationInfo = computed(() => {
     <Table class="min-w-[800px]">
       <TableHeader>
         <TableRow>
-          <TableHead class="w-[100px] font-semibold">Image</TableHead>
-          <TableHead class="w-[120px] font-semibold">Code</TableHead>
-          <TableHead class="font-semibold">Désignation</TableHead>
-          <TableHead class="font-semibold">Famille</TableHead>
-          <!-- <TableHead class="text-right font-semibold">Prix Achat</TableHead> -->
-          <TableHead class="text-right font-semibold">Prix Vente</TableHead>
-          <TableHead class="text-right font-semibold">Stock Min</TableHead>
-          <TableHead class="text-right font-semibold">Stock Opt</TableHead>
-          <TableHead class="text-right font-semibold">Stock Actuel</TableHead>
+          <TableHead v-if="isColumnVisible('image')" class="w-[100px] font-semibold">Image</TableHead>
+          <TableHead v-if="isColumnVisible('code')" class="w-[120px] font-semibold">Code</TableHead>
+          <TableHead v-if="isColumnVisible('designation')" class="font-semibold">Désignation</TableHead>
+          <TableHead v-if="isColumnVisible('family')" class="font-semibold">Famille</TableHead>
+          <TableHead v-if="isColumnVisible('purchase_price')" class="text-right font-semibold">Prix Achat</TableHead>
+          <TableHead v-if="isColumnVisible('sale_price')" class="text-right font-semibold">Prix Vente</TableHead>
+          <TableHead v-if="isColumnVisible('minimum_stock')" class="text-right font-semibold">Stock Min</TableHead>
+          <TableHead v-if="isColumnVisible('optimal_stock')" class="text-right font-semibold">Stock Opt</TableHead>
+          <TableHead v-if="isColumnVisible('current_stock')" class="text-right font-semibold">Stock Actuel</TableHead>
           <TableHead class="w-[80px] text-center font-semibold">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         <template v-if="loading">
           <TableRow v-for="i in (pageSize || 8)" :key="i">
-            <TableCell><Skeleton class="h-[32px] w-[32px] rounded" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-20" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-32" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-24" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-20 ml-auto" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
+            <TableCell v-if="isColumnVisible('image')"><Skeleton class="h-[32px] w-[32px] rounded" /></TableCell>
+            <TableCell v-if="isColumnVisible('code')"><Skeleton class="h-4 w-20" /></TableCell>
+            <TableCell v-if="isColumnVisible('designation')"><Skeleton class="h-4 w-32" /></TableCell>
+            <TableCell v-if="isColumnVisible('family')"><Skeleton class="h-4 w-24" /></TableCell>
+            <TableCell v-if="isColumnVisible('purchase_price')"><Skeleton class="h-4 w-20 ml-auto" /></TableCell>
+            <TableCell v-if="isColumnVisible('sale_price')"><Skeleton class="h-4 w-20 ml-auto" /></TableCell>
+            <TableCell v-if="isColumnVisible('minimum_stock')"><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
+            <TableCell v-if="isColumnVisible('optimal_stock')"><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
+            <TableCell v-if="isColumnVisible('current_stock')"><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
             <TableCell><Skeleton class="h-8 w-8 mx-auto" /></TableCell>
           </TableRow>
         </template>
@@ -97,7 +133,7 @@ const paginationInfo = computed(() => {
             :key="product.id"
             class="hover:bg-gray-50"
           >
-            <TableCell>
+            <TableCell v-if="isColumnVisible('image')">
               <div class="flex items-center justify-center">
                 <img
                   v-if="product.primary_image"
@@ -113,22 +149,22 @@ const paginationInfo = computed(() => {
                 </div>
               </div>
             </TableCell>
-            <TableCell class="font-medium">{{ product.reference }}</TableCell>
-            <TableCell>{{ product.name }}</TableCell>
-            <TableCell class="text-muted-foreground">{{ product.category_name }}</TableCell>
-            <!-- <TableCell class="text-right text-muted-foreground text-sm">
+            <TableCell v-if="isColumnVisible('code')" class="font-medium">{{ product.reference }}</TableCell>
+            <TableCell v-if="isColumnVisible('designation')">{{ product.name }}</TableCell>
+            <TableCell v-if="isColumnVisible('family')" class="text-muted-foreground">{{ product.category_name }}</TableCell>
+            <TableCell v-if="isColumnVisible('purchase_price')" class="text-right text-muted-foreground text-sm">
               {{ formatPrice(product.cost_price) }}
-            </TableCell> -->
-            <TableCell class="text-right font-medium">
+            </TableCell>
+            <TableCell v-if="isColumnVisible('sale_price')" class="text-right font-medium">
               {{ formatPrice(product.selling_price) }}
             </TableCell>
-            <TableCell class="text-right text-muted-foreground">
-              {{ product.minimum_stock }}
+            <TableCell v-if="isColumnVisible('minimum_stock')" class="text-right text-muted-foreground">
+              {{ formatNumber(product.minimum_stock) }}
             </TableCell>
-            <TableCell class="text-right text-muted-foreground">
-              {{ product.optimal_stock }}
+            <TableCell v-if="isColumnVisible('optimal_stock')" class="text-right text-muted-foreground">
+              {{ formatNumber(product.optimal_stock) }}
             </TableCell>
-            <TableCell class="text-right">
+            <TableCell v-if="isColumnVisible('current_stock')" class="text-right">
               <span
                 :class="[
                   'font-semibold',
@@ -137,7 +173,7 @@ const paginationInfo = computed(() => {
                     : 'text-green-600',
                 ]"
               >
-                {{ product.current_stock }}
+                {{ formatNumber(product.current_stock) }}
               </span>
             </TableCell>
             <TableCell class="text-center">

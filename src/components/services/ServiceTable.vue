@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { MoreVertical, Edit, Trash2 } from 'lucide-vue-next'
 import type { Service } from '@/stores/services'
+import { useFieldConfigStore } from '@/stores/field-config.store'
 import {
   Table,
   TableBody,
@@ -19,6 +20,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
+const fieldConfigStore = useFieldConfigStore()
+
 const props = defineProps<{
   services: Service[]
   loading?: boolean
@@ -33,13 +36,45 @@ const emit = defineEmits<{
   pageChange: [page: number]
 }>()
 
+// Load field configurations on mount
+onMounted(async () => {
+  if (fieldConfigStore.configurations.length === 0) {
+    await fieldConfigStore.fetchConfigurations()
+  }
+})
+
+// Get column visibility configurations
+const columnConfigs = computed(() => {
+  const grouped = fieldConfigStore.getConfigsByForm()
+  const configs = grouped['service_table'] || []
+  const configMap: Record<string, { visible: boolean; required: boolean }> = {}
+
+  configs.forEach(config => {
+    configMap[config.field_name] = {
+      visible: config.is_visible,
+      required: config.is_required
+    }
+  })
+
+  return configMap
+})
+
+const isColumnVisible = (columnName: string) => {
+  return columnConfigs.value[columnName]?.visible ?? true
+}
+
 const displayedServices = computed(() => props.services)
 
-const formatAmount = (amount: number) => {
+const formatAmount = (amount: number | null | undefined) => {
+  const numericAmount = amount ?? 0
   return new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount)
+  }).format(numericAmount)
+}
+
+const formatNumber = (value: number | null | undefined) => {
+  return value ?? 0
 }
 
 const handleEdit = (service: Service) => {
@@ -114,23 +149,23 @@ const goToNextPage = () => {
     <Table class="min-w-[700px]">
       <TableHeader>
         <TableRow class="border-b border-[#EEEEEE]">
-          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
+          <TableHead v-if="isColumnVisible('reference')" class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
             Référence
           </TableHead>
-          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
-            Désignation
+          <TableHead v-if="isColumnVisible('name')" class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
+            Nom
           </TableHead>
-          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
-            Description
-          </TableHead>
-          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
+          <TableHead v-if="isColumnVisible('category')" class="font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
             Catégorie
           </TableHead>
-          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-right" style="font-family: Inter">
+          <TableHead v-if="isColumnVisible('unit_price')" class="font-bold text-[14.9px] text-[#B5B7C0] text-right" style="font-family: Inter">
             Prix unitaire
           </TableHead>
-          <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
-            Statut
+          <TableHead v-if="isColumnVisible('tax_rate')" class="font-bold text-[14.9px] text-[#B5B7C0] text-right" style="font-family: Inter">
+            TVA (%)
+          </TableHead>
+          <TableHead v-if="isColumnVisible('estimated_duration')" class="font-bold text-[14.9px] text-[#B5B7C0] text-right" style="font-family: Inter">
+            Durée (min)
           </TableHead>
           <TableHead class="w-[80px] text-center font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
             Action
@@ -140,12 +175,12 @@ const goToNextPage = () => {
       <TableBody>
         <template v-if="loading">
           <TableRow v-for="i in (pageSize || 8)" :key="i">
-            <TableCell><Skeleton class="h-4 w-20" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-40" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-32" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-24" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-24 ml-auto" /></TableCell>
-            <TableCell><Skeleton class="h-4 w-16 mx-auto" /></TableCell>
+            <TableCell v-if="isColumnVisible('reference')"><Skeleton class="h-4 w-20" /></TableCell>
+            <TableCell v-if="isColumnVisible('name')"><Skeleton class="h-4 w-40" /></TableCell>
+            <TableCell v-if="isColumnVisible('category')"><Skeleton class="h-4 w-24" /></TableCell>
+            <TableCell v-if="isColumnVisible('unit_price')"><Skeleton class="h-4 w-24 ml-auto" /></TableCell>
+            <TableCell v-if="isColumnVisible('tax_rate')"><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
+            <TableCell v-if="isColumnVisible('estimated_duration')"><Skeleton class="h-4 w-16 ml-auto" /></TableCell>
             <TableCell><Skeleton class="h-8 w-8 mx-auto" /></TableCell>
           </TableRow>
         </template>
@@ -155,32 +190,23 @@ const goToNextPage = () => {
             :key="service.id"
             class="border-b border-[#EEEEEE] hover:bg-gray-50"
           >
-            <TableCell class="text-[14px] font-medium text-[#5932EA]" style="font-family: Poppins">
+            <TableCell v-if="isColumnVisible('reference')" class="text-[14px] font-medium text-[#5932EA]" style="font-family: Poppins">
               {{ service.reference }}
             </TableCell>
-            <TableCell class="text-[14px] font-medium text-[#292D32]" style="font-family: Poppins">
+            <TableCell v-if="isColumnVisible('name')" class="text-[14px] font-medium text-[#292D32]" style="font-family: Poppins">
               {{ service.name }}
             </TableCell>
-            <TableCell class="text-[14px] text-[#292D32] max-w-xs truncate" style="font-family: Poppins" :title="service.description || 'Aucune description'">
-              {{ service.description || '-' }}
-            </TableCell>
-            <TableCell class="text-[14px] font-medium text-[#292D32]" style="font-family: Poppins">
+            <TableCell v-if="isColumnVisible('category')" class="text-[14px] font-medium text-[#292D32]" style="font-family: Poppins">
               {{ service.category_name }}
             </TableCell>
-            <TableCell class="text-[14px] font-medium text-[#292D32] text-right" style="font-family: Poppins">
+            <TableCell v-if="isColumnVisible('unit_price')" class="text-[14px] font-medium text-[#292D32] text-right" style="font-family: Poppins">
               {{ formatAmount(service.unit_price) }} FCFA
             </TableCell>
-            <TableCell class="text-center">
-              <span
-                :class="[
-                  'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                  service.is_active
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                ]"
-              >
-                {{ service.is_active ? 'Actif' : 'Inactif' }}
-              </span>
+            <TableCell v-if="isColumnVisible('tax_rate')" class="text-[14px] font-medium text-[#292D32] text-right" style="font-family: Poppins">
+              {{ formatNumber(service.tax_rate) }}%
+            </TableCell>
+            <TableCell v-if="isColumnVisible('estimated_duration')" class="text-[14px] font-medium text-[#292D32] text-right" style="font-family: Poppins">
+              {{ formatNumber(service.estimated_duration) }} min
             </TableCell>
             <TableCell class="text-center">
               <DropdownMenu>

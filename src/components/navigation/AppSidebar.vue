@@ -226,21 +226,19 @@ const footerMenu = [
     title: "Paramètres",
     url: "/settings",
     icon: Settings,
-    permissions: [] // Accessible à tous
+    permissions: [],
+    requiresAdmin: true // Réservé aux superadmin et admin du tenant
   },
 ]
 
 // Interface pour le menu
 interface MenuItem {
-  id: string
-  label: string
-  icon: any
-  route?: string
-  children?: MenuItem[]
+  title: string
+  url?: string
+  icon?: unknown
+  children?: Omit<MenuItem, 'icon'>[]
   permissions?: string[]
   requiresAdmin?: boolean
-  separator?: boolean
-  badge?: string
 }
 
 // Filtrer les menus selon les permissions de l'utilisateur
@@ -297,13 +295,13 @@ const data = computed(() => {
       <img v-else src="@/assets/icon.svg" alt="logo de l'application sans nom" class="h-10 w-auto" />
     </SidebarHeader>
     <SidebarContent>
-      <NavMain :items="data.menu" />
+      <NavMain :items="data.menu as any" />
     </SidebarContent>
     <SidebarFooter>
       <SidebarMenu>
         <SidebarMenuItem v-for="item in data.footerMenu" :key="item.title">
           <SidebarMenuButton as-child>
-            <RouterLink :to="item.url">
+            <RouterLink v-if="item.url" :to="item.url">
               <component :is="item.icon" />
               <span>{{ item.title }}</span>
             </RouterLink>

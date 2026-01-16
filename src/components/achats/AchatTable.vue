@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import type { Achat } from '@/stores/achats'
+import { useFieldConfigStore } from '@/stores/field-config.store'
 import {
   Table,
   TableBody,
@@ -18,6 +19,36 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MoreVertical, Pencil, Trash2 } from 'lucide-vue-next'
+
+// Field configuration store
+const fieldConfigStore = useFieldConfigStore()
+
+onMounted(async () => {
+  if (!fieldConfigStore.configurations || fieldConfigStore.configurations.length === 0) {
+    await fieldConfigStore.fetchConfigurations()
+  }
+})
+
+// Column configurations
+const columnConfigs = computed(() => {
+  const configs: Record<string, { visible: boolean; required: boolean }> = {}
+
+  fieldConfigStore.configurations
+    .filter(c => c.form_name === 'purchase_table')
+    .forEach(config => {
+      configs[config.field_name] = {
+        visible: config.is_visible,
+        required: config.is_required
+      }
+    })
+
+  return configs
+})
+
+// Check if a column is visible
+const isColumnVisible = (columnName: string): boolean => {
+  return columnConfigs.value[columnName]?.visible ?? true
+}
 
 // Props
 interface Props {
@@ -64,7 +95,12 @@ const formatDate = (dateString: string) => {
 
 // Formatage de la quantité
 const formatQuantity = (quantity: number) => {
-  return quantity.toLocaleString('fr-FR')
+  return (quantity ?? 0).toLocaleString('fr-FR')
+}
+
+// Formatage du montant
+const formatAmount = (amount: number) => {
+  return (amount ?? 0).toLocaleString('fr-FR')
 }
 
 // Pagination
@@ -110,25 +146,25 @@ const handleDelete = (achat: Achat) => {
       <Table class="min-w-[700px]">
         <TableHeader>
           <TableRow class="border-b border-[#EEEEEE]">
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+            <TableHead v-if="isColumnVisible('receipt_number')" class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               N° Pièce
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+            <TableHead v-if="isColumnVisible('reference')" class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Référence
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+            <TableHead v-if="isColumnVisible('product_name')" class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Produit
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+            <TableHead v-if="isColumnVisible('store_name')" class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Magasin
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+            <TableHead v-if="isColumnVisible('quantity')" class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Quantité
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+            <TableHead v-if="isColumnVisible('invoice_amount')" class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Montant facture
             </TableHead>
-            <TableHead class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
+            <TableHead v-if="isColumnVisible('created_at')" class="font-bold text-[14.9px] text-[#B5B7C0] text-center" style="font-family: Inter">
               Date
             </TableHead>
             <TableHead class="w-[80px] text-center font-bold text-[14.9px] text-[#B5B7C0]" style="font-family: Inter">
@@ -139,13 +175,13 @@ const handleDelete = (achat: Achat) => {
         <TableBody>
           <template v-if="loading">
             <TableRow v-for="i in (pageSize || 8)" :key="i">
-              <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-20 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-32 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-16 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-20 mx-auto" /></TableCell>
-              <TableCell class="text-center"><Skeleton class="h-4 w-28 mx-auto" /></TableCell>
+              <TableCell v-if="isColumnVisible('receipt_number')" class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
+              <TableCell v-if="isColumnVisible('reference')" class="text-center"><Skeleton class="h-4 w-20 mx-auto" /></TableCell>
+              <TableCell v-if="isColumnVisible('product_name')" class="text-center"><Skeleton class="h-4 w-32 mx-auto" /></TableCell>
+              <TableCell v-if="isColumnVisible('store_name')" class="text-center"><Skeleton class="h-4 w-24 mx-auto" /></TableCell>
+              <TableCell v-if="isColumnVisible('quantity')" class="text-center"><Skeleton class="h-4 w-16 mx-auto" /></TableCell>
+              <TableCell v-if="isColumnVisible('invoice_amount')" class="text-center"><Skeleton class="h-4 w-20 mx-auto" /></TableCell>
+              <TableCell v-if="isColumnVisible('created_at')" class="text-center"><Skeleton class="h-4 w-28 mx-auto" /></TableCell>
               <TableCell class="text-center"><Skeleton class="h-4 w-8 mx-auto" /></TableCell>
             </TableRow>
           </template>
@@ -155,25 +191,25 @@ const handleDelete = (achat: Achat) => {
               :key="achat.id"
               class="border-b border-[#EEEEEE] hover:bg-gray-50"
             >
-              <TableCell class="text-[14px] font-medium text-[#5932EA] text-center" style="font-family: Poppins">
+              <TableCell v-if="isColumnVisible('receipt_number')" class="text-[14px] font-medium text-[#5932EA] text-center" style="font-family: Poppins">
                 {{ achat.receipt_number || '-' }}
               </TableCell>
-              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+              <TableCell v-if="isColumnVisible('reference')" class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
                 {{ achat.reference || '-' }}
               </TableCell>
-              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+              <TableCell v-if="isColumnVisible('product_name')" class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
                 {{ achat.product_name }}
               </TableCell>
-              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+              <TableCell v-if="isColumnVisible('store_name')" class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
                 {{ achat.store_name }}
               </TableCell>
-              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+              <TableCell v-if="isColumnVisible('quantity')" class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
                 {{ formatQuantity(achat.quantity) }}
               </TableCell>
-              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
-                {{ (achat.invoice_amount || 0).toLocaleString('fr-FR') }} FCFA
+              <TableCell v-if="isColumnVisible('invoice_amount')" class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+                {{ formatAmount(achat.invoice_amount) }} FCFA
               </TableCell>
-              <TableCell class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
+              <TableCell v-if="isColumnVisible('created_at')" class="text-[14px] font-medium text-[#292D32] text-center" style="font-family: Poppins">
                 {{ formatDate(achat.created_at) }}
               </TableCell>
               <TableCell class="text-center">

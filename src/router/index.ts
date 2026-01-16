@@ -44,25 +44,37 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: SettingsView,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, adminOnly: true }
     },
     {
       path: '/settings/company',
       name: 'company-settings',
       component: CompanySettingsView,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, adminOnly: true }
     },
     {
       path: '/settings/users-roles',
       name: 'users-roles-settings',
       component: () => import('@/pages/settings/UsersRolesSettingsView.vue'),
-      meta: { requiresAuth: true, permissions: ['can_manage_users'] }
+      meta: { requiresAuth: true, adminOnly: true }
+    },
+    {
+      path: '/settings/field-config',
+      name: 'field-config-settings',
+      component: () => import('@/pages/settings/FieldConfigView.vue'),
+      meta: { requiresAuth: true, adminOnly: true }
+    },
+    {
+      path: '/settings/invoice-config',
+      name: 'invoice-config-settings',
+      component: () => import('@/pages/settings/InvoiceConfigView.vue'),
+      meta: { requiresAuth: true, adminOnly: true }
     },
     {
       path: '/settings/subscription',
       name: 'subscription-settings',
       component: SubscriptionView,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, adminOnly: true }
     },
     {
       path: '/stores',
@@ -289,6 +301,19 @@ router.beforeEach(async (to, from, next) => {
   // Si déjà authentifié et tente d'accéder à /login, rediriger vers home
   else if (to.name === 'login' && userStore.isAuthenticated) {
     next({ name: 'home' })
+  }
+  // Vérifier si la route nécessite des droits admin
+  else if (to.meta.adminOnly) {
+    const user = userStore.user
+
+    // Vérifier si l'utilisateur est superadmin ou admin du tenant
+    if (user?.is_superuser || user?.is_staff) {
+      next()
+    } else {
+      // Rediriger vers le dashboard avec un message d'erreur
+      console.warn('⚠️ Accès refusé: droits admin requis')
+      next({ name: 'home' })
+    }
   }
   // Vérifier les permissions si la route en requiert
   else if (to.meta.permissions && Array.isArray(to.meta.permissions)) {
