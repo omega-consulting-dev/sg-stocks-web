@@ -51,11 +51,11 @@ export const useFieldConfigStore = defineStore('fieldConfig', () => {
   /**
    * Initialize default configurations
    */
-  const initializeDefaults = async () => {
+  const initializeDefaults = async (force: boolean = false) => {
     loading.value = true
     error.value = null
     try {
-      const result = await fieldConfigApi.initializeDefaults()
+      const result = await fieldConfigApi.initializeDefaults(force)
       await fetchConfigurations()
       return result
     } catch (err: any) {

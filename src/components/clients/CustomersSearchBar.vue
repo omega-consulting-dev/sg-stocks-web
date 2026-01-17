@@ -9,6 +9,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { usePermissions } from '@/composables/usePermissions'
+
+const { permissions } = usePermissions()
 
 const emit = defineEmits<{
   search: [value: string]
@@ -69,13 +72,13 @@ const handleFocusOut = () => {
       </div>
 
       <!-- Bouton Exporter Excel -->
-      <Button variant="outline" class="px-2 sm:px-4" @click="emit('exportExcel')">
+      <Button v-if="permissions.canExportData" variant="outline" class="px-2 sm:px-4" @click="emit('exportExcel')">
         <Sheet />
         <span class="hidden sm:inline">Exporter Excel</span>
       </Button>
 
       <!-- Bouton Nouveau Client -->
-      <Button @click="emit('add')" class="px-2 sm:px-4">
+      <Button v-if="permissions.canManageCustomers" @click="emit('add')" class="px-2 sm:px-4">
         <Plus />
         <span class="hidden sm:inline">Nouveau Client</span>
       </Button>

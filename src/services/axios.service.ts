@@ -187,11 +187,18 @@ Axios.interceptors.response.use(
 
         // Gestion d'autres codes d'erreur spécifiques
         const status = err.response?.status
-        const errorMessage = (err.response?.data as any)?.message || err.message
+        const errorData = err.response?.data as any
+        const errorMessage = errorData?.detail || errorData?.message || err.message
 
         switch (status) {
             case 403:
-                console.error('Accès interdit')
+                console.error('Accès interdit:', errorMessage)
+                // Afficher un toast pour les erreurs de permission
+                const toast = (await import('@/composables/useToast')).useToast()
+                toast.error(
+                    errorMessage || "Vous n'avez pas les droits nécessaires pour effectuer cette action. Veuillez contacter votre supérieur.",
+                    'Accès refusé'
+                )
                 break
             case 404:
                 console.error('Ressource non trouvée')

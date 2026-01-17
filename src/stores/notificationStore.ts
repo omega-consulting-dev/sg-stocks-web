@@ -50,7 +50,7 @@ export const useNotificationStore = defineStore('notifications', () => {
     error.value = null
 
     try {
-      const response = await axios.get('/notifications/')
+      const response = await axios.get('/core/notifications/')
       notifications.value = response.data.results || response.data
       await fetchUnreadCount()
     } catch (err: any) {
@@ -63,7 +63,7 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   async function fetchUnreadCount() {
     try {
-      const response = await axios.get('/notifications/unread_count/')
+      const response = await axios.get('/core/notifications/unread_count/')
       unreadCount.value = response.data.count
     } catch (err: any) {
       // Ignorer silencieusement l'erreur 404 (endpoint non disponible)
@@ -75,7 +75,7 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   async function markAsRead(notificationId: number) {
     try {
-      await axios.post(`/notifications/${notificationId}/mark_as_read/`)
+      await axios.post(`/core/notifications/${notificationId}/mark_as_read/`)
 
       const notification = notifications.value.find(n => n.id === notificationId)
       if (notification) {
@@ -91,7 +91,7 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   async function markMultipleAsRead(notificationIds: number[]) {
     try {
-      await axios.post('/notifications/mark_multiple_as_read/', {
+      await axios.post('/core/notifications/mark_multiple_as_read/', {
         notification_ids: notificationIds
       })
 
@@ -112,7 +112,7 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   async function markAllAsRead() {
     try {
-      await axios.post('/notifications/mark_multiple_as_read/', {
+      await axios.post('/core/notifications/mark_multiple_as_read/', {
         mark_all: true
       })
 
@@ -132,7 +132,7 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   async function deleteReadNotifications() {
     try {
-      await axios.delete('/notifications/delete_read/')
+      await axios.delete('/core/notifications/delete_read/')
       notifications.value = notifications.value.filter(n => !n.is_read)
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la suppression'
@@ -143,7 +143,7 @@ export const useNotificationStore = defineStore('notifications', () => {
   // Afficher les ruptures de stock non lues à la connexion
   async function showStockRuptureOnLogin() {
     try {
-      const response = await axios.get('/notifications/')
+      const response = await axios.get('/core/notifications/')
       const stockRuptureNotifications = (response.data.results || response.data).filter(
         (n: Notification) => n.type === 'stock_rupture' && !n.is_read
       )

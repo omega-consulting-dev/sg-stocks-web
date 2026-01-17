@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useProductFamiliesStore, type ProductFamily } from '@/stores/productFamilies'
 import { useProductsStore } from '@/stores/products'
+import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
 import ProductFamilySearchBar from '@/components/product-families/ProductFamilySearchBar.vue'
 import ProductFamilyTable from '@/components/product-families/ProductFamilyTable.vue'
 import ProductFamilyForm from '@/components/product-families/ProductFamilyForm.vue'
@@ -27,6 +29,9 @@ import { Card, CardContent } from '@/components/ui/card'
 
 const store = useProductFamiliesStore()
 const productsStore = useProductsStore()
+
+const { permissions, hasPermission, getPermissionErrorMessage } = usePermissions()
+const toast = useToast()
 
 // État local
 const searchQuery = ref('')
@@ -74,6 +79,10 @@ const handleSearch = (query: string) => {
 
 // Gestion de l'ajout
 const handleAdd = () => {
+  if (!hasPermission('can_manage_categories')) {
+    toast.error(getPermissionErrorMessage('can_manage_categories'), 'Accès refusé')
+    return
+  }
   selectedFamily.value = null
   isFormOpen.value = true
 }
@@ -127,12 +136,20 @@ const handleSelectFamily = (family: ProductFamily) => {
 
 // Gestion de la modification
 const handleEdit = (family: ProductFamily) => {
+  if (!hasPermission('can_manage_categories')) {
+    toast.error(getPermissionErrorMessage('can_manage_categories'), 'Accès refusé')
+    return
+  }
   selectedFamily.value = family
   isFormOpen.value = true
 }
 
 // Gestion de la suppression
 const handleDelete = (family: ProductFamily) => {
+  if (!hasPermission('can_manage_categories')) {
+    toast.error(getPermissionErrorMessage('can_manage_categories'), 'Accès refusé')
+    return
+  }
   familyToDelete.value = family
   isDeleteDialogOpen.value = true
 }

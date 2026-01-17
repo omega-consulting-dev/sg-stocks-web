@@ -3,6 +3,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useProductsStore, type Product } from '@/stores/products'
 import { useProductFamiliesStore } from '@/stores/productFamilies'
 import { useStoresStore } from '@/stores/stores.store'
+import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
 import { inventoryApi, type StockLevel } from '@/services/api/inventory.api'
 import type { CreateProductDto } from '@/services/api/products.api'
 import ProductSearchBar from '@/components/products/ProductSearchBar.vue'
@@ -39,6 +41,8 @@ import { Store } from 'lucide-vue-next'
 const store = useProductsStore()
 const familiesStore = useProductFamiliesStore()
 const storesStore = useStoresStore()
+const { permissions, hasPermission, getPermissionErrorMessage } = usePermissions()
+const toast = useToast()
 
 // État local
 const searchQuery = ref('')
@@ -54,7 +58,7 @@ const productToDelete = ref<Product | null>(null)
 // Computed
 const filteredProducts = computed(() => {
   let products = store.products
-  
+
   // Filtre par magasin : remplacer current_stock par le stock du magasin sélectionné
   if (selectedStoreId.value !== 'all') {
     products = products.map(product => {
@@ -66,7 +70,7 @@ const filteredProducts = computed(() => {
       }
     })
   }
-  
+
   // Filtre par recherche
   if (!searchQuery.value) {
     return products
@@ -86,14 +90,14 @@ const loadStoreStocks = async (storeId: number) => {
   try {
     // Récupérer tous les stocks du magasin
     const response = await inventoryApi.getStockLevels({ store: storeId }, 1)
-    
+
     // Créer une Map productId -> quantity
     const stocksMap = new Map<number, number>()
     response.results.forEach((stock: StockLevel) => {
       const productId = typeof stock.product === 'number' ? stock.product : stock.product.id
       stocksMap.set(productId, stock.quantity)
     })
-    
+
     storeStocks.value = stocksMap
     console.log(`Stocks chargés pour le magasin ${storeId}:`, stocksMap)
   } catch (error) {
@@ -127,6 +131,12 @@ const handleSearch = (query: string) => {
 
 // Gestion de l'ajout
 const handleAdd = () => {
+  // Vérifier les permissions avant d'ouvrir le formulaire
+  if (!hasPermission('can_manage_products')) {
+    toast.error(getPermissionErrorMessage('can_manage_products'), 'Accès refusé')
+    return
+  }
+
   selectedProduct.value = null
   isFormOpen.value = true
 }
@@ -154,6 +164,10 @@ const handleImport = () => {
 
 // Gestion de l'export PDF
 const handleExportPdf = async () => {
+  if (!hasPermission('can_export_data') && !hasPermission('can_view_products')) {
+    toast.error("Vous n'avez pas les droits nécessaires pour exporter les données. Veuillez contacter votre supérieur.", 'Accès refusé')
+    return
+  }
   try {
     await store.exportPdf()
   } catch (error) {
@@ -164,6 +178,10 @@ const handleExportPdf = async () => {
 
 // Gestion de l'export Excel
 const handleExportExcel = async () => {
+  if (!hasPermission('can_export_data') && !hasPermission('can_view_products')) {
+    toast.error("Vous n'avez pas les droits nécessaires pour exporter les données. Veuillez contacter votre supérieur.", 'Accès refusé')
+    return
+  }
   try {
     await store.exportExcel()
   } catch (error) {

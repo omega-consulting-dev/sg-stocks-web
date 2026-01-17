@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useServiceFamiliesStore, type ServiceFamily } from '@/stores/serviceFamilies'
+import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
 import ServiceFamilySearchBar from '@/components/service-families/ServiceFamilySearchBar.vue'
 import ServiceFamilyTable from '@/components/service-families/ServiceFamilyTable.vue'
 import ServiceFamilyForm from '@/components/service-families/ServiceFamilyForm.vue'
@@ -24,6 +26,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
 const store = useServiceFamiliesStore()
+
+const { permissions, hasPermission, getPermissionErrorMessage } = usePermissions()
+const toast = useToast()
 
 // Etat local
 const searchQuery = ref('')
@@ -59,6 +64,10 @@ const handleSearch = (query: string) => {
 
 // Gestion de l'ajout
 const handleAdd = () => {
+  if (!hasPermission('can_manage_services')) {
+    toast.error(getPermissionErrorMessage('can_manage_services'), 'Accès refusé')
+    return
+  }
   selectedFamily.value = null
   isFormOpen.value = true
 }
@@ -85,12 +94,20 @@ const handleSelectFamily = (family: ServiceFamily) => {
 
 // Gestion de la modification
 const handleEdit = (family: ServiceFamily) => {
+  if (!hasPermission('can_manage_services')) {
+    toast.error(getPermissionErrorMessage('can_manage_services'), 'Accès refusé')
+    return
+  }
   selectedFamily.value = family
   isFormOpen.value = true
 }
 
 // Gestion de la suppression
 const handleDelete = (family: ServiceFamily) => {
+  if (!hasPermission('can_manage_services')) {
+    toast.error(getPermissionErrorMessage('can_manage_services'), 'Accès refusé')
+    return
+  }
   familyToDelete.value = family
   isDeleteDialogOpen.value = true
 }

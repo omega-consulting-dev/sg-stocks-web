@@ -25,14 +25,29 @@ const { play: playNotificationSound, init: initSound } = useNotificationSound()
 // Référence au composant toast
 const toastRef = ref<InstanceType<typeof ToastNotification> | null>(null)
 
+// Flag pour savoir si l'audio a été initialisé
+const audioInitialized = ref(false)
+
+// Initialiser l'audio au premier clic de l'utilisateur
+const initAudioOnInteraction = async () => {
+  if (!audioInitialized.value) {
+    await initSound()
+    audioInitialized.value = true
+    // Retirer l'écouteur après la première interaction
+    document.removeEventListener('click', initAudioOnInteraction)
+    document.removeEventListener('keydown', initAudioOnInteraction)
+  }
+}
+
 // Check if current route is an auth route
 const isAuthRoute = computed(() => route.meta.layout === 'auth')
 
 onMounted(async () => {
     userStore.setDomain()
 
-    // L'audio sera initialisé lors de la première interaction utilisateur
-    // (les navigateurs bloquent l'audio avant une interaction)
+    // Ajouter des écouteurs pour initialiser l'audio dès la première interaction
+    document.addEventListener('click', initAudioOnInteraction, { once: true })
+    document.addEventListener('keydown', initAudioOnInteraction, { once: true })
 
     // Configurer les callbacks pour les notifications AVANT d'initialiser le WebSocket
     notificationStore.setToastCallback((notification) => {
@@ -46,10 +61,14 @@ onMounted(async () => {
       }
     })
 
-    notificationStore.setSoundCallback(() => {
-      // Initialiser l'audio au premier appel (interaction utilisateur)
-      initSound().catch(() => {})
-      playNotificationSound()
+    notificationStore.setSoundCallback(async () => {
+      // S'assurer que l'audio est initialisé avant de jouer
+      if (!audioInitialized.value) {
+        await initSound()
+        audioInitialized.value = true
+      }
+      // Jouer le son
+      await playNotificationSound()
     })
 
     // Initialiser le WebSocket si l'utilisateur a un token
@@ -69,6 +88,10 @@ onMounted(async () => {
 // En production, la page se recharge complètement donc le WebSocket se ferme naturellement.
 
 onUnmounted(() => {
+  // Retirer les écouteurs d'événements
+  document.removeEventListener('click', initAudioOnInteraction)
+  document.removeEventListener('keydown', initAudioOnInteraction)
+
   // Déconnecter le WebSocket
   notificationStore.disconnectWebSocket()
 

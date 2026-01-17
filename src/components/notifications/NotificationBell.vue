@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Bell } from 'lucide-vue-next'
 import { useNotificationStore } from '@/stores/notificationStore'
 import { useUserStore } from '@/stores/user'
@@ -17,12 +17,29 @@ const unreadCount = computed(() => notificationStore.unreadCount)
 const hasUnread = computed(() => unreadCount.value > 0)
 const isWebSocketConnected = computed(() => notificationStore.isWebSocketConnected)
 
+let pollingInterval: number | null = null
+
 onMounted(async () => {
   // Charger les données initiales uniquement si l'utilisateur est authentifié
   if (userStore.isAuthenticated) {
     await notificationStore.fetchUnreadCount()
+
+    // Démarrer le polling pour rafraîchir le compteur toutes les 10 secondes
+    pollingInterval = window.setInterval(async () => {
+      if (userStore.isAuthenticated) {
+        await notificationStore.fetchUnreadCount()
+      }
+    }, 10000) // 10 secondes
   }
   // Le WebSocket est maintenant initialisé dans App.vue
+})
+
+onUnmounted(() => {
+  // Nettoyer l'intervalle quand le composant est détruit
+  if (pollingInterval !== null) {
+    clearInterval(pollingInterval)
+    pollingInterval = null
+  }
 })
 
 const handleOpen = async () => {

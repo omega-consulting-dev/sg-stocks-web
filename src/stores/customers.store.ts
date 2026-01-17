@@ -21,7 +21,10 @@ export const useCustomersStore = defineStore('customers', () => {
 
     try {
       const response = await customersApi.getCustomers(filters)
-      customers.value = response.results
+      // Trier par code client (ordre croissant)
+      customers.value = response.results.sort((a, b) => {
+        return a.customer_code.localeCompare(b.customer_code, undefined, { numeric: true })
+      })
       totalCount.value = response.count
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Erreur lors du chargement des clients'
@@ -61,7 +64,11 @@ export const useCustomersStore = defineStore('customers', () => {
 
     try {
       const customer = await customersApi.createCustomer(data)
-      customers.value.unshift(customer)
+      customers.value.push(customer)
+      // Re-trier après ajout
+      customers.value.sort((a, b) => {
+        return a.customer_code.localeCompare(b.customer_code, undefined, { numeric: true })
+      })
       totalCount.value++
       return customer
     } catch (err: unknown) {
@@ -85,6 +92,10 @@ export const useCustomersStore = defineStore('customers', () => {
       const index = customers.value.findIndex(c => c.id === id)
       if (index !== -1) {
         customers.value[index] = customer
+        // Re-trier après modification
+        customers.value.sort((a, b) => {
+          return a.customer_code.localeCompare(b.customer_code, undefined, { numeric: true })
+        })
       }
       if (currentCustomer.value?.id === id) {
         currentCustomer.value = customer

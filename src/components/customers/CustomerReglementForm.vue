@@ -147,6 +147,9 @@ const isValid = computed(() => {
 const handleSubmit = async () => {
   if (!isValid.value || !selectedCustomer.value) return
 
+  // Empêcher les doubles soumissions
+  if (submitting.value) return
+
   submitting.value = true
   try {
     const paymentData: any = {

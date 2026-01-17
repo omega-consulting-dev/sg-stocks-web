@@ -241,8 +241,8 @@ const calculateMovementTypeFilter = (movementType: string, storeType: string): s
   } else if (storeType === 'retail') {
     // POINT DE VENTE
     if (movementType === 'in') {
-      // Entrée PV = transferts depuis l'entrepôt
-      return 'transfer'
+      // Entrée PV = transferts depuis l'entrepôt + achats directs (si configuré)
+      return 'in,transfer'
     } else if (movementType === 'out') {
       // Sortie PV = ventes
       return 'out'

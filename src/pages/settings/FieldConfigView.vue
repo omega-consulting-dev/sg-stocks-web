@@ -56,6 +56,13 @@ const entities = [
     hasTable: true
   },
   {
+    value: 'loan',
+    label: 'Emprunts',
+    icon: '💰',
+    hasForm: true,
+    hasTable: true
+  },
+  {
     value: 'invoice',
     label: 'Facture Produit',
     icon: '🧾',
@@ -138,17 +145,46 @@ onMounted(async () => {
     console.log('Configurations chargées:', fieldConfigStore.configurations.length)
     console.log('Configurations:', fieldConfigStore.configurations)
 
-    // Vérifier si invoice_service existe
-    const hasInvoiceService = fieldConfigStore.configurations.some(
+    // Compter les configurations par entité
+    const customerConfigs = fieldConfigStore.configurations.filter(
+      (config: any) => config.form_name === 'customer'
+    )
+    const supplierConfigs = fieldConfigStore.configurations.filter(
+      (config: any) => config.form_name === 'supplier'
+    )
+    const loanConfigs = fieldConfigStore.configurations.filter(
+      (config: any) => config.form_name === 'loan'
+    )
+    const invoiceServiceConfigs = fieldConfigStore.configurations.filter(
       (config: any) => config.form_name === 'invoice_service'
     )
 
-    // Si aucune configuration ou pas de invoice_service, initialiser automatiquement
-    if (fieldConfigStore.configurations.length === 0 || !hasInvoiceService) {
-      console.log('Configurations manquantes, initialisation automatique...')
-      await fieldConfigStore.initializeDefaults()
+    console.log('Customer configs count:', customerConfigs.length)
+    console.log('Supplier configs count:', supplierConfigs.length)
+    console.log('Loan configs count:', loanConfigs.length)
+    console.log('Invoice service configs count:', invoiceServiceConfigs.length)
+
+    // Nombre attendu de configurations
+    const expectedCounts = {
+      customer: 13,
+      supplier: 15,
+      loan: 11,
+      invoice_service: 9
+    }
+
+    // Si une entité manque ou est incomplète, forcer la mise à jour
+    const needsUpdate =
+      fieldConfigStore.configurations.length === 0 ||
+      customerConfigs.length < expectedCounts.customer ||
+      supplierConfigs.length < expectedCounts.supplier ||
+      loanConfigs.length < expectedCounts.loan ||
+      invoiceServiceConfigs.length < expectedCounts.invoice_service
+
+    if (needsUpdate) {
+      console.log('Configurations incomplètes, initialisation automatique avec force=true...')
+      await fieldConfigStore.initializeDefaults(true) // Force update
       await fieldConfigStore.fetchConfigurations()
-      toast.success('Configurations initialisées automatiquement!', 'Initialisation')
+      toast.success('Configurations mises à jour automatiquement!', 'Initialisation')
     }
   } catch (error) {
     console.error('Error loading configurations:', error)

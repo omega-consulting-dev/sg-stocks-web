@@ -198,7 +198,7 @@ const handleDelete = (fournisseur: Supplier) => {
                       <span>Voir détails</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem @click="handleEdit(fournisseur)" class="cursor-pointer">
-                      <Edit class="mr-2 h-4 w-4" />
+                      <Pencil class="mr-2 h-4 w-4" />
                       <span>Modifier</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem

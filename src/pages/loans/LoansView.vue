@@ -196,47 +196,47 @@
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead class="min-w-[100px]">N° Emprunt</TableHead>
-                <TableHead class="min-w-[120px]">Prêteur</TableHead>
-                <TableHead class="hidden md:table-cell min-w-[100px]">Type</TableHead>
-                <TableHead class="hidden lg:table-cell min-w-[100px]">Date</TableHead>
-                <TableHead class="text-right min-w-[120px]">Montant Principal</TableHead>
-                <TableHead class="hidden lg:table-cell text-center min-w-[80px]">Taux (%)</TableHead>
-                <TableHead class="text-right min-w-[120px]">Solde Restant</TableHead>
-                <TableHead class="hidden sm:table-cell min-w-[100px]">Statut</TableHead>
+                <TableHead v-if="tableColumns.loan_number" class="min-w-[100px]">N° Emprunt</TableHead>
+                <TableHead v-if="tableColumns.lender_name" class="min-w-[120px]">Prêteur</TableHead>
+                <TableHead v-if="tableColumns.loan_type" class="hidden md:table-cell min-w-[100px]">Type</TableHead>
+                <TableHead v-if="tableColumns.start_date" class="hidden lg:table-cell min-w-[100px]">Date</TableHead>
+                <TableHead v-if="tableColumns.principal_amount" class="text-right min-w-[120px]">Montant Principal</TableHead>
+                <TableHead v-if="tableColumns.interest_rate" class="hidden lg:table-cell text-center min-w-[80px]">Taux (%)</TableHead>
+                <TableHead v-if="tableColumns.balance_due" class="text-right min-w-[120px]">Solde Restant</TableHead>
+                <TableHead v-if="tableColumns.status" class="hidden sm:table-cell min-w-[100px]">Statut</TableHead>
                 <TableHead class="text-right min-w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow v-for="loan in loansStore.loans" :key="loan.id">
-                <TableCell class="font-medium">
+                <TableCell v-if="tableColumns.loan_number" class="font-medium">
                   <div class="flex flex-col">
                     <span>{{ loan.loan_number }}</span>
-                    <span class="sm:hidden text-xs text-muted-foreground mt-1">
+                    <span v-if="tableColumns.status" class="sm:hidden text-xs text-muted-foreground mt-1">
                       <Badge :variant="getStatusBadgeVariant(loan.status)" class="text-xs px-1 py-0">
                         {{ loan.status_display }}
                       </Badge>
                     </span>
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell v-if="tableColumns.lender_name">
                   <div class="flex flex-col">
                     <span>{{ loan.lender_name }}</span>
-                    <span class="md:hidden text-xs text-muted-foreground mt-1">{{ loan.loan_type_display }}</span>
+                    <span v-if="tableColumns.loan_type" class="md:hidden text-xs text-muted-foreground mt-1">{{ loan.loan_type_display }}</span>
                   </div>
                 </TableCell>
-                <TableCell class="hidden md:table-cell">
+                <TableCell v-if="tableColumns.loan_type" class="hidden md:table-cell">
                   <Badge variant="outline">{{ loan.loan_type_display }}</Badge>
                 </TableCell>
-                <TableCell class="hidden lg:table-cell text-sm text-muted-foreground">
+                <TableCell v-if="tableColumns.start_date" class="hidden lg:table-cell text-sm text-muted-foreground">
                   {{ formatDate(loan.start_date) }}
                 </TableCell>
-                <TableCell class="text-right font-medium">{{ formatCurrency(loan.principal_amount) }}</TableCell>
-                <TableCell class="hidden lg:table-cell text-center">{{ loan.interest_rate }}%</TableCell>
-                <TableCell class="text-right font-bold" :class="loan.balance_due > 0 ? 'text-orange-600' : 'text-green-600'">
+                <TableCell v-if="tableColumns.principal_amount" class="text-right font-medium">{{ formatCurrency(loan.principal_amount) }}</TableCell>
+                <TableCell v-if="tableColumns.interest_rate" class="hidden lg:table-cell text-center">{{ loan.interest_rate }}%</TableCell>
+                <TableCell v-if="tableColumns.balance_due" class="text-right font-bold" :class="loan.balance_due > 0 ? 'text-orange-600' : 'text-green-600'">
                   {{ formatCurrency(loan.balance_due) }}
                 </TableCell>
-                <TableCell class="hidden sm:table-cell">
+                <TableCell v-if="tableColumns.status" class="hidden sm:table-cell">
                   <Badge :variant="getStatusBadgeVariant(loan.status)">
                     {{ loan.status_display }}
                   </Badge>
@@ -328,8 +328,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useLoansStore } from '@/stores/loans';
+import { useFieldConfigStore } from '@/stores/field-config.store';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import LoanDialog from '@/components/loans/LoanDialog.vue';
 import LoanPaymentDialog from '@/components/loans/LoanPaymentDialog.vue';
@@ -366,6 +367,7 @@ import {
 import { Plus, Upload, Sheet, RotateCcw, MoreVertical, Pencil, Check, X, CreditCard, Trash2 } from 'lucide-vue-next';
 
 const loansStore = useLoansStore();
+const fieldConfigStore = useFieldConfigStore();
 
 const showDialog = ref(false);
 const showPaymentDialog = ref(false);
@@ -376,8 +378,25 @@ const selectedType = ref<string>('all');
 const selectedStatus = ref<string>('all');
 const dateFrom = ref('');
 
+// Field configurations
+const tableColumns = computed(() => {
+  const configsByForm = fieldConfigStore.getConfigsByForm();
+  const configs = configsByForm['loan_table'] || [];
+  return {
+    loan_number: configs.find(c => c.field_name === 'loan_number')?.is_visible ?? true,
+    lender_name: configs.find(c => c.field_name === 'lender_name')?.is_visible ?? true,
+    loan_type: configs.find(c => c.field_name === 'loan_type')?.is_visible ?? true,
+    start_date: configs.find(c => c.field_name === 'start_date')?.is_visible ?? true,
+    principal_amount: configs.find(c => c.field_name === 'principal_amount')?.is_visible ?? true,
+    interest_rate: configs.find(c => c.field_name === 'interest_rate')?.is_visible ?? true,
+    balance_due: configs.find(c => c.field_name === 'balance_due')?.is_visible ?? true,
+    status: configs.find(c => c.field_name === 'status')?.is_visible ?? true,
+  };
+});
+
 // Lifecycle
 onMounted(async () => {
+  await fieldConfigStore.fetchConfigurations();
   await loansStore.fetchLoans();
 });
 

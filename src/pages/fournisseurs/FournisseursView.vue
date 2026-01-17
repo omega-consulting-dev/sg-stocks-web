@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useFournisseursStore, type SupplierDebt } from '@/stores/fournisseurs'
+import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
 import FournisseurSearchBar from '@/components/fournisseurs/FournisseurSearchBar.vue'
 import CompteFournisseurTable from '@/components/fournisseurs/CompteFournisseurTable.vue'
 import ReglementForm from '@/components/fournisseurs/ReglementForm.vue'
@@ -16,6 +18,9 @@ import {
 } from '@/components/ui/breadcrumb'
 
 const store = useFournisseursStore()
+
+const { permissions, hasPermission, getPermissionErrorMessage } = usePermissions()
+const toast = useToast()
 
 // État local
 const searchQuery = ref('')

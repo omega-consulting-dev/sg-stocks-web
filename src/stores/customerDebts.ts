@@ -103,12 +103,13 @@ export const useCustomerDebtsStore = defineStore('customerDebts', () => {
 
       console.log('Payment created successfully:', response.data)
 
-      // Attendre un peu pour que le backend mette à jour les totaux
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Attendre 1 seconde pour que le backend mette à jour les totaux
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // Forcer le rafraîchissement des dettes (ignorer le flag loading)
-      loading.value = false // Reset loading pour forcer un nouveau fetch
-      await fetchDebts(true) // Force refresh
+      // Forcer le rafraîchissement complet des dettes
+      debts.value = [] // Vider le cache
+      loading.value = false // Reset loading
+      await fetchDebts(true) // Force refresh avec timestamp
 
       return response.data
     } catch (err: any) {

@@ -9,6 +9,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { usePermissions } from '@/composables/usePermissions'
+
+const { permissions } = usePermissions()
 
 const emit = defineEmits<{
   search: [value: string]
@@ -71,7 +74,7 @@ const handleFocusOut = () => {
       </div>
 
       <!-- Bouton Importer -->
-      <DropdownMenu>
+      <DropdownMenu v-if="permissions.canManageServices">
         <DropdownMenuTrigger as-child>
           <Button variant="outline">
             <Download />
@@ -87,7 +90,7 @@ const handleFocusOut = () => {
       </DropdownMenu>
 
       <!-- Bouton Exporter -->
-      <DropdownMenu>
+      <DropdownMenu v-if="permissions.canExportData || permissions.canViewServices">
         <DropdownMenuTrigger as-child>
           <Button variant="outline">
             <Upload />
@@ -107,7 +110,7 @@ const handleFocusOut = () => {
       </DropdownMenu>
 
       <!-- Bouton Nouveau -->
-      <Button @click="emit('add')">
+      <Button v-if="permissions.canManageServices" @click="emit('add')">
         <Plus />
         Nouveau
       </Button>

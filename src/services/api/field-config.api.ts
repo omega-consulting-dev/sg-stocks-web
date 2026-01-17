@@ -57,8 +57,8 @@ export const fieldConfigApi = {
   /**
    * Initialize default configurations
    */
-  async initializeDefaults(): Promise<{ message: string; total: number }> {
-    const response = await Axios.post('/core/field-configurations/initialize_defaults/')
+  async initializeDefaults(force: boolean = false): Promise<{ message: string; total: number }> {
+    const response = await Axios.post('/core/field-configurations/initialize_defaults/', { force })
     return response.data
   },
 

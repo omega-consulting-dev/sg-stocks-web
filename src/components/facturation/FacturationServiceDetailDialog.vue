@@ -1,22 +1,31 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { InvoiceServices } from '@/services/invoices.service'
-import { FileText, Calendar, User, CreditCard, DollarSign } from 'lucide-vue-next'
+import { FileText, Calendar, User, CreditCard, DollarSign, AlertCircle } from 'lucide-vue-next'
 
 const props = defineProps<{ open: boolean; factureId: number|null }>()
 const emit = defineEmits(['update:open'])
 
 const facture = ref<any>(null)
 const loading = ref(false)
+const error = ref<string | null>(null)
 
 watch(() => props.open, async (val) => {
   if (val && props.factureId) {
     loading.value = true
+    error.value = null
+    facture.value = null
     try {
       const res = await InvoiceServices.getInvoice(props.factureId)
       facture.value = res.data
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        error.value = 'Cette facture n\'existe pas ou a été supprimée.'
+      } else {
+        error.value = 'Erreur lors du chargement de la facture.'
+      }
     } finally {
       loading.value = false
     }
@@ -52,10 +61,29 @@ const getStatusBadgeClass = (status: string) => {
         <DialogTitle class="text-[24px] font-bold text-[#003FD8] font-inter">
           Détail Facture Service
         </DialogTitle>
+        <DialogDescription class="sr-only">
+          Afficher les détails complets d'une facture de service
+        </DialogDescription>
       </DialogHeader>
 
+      <!-- Error State -->
+      <div v-if="error" class="flex items-center justify-center py-16">
+        <div class="flex flex-col items-center gap-4 text-center max-w-md">
+          <div class="rounded-full bg-red-100 p-4">
+            <AlertCircle class="w-12 h-12 text-red-600" />
+          </div>
+          <div>
+            <h3 class="text-[18px] font-bold text-gray-900 mb-2">Facture introuvable</h3>
+            <p class="text-[14px] text-gray-600 mb-4">{{ error }}</p>
+            <Button @click="handleClose" class="bg-[#0769CF] hover:bg-[#003FD8]">
+              Fermer
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <!-- Loading State -->
-      <div v-if="loading" class="flex items-center justify-center py-16">
+      <div v-else-if="loading" class="flex items-center justify-center py-16">
         <div class="flex flex-col items-center gap-3">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0769CF]"></div>
           <p class="text-[14px] text-[#85878D] font-inter">Chargement des détails...</p>
@@ -185,7 +213,7 @@ const getStatusBadgeClass = (status: string) => {
                   <td class="px-4 py-3 text-right text-sm text-[#85878D] font-inter">{{ line.tax_rate }}%</td>
                   <td class="px-4 py-3 text-right text-sm text-[#85878D] font-inter">{{ line.discount_percentage }}%</td>
                   <td class="px-4 py-3 text-right text-sm font-semibold text-[#0769CF] font-inter">
-                    {{ formatMoney(line.line_total) }}
+                    {{ formatMoney(line.total) }}
                   </td>
                 </tr>
                 <tr v-if="!facture.lines || facture.lines.length === 0">

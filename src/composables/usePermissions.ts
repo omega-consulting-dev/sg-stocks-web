@@ -94,11 +94,38 @@ export function usePermissions() {
     canExportData: hasPermission('can_export_data'),
   }))
 
+  // Obtenir un message d'erreur descriptif pour une permission manquante
+  const getPermissionErrorMessage = (permission: string): string => {
+    const permissionMessages: Record<string, string> = {
+      can_manage_products: 'créer ou modifier les produits',
+      can_view_products: 'consulter les produits',
+      can_manage_categories: 'créer ou modifier les catégories',
+      can_view_categories: 'consulter les catégories',
+      can_manage_services: 'créer ou modifier les services',
+      can_view_services: 'consulter les services',
+      can_manage_inventory: 'gérer le stock',
+      can_view_inventory: 'consulter le stock',
+      can_manage_sales: 'créer ou modifier les ventes',
+      can_manage_customers: 'créer ou modifier les clients',
+      can_manage_suppliers: 'créer ou modifier les fournisseurs',
+      can_manage_cashbox: 'gérer la caisse',
+      can_manage_loans: 'gérer les emprunts',
+      can_manage_expenses: 'gérer les dépenses',
+      can_manage_users: 'gérer les utilisateurs',
+      can_view_analytics: 'consulter les statistiques',
+      can_export_data: 'exporter les données',
+    }
+
+    const action = permissionMessages[permission] || 'effectuer cette action'
+    return `Vous n'avez pas les droits nécessaires pour ${action}. Veuillez contacter votre supérieur.`
+  }
+
   return {
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
     isAdmin,
-    permissions
+    permissions,
+    getPermissionErrorMessage
   }
 }

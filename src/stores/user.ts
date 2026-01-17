@@ -122,8 +122,8 @@ export const useUserStore = defineStore('user', () => {
     const storedRefreshToken = localStorage.getItem('refresh_token')
     const storedUser = localStorage.getItem('user')
 
-    // Vérifier si le token est expiré
-    if (isTokenExpired(storedToken)) {
+    // Vérifier si le token est expiré (seulement si un token existe)
+    if (storedToken && isTokenExpired(storedToken)) {
       console.warn('⚠️ Token expiré, déconnexion automatique')
       clearUser()
       return

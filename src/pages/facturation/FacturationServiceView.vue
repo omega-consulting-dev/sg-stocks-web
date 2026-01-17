@@ -557,7 +557,21 @@ async function handleGenerateInvoice(id: number) {
 }
 
 function handleViewDetails(id: number) {
-  selectedFactureId.value = id
+  // Chercher la vente correspondante pour récupérer l'ID de la facture
+  const sale = salesStore.sales.find(s => s.id === id)
+
+  if (!sale) {
+    toast.error('Vente introuvable', 'Erreur')
+    return
+  }
+
+  if (!sale.invoice || !sale.invoice.id) {
+    toast.error('Cette vente n\'a pas de facture associée', 'Erreur')
+    return
+  }
+
+  // Utiliser l'ID de la facture (pas l'ID de la vente)
+  selectedFactureId.value = sale.invoice.id
   isDetailOpen.value = true
 }
 

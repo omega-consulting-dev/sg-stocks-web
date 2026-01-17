@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useCustomersStore } from '@/stores/customers.store'
+import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
 import CustomersSearchBar from '@/components/clients/CustomersSearchBar.vue'
 import CustomersTable from '@/components/clients/CustomersTable.vue'
 import CustomerFormDialog from '@/components/clients/CustomerFormDialog.vue'
@@ -24,6 +26,9 @@ import {
 import { Button } from '@/components/ui/button'
 
 const store = useCustomersStore()
+
+const { permissions, hasPermission, getPermissionErrorMessage } = usePermissions()
+const toast = useToast()
 
 // État local
 const searchQuery = ref('')
@@ -83,18 +88,30 @@ const handleExportExcel = async () => {
 
 // Ouvrir le formulaire pour un nouveau client
 const handleAdd = () => {
+  if (!hasPermission('can_manage_customers')) {
+    toast.error(getPermissionErrorMessage('can_manage_customers'), 'Accès refusé')
+    return
+  }
   selectedCustomer.value = null
   isFormDialogOpen.value = true
 }
 
 // Gestion de la modification
 const handleEdit = (customer: Customer) => {
+  if (!hasPermission('can_manage_customers')) {
+    toast.error(getPermissionErrorMessage('can_manage_customers'), 'Accès refusé')
+    return
+  }
   selectedCustomer.value = customer
   isFormDialogOpen.value = true
 }
 
 // Gestion de la suppression
 const handleDelete = (customer: Customer) => {
+  if (!hasPermission('can_manage_customers')) {
+    toast.error(getPermissionErrorMessage('can_manage_customers'), 'Accès refusé')
+    return
+  }
   customerToDelete.value = customer
   isDeleteDialogOpen.value = true
 }

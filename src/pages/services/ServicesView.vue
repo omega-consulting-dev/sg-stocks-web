@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useServicesStore, type Service } from '@/stores/services'
 import { useServiceFamiliesStore } from '@/stores/serviceFamilies'
 import type { CreateServiceDto } from '@/services/api/services.api'
+import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
 import ServiceSearchBar from '@/components/services/ServiceSearchBar.vue'
 import ServiceTable from '@/components/services/ServiceTable.vue'
 import ServiceForm from '@/components/services/ServiceForm.vue'
@@ -26,6 +28,9 @@ import { Button } from '@/components/ui/button'
 
 const store = useServicesStore()
 const familiesStore = useServiceFamiliesStore()
+
+const { permissions, hasPermission, getPermissionErrorMessage } = usePermissions()
+const toast = useToast()
 
 // État local
 const searchQuery = ref('')
@@ -62,6 +67,10 @@ const handleSearch = (query: string) => {
 
 // Gestion de l'ajout
 const handleAdd = () => {
+  if (!hasPermission('can_manage_services')) {
+    toast.error(getPermissionErrorMessage('can_manage_services'), 'Accès refusé')
+    return
+  }
   selectedService.value = null
   isFormOpen.value = true
 }
@@ -91,6 +100,10 @@ const handleImport = () => {
 
 // Gestion de l'export PDF
 const handleExportPdf = async () => {
+  if (!hasPermission('can_export_data') && !hasPermission('can_view_services')) {
+    toast.error("Vous n'avez pas les droits nécessaires pour exporter les données. Veuillez contacter votre supérieur.", 'Accès refusé')
+    return
+  }
   try {
     await store.exportPdf()
     successMessage.value = 'Export PDF réussi !'
@@ -104,6 +117,10 @@ const handleExportPdf = async () => {
 
 // Gestion de l'export Excel
 const handleExportExcel = async () => {
+  if (!hasPermission('can_export_data') && !hasPermission('can_view_services')) {
+    toast.error("Vous n'avez pas les droits nécessaires pour exporter les données. Veuillez contacter votre supérieur.", 'Accès refusé')
+    return
+  }
   try {
     await store.exportExcel()
     successMessage.value = 'Export Excel réussi !'
@@ -117,6 +134,10 @@ const handleExportExcel = async () => {
 
 // Gestion de la modification
 const handleEdit = (service: Service) => {
+  if (!hasPermission('can_manage_services')) {
+    toast.error(getPermissionErrorMessage('can_manage_services'), 'Accès refusé')
+    return
+  }
   console.log('ServicesView handleEdit appelé avec:', service)
   selectedService.value = service
   isFormOpen.value = true
@@ -124,6 +145,10 @@ const handleEdit = (service: Service) => {
 
 // Gestion de la suppression
 const handleDelete = (service: Service) => {
+  if (!hasPermission('can_manage_services')) {
+    toast.error(getPermissionErrorMessage('can_manage_services'), 'Accès refusé')
+    return
+  }
   serviceToDelete.value = service
   isDeleteDialogOpen.value = true
 }
