@@ -2,15 +2,17 @@ import Axios from '../axios.service'
 import type { AxiosResponse } from 'axios'
 
 export interface Decaissement {
-  id: string
+  id: number  // ID numérique du CashMovement
   code: string
   type: string
   date: string
   reference: string
   montant: number
-  mode_paiement: string
+  mode_paiement: string  // Libellé affiché
+  payment_method: string  // Valeur brute pour l'édition
   description: string
   created_at: string
+  store_id?: number
 }
 
 export interface DecaissementsResponse {
@@ -114,5 +116,84 @@ export const decaissementsApi = {
       responseType: 'blob',
     })
     return response.data
+  },
+
+  async exportToPDF(filters: DecaissementsFilters = {}): Promise<Blob> {
+    const response: AxiosResponse<Blob> = await Axios.get('/cashbox/decaissements/export-pdf/', {
+      params: filters,
+      responseType: 'blob',
+    })
+    return response.data
+  },
+
+  async updateDecaissement(id: number, data: CreateDecaissementDto): Promise<any> {
+    try {
+      // Récupérer la caisse du store
+      const cashboxResponse: AxiosResponse<any> = await Axios.get('/cashbox/cashboxes/', {
+        params: { store: data.store_id, is_active: true }
+      })
+
+      let cashboxId: number
+
+      if (cashboxResponse.data.results && cashboxResponse.data.results.length > 0) {
+        cashboxId = cashboxResponse.data.results[0].id
+      } else {
+        // Créer une caisse pour ce store si elle n'existe pas
+        const timestamp = Date.now()
+        const newCashbox: AxiosResponse<any> = await Axios.post('/cashbox/cashboxes/', {
+          store: data.store_id,
+          name: `Caisse principale`,
+          code: `CASH-${data.store_id}-${timestamp}`,
+          is_active: true
+        })
+        cashboxId = newCashbox.data.id
+      }
+
+      // Récupérer ou créer une session active pour cette caisse
+      const sessionResponse: AxiosResponse<any> = await Axios.get('/cashbox/sessions/', {
+        params: { cashbox: cashboxId, status: 'open' }
+      })
+
+      let sessionId: number
+
+      if (sessionResponse.data.results && sessionResponse.data.results.length > 0) {
+        sessionId = sessionResponse.data.results[0].id
+      } else {
+        // Créer une session si elle n'existe pas
+        const newSession: AxiosResponse<any> = await Axios.post('/cashbox/sessions/open_session/', {
+          cashbox: cashboxId,
+          opening_balance: 0
+        })
+        sessionId = newSession.data.id
+      }
+
+      const movementData = {
+        movement_type: 'out',
+        category: 'bank_deposit',
+        amount: data.amount,
+        payment_method: data.payment_method,
+        reference: data.reference || '',
+        description: data.description || 'Approvisionnement bancaire',
+        notes: data.notes || '',
+        cashbox_session: sessionId
+      }
+
+      const response: AxiosResponse<any> = await Axios.patch(`/cashbox/movements/${id}/`, movementData)
+      return response.data
+    } catch (error: any) {
+      console.error('Error updating decaissement:', error)
+      console.error('Error response:', error.response?.data)
+      throw error
+    }
+  },
+
+  async deleteDecaissement(id: number): Promise<void> {
+    try {
+      await Axios.delete(`/cashbox/movements/${id}/`)
+    } catch (error: any) {
+      console.error('Error deleting decaissement:', error)
+      console.error('Error response:', error.response?.data)
+      throw error
+    }
   },
 }

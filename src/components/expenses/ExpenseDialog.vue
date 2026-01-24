@@ -54,14 +54,14 @@
           </div>
 
           <div class="form-group">
-            <label>Bénéficiaire *</label>
-            <input v-model="formData.beneficiary" type="text" required />
+            <label>Bénéficiaire</label>
+            <input v-model="formData.beneficiary" type="text" />
             <span v-if="errors.beneficiary" class="error">{{ errors.beneficiary }}</span>
           </div>
 
           <div class="form-group">
-            <label>Description *</label>
-            <textarea v-model="formData.description" required rows="3"></textarea>
+            <label>Description</label>
+            <textarea v-model="formData.description" rows="3"></textarea>
             <span v-if="errors.description" class="error">{{ errors.description }}</span>
           </div>
         </div>
@@ -74,12 +74,15 @@
               <label>Mode de paiement</label>
               <select v-model="formData.payment_method">
                 <option :value="null">Non défini</option>
-                <option value="cash">Espèces</option>
-                <option value="bank_transfer">Virement bancaire</option>
-                <option value="check">Chèque</option>
-                <option value="mobile_money">Mobile Money</option>
-                <option value="card">Carte bancaire</option>
+                <option value="cash">💵 Espèces (Caisse)</option>
+                <option value="bank_transfer">🏦 Virement bancaire</option>
+                <option value="check">📄 Chèque</option>
+                <option value="mobile_money">📱 Mobile Money</option>
+                <option value="card">💳 Carte bancaire</option>
               </select>
+              <p v-if="formData.payment_method === 'cash'" class="info-text cash-info">
+                ℹ️ Le montant sera automatiquement déduit du solde de la caisse lors du paiement
+              </p>
             </div>
 
             <div class="form-group">
@@ -293,25 +296,24 @@ async function submitForm() {
     errors.value.amount = 'Le montant doit être supérieur à 0';
     return;
   }
-  if (!formData.value.beneficiary) {
-    errors.value.beneficiary = 'Le bénéficiaire est requis';
-    return;
-  }
-  if (!formData.value.description) {
-    errors.value.description = 'La description est requise';
-    return;
-  }
 
   isSubmitting.value = true;
 
   try {
-    console.log('Submitting expense with data:', formData.value);
+    // Préparer les données en s'assurant que null est bien null et pas une chaîne vide
+    const dataToSubmit = {
+      ...formData.value,
+      store: formData.value.store === '' || formData.value.store === null ? null : formData.value.store,
+      payment_method: formData.value.payment_method === null || formData.value.payment_method === '' ? null : formData.value.payment_method,
+    };
+    
+    console.log('Submitting expense with data:', dataToSubmit);
     let result: Expense;
 
     if (isEdit.value && props.expense) {
-      result = await expensesStore.updateExpense(props.expense.id, formData.value);
+      result = await expensesStore.updateExpense(props.expense.id, dataToSubmit);
     } else {
-      result = await expensesStore.createExpense(formData.value);
+      result = await expensesStore.createExpense(dataToSubmit);
     }
 
     console.log('Expense created/updated:', result);
@@ -598,6 +600,21 @@ function closeOnBackdrop(event: MouseEvent) {
   color: #27ae60;
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.info-text {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.cash-info {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  border-left: 3px solid #1976d2;
+  font-weight: 500;
 }
 
 .alert {

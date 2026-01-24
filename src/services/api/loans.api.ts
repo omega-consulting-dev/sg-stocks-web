@@ -25,6 +25,9 @@ export const loansApi = {
   makePayment(loanId: number, data: MakePaymentRequest) {
     return Axios.post<LoanPayment>(`${LOANS_API}loans/${loanId}/make_payment/`, data);
   },
+  getPaymentHistory(loanId: number) {
+    return Axios.get<LoanPayment[]>(`${LOANS_API}loans/${loanId}/payment_history/`);
+  },
   exportToExcel(params: Record<string, any>) {
     return Axios.get<Blob>(`${LOANS_API}export_excel/`, {
       params,

@@ -22,6 +22,8 @@ export interface CustomerPayment {
   amount: number
   payment_method: string
   payment_method_display: string
+  status?: string
+  status_display?: string
   reference?: string
   notes?: string
 }
@@ -65,7 +67,11 @@ export const useCustomerDebtsStore = defineStore('customerDebts', () => {
   async function fetchCustomerPayments(customerId: number): Promise<CustomerPayment[]> {
     try {
       const response = await Axios.get(`/customers/customers/${customerId}/payment_history/`)
-      return response.data
+      // Trier par numéro de paiement (ordre croissant)
+      const payments = response.data
+      return payments.sort((a: CustomerPayment, b: CustomerPayment) => {
+        return a.payment_number.localeCompare(b.payment_number, undefined, { numeric: true })
+      })
     } catch (err: any) {
       console.error('Erreur chargement historique paiements:', err)
       throw err

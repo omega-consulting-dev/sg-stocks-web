@@ -1,45 +1,50 @@
 <template>
-  <div class="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6">
+  <div class="flex-1 space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6 p-3 sm:p-4 md:p-5 lg:p-6">
     <!-- Breadcrumb -->
-    <Breadcrumb>
+    <Breadcrumb class="mb-2">
       <BreadcrumbList>
         <BreadcrumbItem>
-          <BreadcrumbLink href="/">Accueil</BreadcrumbLink>
+          <BreadcrumbLink href="/" class="text-xs sm:text-sm">Accueil</BreadcrumbLink>
         </BreadcrumbItem>
-        <BreadcrumbSeparator />
+        <BreadcrumbSeparator class="text-xs sm:text-sm" />
         <BreadcrumbItem>
-          <BreadcrumbPage>Dépenses</BreadcrumbPage>
+          <BreadcrumbPage class="text-xs sm:text-sm">Dépenses</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
 
     <!-- Header with title and actions -->
-    <header class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-primary">Dépenses</h1>
-        <p class="opacity-60 text-xs sm:text-sm">Gestion des dépenses de l'entreprise</p>
+    <header class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start md:items-center">
+      <div class="flex-1 min-w-0">
+        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-primary truncate">Dépenses</h1>
+        <p class="opacity-60 text-xs sm:text-sm mt-0.5">Gestion des dépenses de l'entreprise</p>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-2.5 md:gap-3 shrink-0">
         <!-- Manage Categories button -->
         <Button
           @click="$router.push('/depenses/categories')"
           variant="outline"
-          class="px-2 sm:px-4"
+          size="sm"
+          class="flex-1 sm:flex-none min-w-[100px] sm:min-w-0 h-9 sm:h-10"
         >
-          <FolderTree class="h-4 w-4" />
-          <span class="hidden sm:inline">Catégories</span>
+          <FolderTree class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span class="ml-1.5 sm:ml-2 text-xs sm:text-sm">Catégories</span>
         </Button>
 
         <!-- Export button -->
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
-            <Button variant="outline" class="px-2 sm:px-4">
-              <Upload class="h-4 w-4" />
-              <span class="hidden sm:inline">Exporter</span>
+            <Button 
+              variant="outline" 
+              size="sm"
+              class="flex-1 sm:flex-none min-w-[100px] sm:min-w-0 h-9 sm:h-10"
+            >
+              <Upload class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span class="ml-1.5 sm:ml-2 text-xs sm:text-sm">Exporter</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent class="rounded-lg" align="end">
+          <DropdownMenuContent class="rounded-lg w-48" align="end">
             <DropdownMenuItem @select="exportToExcel" class="gap-2 cursor-pointer">
               <Sheet class="h-4 w-4 text-green-600" />
               <span>Exporter en Excel</span>
@@ -48,75 +53,79 @@
         </DropdownMenu>
 
         <!-- Create button -->
-        <Button @click="openCreateDialog" class="px-2 sm:px-4">
-          <Plus class="h-4 w-4" />
-          <span class="hidden sm:inline">Nouvelle Dépense</span>
+        <Button 
+          @click="openCreateDialog" 
+          size="sm"
+          class="flex-1 sm:flex-none min-w-[100px] sm:min-w-0 h-9 sm:h-10"
+        >
+          <Plus class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span class="ml-1.5 sm:ml-2 text-xs sm:text-sm">Nouvelle</span>
         </Button>
       </div>
     </header>
 
 
  <!-- Stats cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <!-- Total Dépenses Card -->
-      <Card class="rounded-xl border-none shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50 hover:shadow-md transition-all">
-        <CardContent class="p-6">
-          <div class="flex items-start justify-between">
-            <div class="flex flex-col gap-2">
-              <p class="text-[13px] font-medium text-blue-700/70">Total Dépenses</p>
-              <p class="text-[28px] font-bold text-blue-900">{{ formatCurrency(expensesStore.totalAmount) }}</p>
-              <p class="text-[11px] text-blue-600/60">Toutes périodes</p>
+      <Card class="rounded-lg sm:rounded-xl border-none shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50 hover:shadow-md transition-all">
+        <CardContent class="p-4 sm:p-5 md:p-6">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex flex-col gap-1 sm:gap-1.5 md:gap-2 flex-1 min-w-0">
+              <p class="text-[11px] sm:text-xs md:text-[13px] font-medium text-blue-700/70 truncate">Total Dépenses</p>
+              <p class="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-bold text-blue-900 truncate">{{ formatCurrency(expensesStore.totalAmount) }}</p>
+              <p class="text-[10px] sm:text-[11px] text-blue-600/60">Toutes périodes</p>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-              <CreditCard class="h-6 w-6 text-blue-600" />
+            <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+              <CreditCard class="h-5 w-5 sm:h-5.5 sm:w-5.5 md:h-6 md:w-6 text-blue-600" />
             </div>
           </div>
         </CardContent>
       </Card>
 
       <!-- Payées Card -->
-      <Card class="rounded-xl border-none shadow-sm bg-gradient-to-br from-green-50 to-green-100/50 hover:shadow-md transition-all">
-        <CardContent class="p-6">
-          <div class="flex items-start justify-between">
-            <div class="flex flex-col gap-2">
-              <p class="text-[13px] font-medium text-green-700/70">Dépenses Payées</p>
-              <p class="text-[28px] font-bold text-green-900">{{ formatCurrency(expensesStore.totalPaid) }}</p>
-              <p class="text-[11px] text-green-600/60">Payées et validées</p>
+      <Card class="rounded-lg sm:rounded-xl border-none shadow-sm bg-gradient-to-br from-green-50 to-green-100/50 hover:shadow-md transition-all">
+        <CardContent class="p-4 sm:p-5 md:p-6">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex flex-col gap-1 sm:gap-1.5 md:gap-2 flex-1 min-w-0">
+              <p class="text-[11px] sm:text-xs md:text-[13px] font-medium text-green-700/70 truncate">Payées</p>
+              <p class="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-bold text-green-900 truncate">{{ formatCurrency(expensesStore.totalPaid) }}</p>
+              <p class="text-[10px] sm:text-[11px] text-green-600/60">Validées</p>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-              <Check class="h-6 w-6 text-green-600" />
+            <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+              <Check class="h-5 w-5 sm:h-5.5 sm:w-5.5 md:h-6 md:w-6 text-green-600" />
             </div>
           </div>
         </CardContent>
       </Card>
 
       <!-- En Attente Card -->
-      <Card class="rounded-xl border-none shadow-sm bg-gradient-to-br from-orange-50 to-orange-100/50 hover:shadow-md transition-all">
-        <CardContent class="p-6">
-          <div class="flex items-start justify-between">
-            <div class="flex flex-col gap-2">
-              <p class="text-[13px] font-medium text-orange-700/70">En Attente</p>
-              <p class="text-[28px] font-bold text-orange-900">{{ formatCurrency(expensesStore.totalPending) }}</p>
-              <p class="text-[11px] text-orange-600/60">À approuver</p>
+      <Card class="rounded-lg sm:rounded-xl border-none shadow-sm bg-gradient-to-br from-orange-50 to-orange-100/50 hover:shadow-md transition-all">
+        <CardContent class="p-4 sm:p-5 md:p-6">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex flex-col gap-1 sm:gap-1.5 md:gap-2 flex-1 min-w-0">
+              <p class="text-[11px] sm:text-xs md:text-[13px] font-medium text-orange-700/70 truncate">En Attente</p>
+              <p class="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-bold text-orange-900 truncate">{{ formatCurrency(expensesStore.totalPending) }}</p>
+              <p class="text-[10px] sm:text-[11px] text-orange-600/60">À approuver</p>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
-              <RotateCcw class="h-6 w-6 text-orange-600" />
+            <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
+              <RotateCcw class="h-5 w-5 sm:h-5.5 sm:w-5.5 md:h-6 md:w-6 text-orange-600" />
             </div>
           </div>
         </CardContent>
       </Card>
 
       <!-- Nombre Card -->
-      <Card class="rounded-xl border-none shadow-sm bg-gradient-to-br from-purple-50 to-purple-100/50 hover:shadow-md transition-all">
-        <CardContent class="p-6">
-          <div class="flex items-start justify-between">
-            <div class="flex flex-col gap-2">
-              <p class="text-[13px] font-medium text-purple-700/70">Nombre Total</p>
-              <p class="text-[28px] font-bold text-purple-900">{{ expensesStore.expenses.length }}</p>
-              <p class="text-[11px] text-purple-600/60">Dépenses enregistrées</p>
+      <Card class="rounded-lg sm:rounded-xl border-none shadow-sm bg-gradient-to-br from-purple-50 to-purple-100/50 hover:shadow-md transition-all">
+        <CardContent class="p-4 sm:p-5 md:p-6">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex flex-col gap-1 sm:gap-1.5 md:gap-2 flex-1 min-w-0">
+              <p class="text-[11px] sm:text-xs md:text-[13px] font-medium text-purple-700/70 truncate">Total</p>
+              <p class="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-bold text-purple-900 truncate">{{ expensesStore.expenses.length }}</p>
+              <p class="text-[10px] sm:text-[11px] text-purple-600/60">Enregistrées</p>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
-              <Sheet class="h-6 w-6 text-purple-600" />
+            <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
+              <Sheet class="h-5 w-5 sm:h-5.5 sm:w-5.5 md:h-6 md:w-6 text-purple-600" />
             </div>
           </div>
         </CardContent>
@@ -125,18 +134,18 @@
 
 
     <!-- Filters section -->
-    <Card class="rounded-xl border-none shadow-sm bg-white/50 backdrop-blur-sm">
-      <CardContent class="p-6">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <Card class="rounded-lg sm:rounded-xl border-none shadow-sm bg-white/50 backdrop-blur-sm">
+      <CardContent class="p-3 sm:p-4 md:p-5 lg:p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
           <!-- Category filter -->
-          <div class="flex flex-col gap-2">
-            <Label for="category-filter" class="text-[13px] font-medium text-[#9197B3]">Catégorie</Label>
+          <div class="flex flex-col gap-1.5 sm:gap-2">
+            <Label for="category-filter" class="text-xs sm:text-[13px] font-medium text-[#9197B3]">Catégorie</Label>
             <Select v-model="selectedCategory" @update:model-value="applyFilters">
-              <SelectTrigger id="category-filter" class="h-[38px] rounded-[10px] border-[#E5E5E5] bg-white hover:border-[#5932EA] transition-colors">
-                <SelectValue placeholder="Toutes les catégories" />
+              <SelectTrigger id="category-filter" class="h-9 sm:h-[38px] rounded-lg sm:rounded-[10px] border-[#E5E5E5] bg-white hover:border-[#5932EA] transition-colors text-xs sm:text-sm">
+                <SelectValue placeholder="Toutes" />
               </SelectTrigger>
-              <SelectContent class="rounded-[10px]">
-                <SelectItem :value="undefined">Toutes les catégories</SelectItem>
+              <SelectContent class="rounded-lg sm:rounded-[10px]">
+                <SelectItem value="all">Toutes les catégories</SelectItem>
                 <SelectItem v-for="cat in expensesStore.categories" :key="cat.id" :value="cat.id">
                   {{ cat.name }}
                 </SelectItem>
@@ -145,14 +154,14 @@
           </div>
 
           <!-- Status filter -->
-          <div class="flex flex-col gap-2">
-            <Label for="status-filter" class="text-[13px] font-medium text-[#9197B3]">Statut</Label>
+          <div class="flex flex-col gap-1.5 sm:gap-2">
+            <Label for="status-filter" class="text-xs sm:text-[13px] font-medium text-[#9197B3]">Statut</Label>
             <Select v-model="selectedStatus" @update:model-value="applyFilters">
-              <SelectTrigger id="status-filter" class="h-[38px] rounded-[10px] border-[#E5E5E5] bg-white hover:border-[#5932EA] transition-colors">
-                <SelectValue placeholder="Tous les statuts" />
+              <SelectTrigger id="status-filter" class="h-9 sm:h-[38px] rounded-lg sm:rounded-[10px] border-[#E5E5E5] bg-white hover:border-[#5932EA] transition-colors text-xs sm:text-sm">
+                <SelectValue placeholder="Tous" />
               </SelectTrigger>
-              <SelectContent class="rounded-[10px]">
-                <SelectItem :value="undefined">Tous les statuts</SelectItem>
+              <SelectContent class="rounded-lg sm:rounded-[10px]">
+                <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="draft">Brouillon</SelectItem>
                 <SelectItem value="pending">En attente</SelectItem>
                 <SelectItem value="approved">Approuvé</SelectItem>
@@ -163,38 +172,39 @@
           </div>
 
           <!-- Date from filter -->
-          <div class="flex flex-col gap-2">
-            <Label for="date-from" class="text-[13px] font-medium text-[#9197B3]">Date début</Label>
+          <div class="flex flex-col gap-1.5 sm:gap-2">
+            <Label for="date-from" class="text-xs sm:text-[13px] font-medium text-[#9197B3]">Date début</Label>
             <Input
               id="date-from"
               type="date"
               v-model="dateFrom"
               @change="applyFilters"
-              class="h-[38px] rounded-[10px] border-[#E5E5E5] bg-white hover:border-[#5932EA] transition-colors"
+              class="h-9 sm:h-[38px] rounded-lg sm:rounded-[10px] border-[#E5E5E5] bg-white hover:border-[#5932EA] transition-colors text-xs sm:text-sm"
             />
           </div>
 
           <!-- Date to filter -->
-          <div class="flex flex-col gap-2">
-            <Label for="date-to" class="text-[13px] font-medium text-[#9197B3]">Date fin</Label>
+          <div class="flex flex-col gap-1.5 sm:gap-2">
+            <Label for="date-to" class="text-xs sm:text-[13px] font-medium text-[#9197B3]">Date fin</Label>
             <Input
               id="date-to"
               type="date"
               v-model="dateTo"
               @change="applyFilters"
-              class="h-[38px] rounded-[10px] border-[#E5E5E5] bg-white hover:border-[#5932EA] transition-colors"
+              class="h-9 sm:h-[38px] rounded-lg sm:rounded-[10px] border-[#E5E5E5] bg-white hover:border-[#5932EA] transition-colors text-xs sm:text-sm"
             />
           </div>
 
           <!-- Clear filters button -->
-          <div class="flex items-end">
+          <div class="flex items-end sm:col-span-2 lg:col-span-1">
             <Button
               @click="clearFiltersClick"
               variant="outline"
-              class="w-full h-[38px] gap-2 rounded-[10px] border-[#E5E5E5] hover:bg-[#5932EA] hover:text-white hover:border-[#5932EA] transition-all"
+              size="sm"
+              class="w-full h-9 sm:h-[38px] gap-1.5 sm:gap-2 rounded-lg sm:rounded-[10px] border-[#E5E5E5] hover:bg-[#5932EA] hover:text-white hover:border-[#5932EA] transition-all text-xs sm:text-sm"
             >
-              <RotateCcw class="h-4 w-4" />
-              <span class="hidden sm:inline">Réinitialiser</span>
+              <RotateCcw class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Réinitialiser</span>
             </Button>
           </div>
         </div>
@@ -204,45 +214,132 @@
 
 
     <!-- Loading indicator -->
-    <div v-if="expensesStore.isLoading" class="flex items-center justify-center py-12">
-      <Skeleton class="h-12 w-12 rounded-full" />
+    <div v-if="expensesStore.isLoading" class="flex items-center justify-center py-8 sm:py-10 md:py-12">
+      <Skeleton class="h-10 w-10 sm:h-12 sm:w-12 rounded-full" />
     </div>
 
     <!-- Expenses table -->
-    <Card v-else class="rounded-xl">
-      <CardContent class="pt-6">
-        <div v-if="expensesStore.expenses.length === 0" class="text-center py-12">
-          <p class="text-muted-foreground">Aucune dépense trouvée</p>
+    <Card v-else class="rounded-lg sm:rounded-xl overflow-hidden">
+      <CardContent class="p-0 sm:pt-6">
+        <div v-if="expensesStore.expenses.length === 0" class="text-center py-8 sm:py-10 md:py-12 px-4">
+          <p class="text-muted-foreground text-sm sm:text-base">Aucune dépense trouvée</p>
         </div>
-        <div v-else class="overflow-x-auto">
+        
+        <!-- Mobile Card View (visible only on mobile) -->
+        <div v-else class="block lg:hidden space-y-3 p-3 sm:p-4">
+          <Card 
+            v-for="(expense, index) in expensesStore.expenses" 
+            :key="expense.id"
+            class="rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+          >
+            <CardContent class="p-3 sm:p-4 space-y-3">
+              <!-- Header -->
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs font-semibold text-gray-500">#{index + 1}</span>
+                    <Badge :variant="getStatusBadgeVariant(expense.status)" class="text-xs">
+                      {{ expense.status_display }}
+                    </Badge>
+                  </div>
+                  <p class="text-sm font-medium text-gray-900 truncate">{{ expense.category_name }}</p>
+                  <p class="text-xs text-gray-500 mt-0.5">{{ formatDate(expense.expense_date) }}</p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button variant="ghost" size="sm" class="h-8 w-8 p-0 rounded-lg shrink-0">
+                      <MoreVertical class="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent class="rounded-lg w-48" align="end">
+                    <DropdownMenuItem @select="editExpense(expense)">
+                      <Pencil class="mr-2 h-4 w-4" />
+                      Modifier
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      v-if="expense.status === 'draft' || expense.status === 'pending'"
+                      @select="approveExpenseDialog(expense)"
+                    >
+                      <Check class="mr-2 h-4 w-4 text-green-600" />
+                      Approuver
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      v-if="expense.status === 'draft' || expense.status === 'pending'"
+                      @select="rejectExpenseDialog(expense)"
+                    >
+                      <X class="mr-2 h-4 w-4 text-red-600" />
+                      Rejeter
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      v-if="expense.status === 'approved'"
+                      @select="markAsPaidDialog(expense)"
+                    >
+                      <CreditCard class="mr-2 h-4 w-4 text-green-600" />
+                      Marquer payée
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      @select="deleteExpenseDialog(expense)"
+                      class="text-red-600"
+                    >
+                      <Trash2 class="mr-2 h-4 w-4" />
+                      Supprimer
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              
+              <!-- Details -->
+              <div class="space-y-2 text-xs sm:text-sm">
+                <div class="flex justify-between items-start gap-2">
+                  <span class="text-gray-500">Description:</span>
+                  <span class="font-medium text-right line-clamp-2">{{ expense.description || '-' }}</span>
+                </div>
+                <div class="flex justify-between items-center gap-2">
+                  <span class="text-gray-500">Bénéficiaire:</span>
+                  <span class="font-medium truncate">{{ expense.beneficiary || '-' }}</span>
+                </div>
+                <div class="flex justify-between items-center gap-2 pt-2 border-t">
+                  <span class="text-gray-700 font-medium">Montant:</span>
+                  <span class="font-bold text-base sm:text-lg text-primary">{{ formatCurrency(expense.amount) }}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <!-- Desktop Table View (hidden on mobile) -->
+        <div class="hidden lg:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead class="w-16">#</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Catégorie</TableHead>
-                <TableHead>Bénéficiaire</TableHead>
-                <TableHead class="text-right">Montant</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead class="text-right">Actions</TableHead>
+                <TableHead class="w-12 xl:w-16">#</TableHead>
+                <TableHead class="min-w-[100px]">Date</TableHead>
+                <TableHead class="min-w-[140px]">Catégorie</TableHead>
+                <TableHead class="min-w-[180px]">Description</TableHead>
+                <TableHead class="min-w-[120px]">Bénéficiaire</TableHead>
+                <TableHead class="text-right min-w-[120px]">Montant</TableHead>
+                <TableHead class="min-w-[100px]">Statut</TableHead>
+                <TableHead class="text-right w-16">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="(expense, index) in expensesStore.expenses" :key="expense.id">
-                <TableCell class="font-semibold text-gray-500">{{ index + 1 }}</TableCell>
-                <TableCell>{{ formatDate(expense.expense_date) }}</TableCell>
-                <TableCell>{{ expense.category_name }}</TableCell>
-                <TableCell>{{ expense.beneficiary }}</TableCell>
-                <TableCell class="text-right font-medium">{{ formatCurrency(expense.amount) }}</TableCell>
+              <TableRow v-for="(expense, index) in expensesStore.expenses" :key="expense.id" class="hover:bg-gray-50/50">
+                <TableCell class="font-semibold text-gray-500 text-sm">{{ index + 1 }}</TableCell>
+                <TableCell class="text-sm">{{ formatDate(expense.expense_date) }}</TableCell>
+                <TableCell class="text-sm">{{ expense.category_name }}</TableCell>
+                <TableCell class="max-w-xs truncate text-sm" :title="expense.description">{{ expense.description || '-' }}</TableCell>
+                <TableCell class="text-sm">{{ expense.beneficiary || '-' }}</TableCell>
+                <TableCell class="text-right font-medium text-sm">{{ formatCurrency(expense.amount) }}</TableCell>
                 <TableCell>
-                  <Badge :variant="getStatusBadgeVariant(expense.status)">
+                  <Badge :variant="getStatusBadgeVariant(expense.status)" class="text-xs">
                     {{ expense.status_display }}
                   </Badge>
                 </TableCell>
                 <TableCell class="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger as-child>
-                      <Button variant="ghost" class="h-8 w-8 p-0 rounded-lg">
+                      <Button variant="ghost" size="sm" class="h-8 w-8 p-0 rounded-lg">
                         <MoreVertical class="h-4 w-4" />
                         <span class="sr-only">Open menu</span>
                       </Button>
@@ -252,7 +349,6 @@
                         <Pencil class="mr-2 h-4 w-4" />
                         Modifier
                       </DropdownMenuItem>
-
                       <DropdownMenuItem
                         v-if="expense.status === 'draft' || expense.status === 'pending'"
                         @select="approveExpenseDialog(expense)"
@@ -260,7 +356,6 @@
                         <Check class="mr-2 h-4 w-4 text-green-600" />
                         Approuver
                       </DropdownMenuItem>
-
                       <DropdownMenuItem
                         v-if="expense.status === 'draft' || expense.status === 'pending'"
                         @select="rejectExpenseDialog(expense)"
@@ -268,7 +363,6 @@
                         <X class="mr-2 h-4 w-4 text-red-600" />
                         Rejeter
                       </DropdownMenuItem>
-
                       <DropdownMenuItem
                         v-if="expense.status === 'approved'"
                         @select="markAsPaidDialog(expense)"
@@ -276,9 +370,7 @@
                         <CreditCard class="mr-2 h-4 w-4 text-green-600" />
                         Marquer payée
                       </DropdownMenuItem>
-
                       <DropdownMenuSeparator />
-
                       <DropdownMenuItem
                         @select="deleteExpenseDialog(expense)"
                         class="text-red-600"
@@ -294,16 +386,17 @@
           </Table>
 
           <!-- Pagination -->
-          <div v-if="expensesStore.pagination.total_pages > 1" class="flex items-center justify-between mt-6 pt-6 border-t">
-            <p class="text-sm text-muted-foreground">
+          <div v-if="expensesStore.pagination.total_pages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 px-3 sm:px-6 border-t">
+            <p class="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
               Page {{ expensesStore.pagination.current_page }} / {{ expensesStore.pagination.total_pages }}
             </p>
-            <div class="flex gap-2">
+            <div class="flex gap-2 w-full sm:w-auto order-1 sm:order-2">
               <Button
                 @click="previousPage"
                 :disabled="!expensesStore.pagination.previous"
                 variant="outline"
-                class="rounded-lg"
+                size="sm"
+                class="flex-1 sm:flex-none rounded-lg text-xs sm:text-sm h-9"
               >
                 ← Précédent
               </Button>
@@ -311,7 +404,8 @@
                 @click="nextPage"
                 :disabled="!expensesStore.pagination.next"
                 variant="outline"
-                class="rounded-lg"
+                size="sm"
+                class="flex-1 sm:flex-none rounded-lg text-xs sm:text-sm h-9"
               >
                 Suivant →
               </Button>
@@ -465,6 +559,7 @@ import { useExpensesStore } from '@/stores/expenses'
 import { useStoresStatsStore } from '@/stores/storesStats'
 import { formatCurrency, formatDate } from '@/lib/formatters'
 import { PAYMENT_METHOD_LABELS } from '@/types/expenses'
+import { useToast } from '@/composables/useToast'
 import ExpenseDialog from '@/components/expenses/ExpenseDialog.vue'
 import MarkAsPaidDialog from '@/components/expenses/MarkAsPaidDialog.vue'
 import type { Expense } from '@/types/expenses'
@@ -518,8 +613,8 @@ const selectedExpenseForEdit = ref<Expense | null>(null)
 const selectedExpenseForPayment = ref<Expense | null>(null)
 const selectedExpenseForAction = ref<Expense | null>(null)
 
-const selectedCategory = ref<number | undefined>()
-const selectedStatus = ref<string | undefined>()
+const selectedCategory = ref<number | string>('all')
+const selectedStatus = ref<string>('all')
 const dateFrom = ref('')
 const dateTo = ref('')
 
@@ -597,6 +692,8 @@ function markAsPaidDialog(expense: Expense) {
   showPaymentDialog.value = true
 }
 
+const toast = useToast()
+
 async function handleMarkAsPaid(paymentMethod: string, paymentReference: string) {
   if (selectedExpenseForPayment.value) {
     try {
@@ -607,8 +704,12 @@ async function handleMarkAsPaid(paymentMethod: string, paymentReference: string)
       )
       showPaymentDialog.value = false
       selectedExpenseForPayment.value = null
-    } catch (error) {
+      toast.success('Dépense marquée comme payée avec succès', 'Paiement enregistré')
+    } catch (error: any) {
       console.error('Erreur lors du marquage comme payé:', error)
+      // Ne pas fermer le dialog pour que l'utilisateur voie l'erreur
+      const errorMessage = error.response?.data?.error || error.response?.data?.detail || error.message || 'Une erreur est survenue lors du paiement'
+      toast.error(errorMessage, 'Erreur de paiement')
     }
   }
 }
@@ -642,16 +743,16 @@ async function deleteExpense_OLD(id: number) {
 
 function applyFilters() {
   expensesStore.fetchExpenses(1, {
-    category: selectedCategory.value,
-    status: selectedStatus.value as any,
+    category: selectedCategory.value === 'all' ? undefined : selectedCategory.value,
+    status: selectedStatus.value === 'all' ? undefined : (selectedStatus.value as any),
     dateFrom: dateFrom.value,
     dateTo: dateTo.value,
   })
 }
 
 function clearFiltersClick() {
-  selectedCategory.value = undefined
-  selectedStatus.value = undefined
+  selectedCategory.value = 'all'
+  selectedStatus.value = 'all'
   dateFrom.value = ''
   dateTo.value = ''
   expensesStore.clearFilters()

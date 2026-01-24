@@ -20,6 +20,7 @@ import { useCustomerDebtsStore, type CustomerDebt } from '@/stores/customerDebts
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useToast } from '@/composables/useToast'
 
 const props = defineProps<{
   open: boolean
@@ -33,6 +34,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useCustomerDebtsStore()
+const toast = useToast()
 
 const formData = ref({
   customer_id: 0,
@@ -48,6 +50,14 @@ const formData = ref({
 const fileInput = ref<HTMLInputElement | null>(null)
 const fileName = ref('')
 const submitting = ref(false)
+const showSuccessDialog = ref(false)
+const showErrorDialog = ref(false)
+const errorMessage = ref('')
+const successDetails = ref({
+  amount: 0,
+  customer: '',
+  reference: ''
+})
 
 // Clients avec des dettes (balance > 0)
 const customersWithDebts = computed(() => {
@@ -171,15 +181,60 @@ const handleSubmit = async () => {
 
     console.log('Payment response:', response)
 
+    // Préparer les détails pour le dialog de succès
+    successDetails.value = {
+      amount: formData.value.montant,
+      customer: selectedCustomer.value.customer_name,
+      reference: response.reference || formData.value.reference || 'N/A'
+    }
+
+    // Afficher le dialog de succès
+    showSuccessDialog.value = true
+
+    // Toast de succès
+    toast.success(`Paiement de ${formData.value.montant} F CFA enregistré avec succès`)
+
+    // Émettre l'événement success immédiatement pour rafraîchir les données
     emit('success')
-    emit('update:open', false)
+
   } catch (error: any) {
     console.error('Erreur lors du règlement:', error)
-    const errorMessage = error.response?.data?.error || error.message || 'Impossible d\'enregistrer le règlement'
-    alert(errorMessage)
+
+    // Extraire le message d'erreur détaillé
+    let errorMsg = 'Une erreur est survenue lors de l\'enregistrement du règlement'
+
+    if (error.response?.data) {
+      if (typeof error.response.data === 'string') {
+        errorMsg = error.response.data
+      } else if (error.response.data.error) {
+        errorMsg = error.response.data.error
+      } else if (error.response.data.detail) {
+        errorMsg = error.response.data.detail
+      } else if (error.response.data.message) {
+        errorMsg = error.response.data.message
+      }
+    } else if (error.message) {
+      errorMsg = error.message
+    }
+
+    errorMessage.value = errorMsg
+    showErrorDialog.value = true
+
+    // Toast d'erreur
+    toast.error(errorMsg)
   } finally {
     submitting.value = false
   }
+}
+
+const handleSuccessClose = () => {
+  showSuccessDialog.value = false
+  emit('success')
+  emit('update:open', false)
+}
+
+const handleErrorClose = () => {
+  showErrorDialog.value = false
 }
 
 const handleClose = () => {
@@ -495,6 +550,68 @@ const handleClose = () => {
           </Button>
         </div>
       </form>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Success Dialog -->
+  <Dialog :open="showSuccessDialog" @update:open="handleSuccessClose">
+    <DialogContent class="max-w-md">
+      <div class="flex flex-col items-center gap-4 py-6">
+        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+          <CheckCircle2 class="w-10 h-10 text-green-600" />
+        </div>
+        <DialogTitle class="text-xl font-bold text-center">Règlement enregistré avec succès</DialogTitle>
+        <DialogDescription class="text-center text-gray-600">
+          Le paiement a été enregistré et la dette du client a été mise à jour.
+        </DialogDescription>
+
+        <div class="w-full bg-gray-50 rounded-lg p-4 space-y-2">
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Client :</span>
+            <span class="text-sm font-semibold">{{ successDetails.customer }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Montant :</span>
+            <span class="text-sm font-semibold text-green-600">{{ successDetails.amount }} F CFA</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Référence :</span>
+            <span class="text-sm font-semibold">{{ successDetails.reference }}</span>
+          </div>
+        </div>
+
+        <Button @click="handleSuccessClose" class="w-full mt-4 bg-green-600 hover:bg-green-700">
+          Fermer
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Error Dialog -->
+  <Dialog :open="showErrorDialog" @update:open="handleErrorClose">
+    <DialogContent class="max-w-md">
+      <div class="flex flex-col items-center gap-4 py-6">
+        <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+          <AlertCircle class="w-10 h-10 text-red-600" />
+        </div>
+        <DialogTitle class="text-xl font-bold text-center text-red-600">Erreur lors du règlement</DialogTitle>
+        <DialogDescription class="text-center text-gray-600">
+          Une erreur s'est produite lors de l'enregistrement du paiement.
+        </DialogDescription>
+
+        <div class="w-full bg-red-50 rounded-lg p-4 border border-red-200">
+          <p class="text-sm text-red-800">{{ errorMessage }}</p>
+        </div>
+
+        <div class="flex gap-3 w-full mt-4">
+          <Button @click="handleErrorClose" variant="outline" class="flex-1">
+            Fermer
+          </Button>
+          <Button @click="handleErrorClose(); showErrorDialog = false" class="flex-1 bg-blue-600 hover:bg-blue-700">
+            Réessayer
+          </Button>
+        </div>
+      </div>
     </DialogContent>
   </Dialog>
 </template>

@@ -777,8 +777,8 @@ const handleSubmitTransfer = async () => {
       return
     }
 
-    // Afficher le dialogue de succès
-    successTransferNumber.value = transferNumber.value
+    // Afficher le dialogue de succès avec le numéro du transfert créé
+    successTransferNumber.value = newTransfer.transfer_number || transferNumber.value
     isTransferModalOpen.value = false
     isSuccessDialogOpen.value = true
 

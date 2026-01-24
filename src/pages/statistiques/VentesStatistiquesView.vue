@@ -100,7 +100,6 @@
               v-model="filters.date_from"
               type="date"
               class="border-slate-300 focus:border-green-500 focus:ring-green-500"
-              @change="handleFilterChange"
             />
           </div>
 
@@ -111,7 +110,6 @@
               v-model="filters.date_to"
               type="date"
               class="border-slate-300 focus:border-green-500 focus:ring-green-500"
-              @change="handleFilterChange"
             />
           </div>
         </div>
@@ -171,6 +169,28 @@
               </Button>
             </div>
           </div>
+
+          <div v-if="!groupByCategory && filters.group_by !== 'service'" class="space-y-2">
+            <Label class="text-sm font-medium text-slate-700">Colonnes à afficher</Label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  v-model="showQuantity"
+                  class="w-4 h-4 text-green-600 border-slate-300 rounded focus:ring-green-500"
+                />
+                <span class="text-sm text-slate-700">Quantité</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  v-model="showCA"
+                  class="w-4 h-4 text-green-600 border-slate-300 rounded focus:ring-green-500"
+                />
+                <span class="text-sm text-slate-700">C.A.</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <!-- Ligne 3: Filtres -->
@@ -180,7 +200,6 @@
             <select
               id="store"
               v-model="filters.store"
-              @change="handleFilterChange"
               class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition-all focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20"
             >
               <option value="">Tous les magasins</option>
@@ -195,7 +214,6 @@
             <select
               id="product"
               v-model="filters.product"
-              @change="handleFilterChange"
               class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition-all focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20"
             >
               <option value="">Tous les produits</option>
@@ -210,7 +228,6 @@
             <select
               id="category"
               v-model="filters.category"
-              @change="handleFilterChange"
               class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition-all focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20"
             >
               <option value="">Toutes les catégories</option>
@@ -223,10 +240,18 @@
 
         <!-- Ligne 4: Actions -->
         <div class="flex items-center justify-between gap-4">
-          <Button @click="handleReset" variant="outline" class="px-4">
-            <RotateCcw class="mr-2 h-4 w-4" />
-            Réinitialiser
-          </Button>
+          <div class="flex gap-2">
+            <Button @click="handleFilterChange" class="px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Rechercher
+            </Button>
+            <Button @click="handleReset" variant="outline" class="px-4">
+              <RotateCcw class="mr-2 h-4 w-4" />
+              Réinitialiser
+            </Button>
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
@@ -269,6 +294,8 @@
         :ventes="store.ventes"
         :loading="store.loading"
         :group-by="filters.group_by"
+        :showQuantity="showQuantity"
+        :showCA="showCA"
       />
     </div>
   </div>
@@ -314,6 +341,8 @@ const filters = ref<VenteFilters>({
 })
 
 const groupByCategory = ref(false)
+const showQuantity = ref(true)
+const showCA = ref(true)
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('fr-FR', {

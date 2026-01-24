@@ -405,7 +405,6 @@ watch(
   [() => props.user, () => props.open],
   ([user, open]) => {
     if (open && user) {
-      console.log('Chargement de l\'utilisateur pour édition:', user)
       formData.value = {
         username: user.username || '',
         email: user.email || '',
@@ -418,7 +417,7 @@ watch(
         employee_id: user.employee_id || '',
         role: user.role ? (typeof user.role === 'object' ? String(user.role.id) : String(user.role)) : undefined,
         assigned_stores: Array.isArray(user.assigned_stores)
-          ? user.assigned_stores.map(s => typeof s === 'object' ? s.id : s)
+          ? user.assigned_stores.map(s => (typeof s === 'object' ? s.id : s))
           : [],
         hire_date: user.hire_date || '',
         alternative_phone: user.alternative_phone || '',
@@ -427,12 +426,11 @@ watch(
         notes: user.notes || '',
         is_active: user.is_active !== undefined ? user.is_active : true
       }
-      console.log('FormData après chargement:', formData.value)
     } else if (open && !user) {
       resetForm()
     }
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 )
 
 // Autres fonctions

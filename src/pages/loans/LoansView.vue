@@ -55,7 +55,7 @@
             <div class="flex flex-col gap-2">
               <p class="text-[13px] font-medium text-blue-700/70">Total Emprunté</p>
               <p class="text-[28px] font-bold text-blue-900">{{ formatCurrency(loansStore.totalBorrowed) }}</p>
-              <p class="text-[11px] text-blue-600/60">Montant principal</p>
+              <p class="text-[11px] text-blue-600/60">Principal + intérêts</p>
             </div>
             <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
               💰
@@ -200,7 +200,7 @@
                 <TableHead v-if="tableColumns.lender_name" class="min-w-[120px]">Prêteur</TableHead>
                 <TableHead v-if="tableColumns.loan_type" class="hidden md:table-cell min-w-[100px]">Type</TableHead>
                 <TableHead v-if="tableColumns.start_date" class="hidden lg:table-cell min-w-[100px]">Date</TableHead>
-                <TableHead v-if="tableColumns.principal_amount" class="text-right min-w-[120px]">Montant Principal</TableHead>
+                <TableHead v-if="tableColumns.principal_amount" class="text-right min-w-[120px]">Montant Total</TableHead>
                 <TableHead v-if="tableColumns.interest_rate" class="hidden lg:table-cell text-center min-w-[80px]">Taux (%)</TableHead>
                 <TableHead v-if="tableColumns.balance_due" class="text-right min-w-[120px]">Solde Restant</TableHead>
                 <TableHead v-if="tableColumns.status" class="hidden sm:table-cell min-w-[100px]">Statut</TableHead>
@@ -231,7 +231,7 @@
                 <TableCell v-if="tableColumns.start_date" class="hidden lg:table-cell text-sm text-muted-foreground">
                   {{ formatDate(loan.start_date) }}
                 </TableCell>
-                <TableCell v-if="tableColumns.principal_amount" class="text-right font-medium">{{ formatCurrency(loan.principal_amount) }}</TableCell>
+                <TableCell v-if="tableColumns.principal_amount" class="text-right font-medium">{{ formatCurrency(loan.total_amount) }}</TableCell>
                 <TableCell v-if="tableColumns.interest_rate" class="hidden lg:table-cell text-center">{{ loan.interest_rate }}%</TableCell>
                 <TableCell v-if="tableColumns.balance_due" class="text-right font-bold" :class="loan.balance_due > 0 ? 'text-orange-600' : 'text-green-600'">
                   {{ formatCurrency(loan.balance_due) }}
@@ -261,6 +261,11 @@
                       >
                         <CreditCard class="h-4 w-4" />
                         Effectuer un paiement
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem @select="openHistoryDialog(loan)">
+                        <History class="h-4 w-4" />
+                        Historique des paiements
                       </DropdownMenuItem>
 
                       <DropdownMenuSeparator />
@@ -324,6 +329,13 @@
       @close="showPaymentDialog = false"
       @confirm="handlePaymentConfirm"
     />
+
+    <!-- Payment History Dialog -->
+    <LoanPaymentHistoryDialog
+      v-if="showHistoryDialog && selectedLoanForHistory"
+      :loan="selectedLoanForHistory"
+      @close="showHistoryDialog = false"
+    />
   </div>
 </template>
 
@@ -334,6 +346,7 @@ import { useFieldConfigStore } from '@/stores/field-config.store';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import LoanDialog from '@/components/loans/LoanDialog.vue';
 import LoanPaymentDialog from '@/components/loans/LoanPaymentDialog.vue';
+import LoanPaymentHistoryDialog from '@/components/loans/LoanPaymentHistoryDialog.vue';
 import type { Loan } from '@/types/loans';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { Card, CardContent } from '@/components/ui/card';
@@ -364,15 +377,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Upload, Sheet, RotateCcw, MoreVertical, Pencil, Check, X, CreditCard, Trash2 } from 'lucide-vue-next';
+import { Plus, Upload, Sheet, RotateCcw, MoreVertical, Pencil, Check, X, CreditCard, Trash2, History } from 'lucide-vue-next';
 
 const loansStore = useLoansStore();
 const fieldConfigStore = useFieldConfigStore();
 
 const showDialog = ref(false);
 const showPaymentDialog = ref(false);
+const showHistoryDialog = ref(false);
 const selectedLoanForEdit = ref<Loan | null>(null);
 const selectedLoanForPayment = ref<Loan | null>(null);
+const selectedLoanForHistory = ref<Loan | null>(null);
 
 const selectedType = ref<string>('all');
 const selectedStatus = ref<string>('all');
@@ -424,6 +439,11 @@ async function handleSaveLoan() {
 function openPaymentDialog(loan: Loan) {
   selectedLoanForPayment.value = loan;
   showPaymentDialog.value = true;
+}
+
+function openHistoryDialog(loan: Loan) {
+  selectedLoanForHistory.value = loan;
+  showHistoryDialog.value = true;
 }
 
 async function handlePaymentConfirm() {

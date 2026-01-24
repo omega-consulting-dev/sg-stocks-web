@@ -23,6 +23,7 @@ const historyCustomer = ref<CustomerDebt | null>(null)
 
 const isDebtsListDialogOpen = ref(false)
 const debtsListCustomer = ref<CustomerDebt | null>(null)
+const debtsListDialogKey = ref(0)
 
 const filteredDebts = computed(() => {
   if (!searchQuery.value) return store.debts
@@ -89,6 +90,12 @@ const handlePaymentSuccess = async () => {
   selectedInvoice.value = null
   // Recharger les dettes pour voir les changements immédiatement
   await store.fetchDebts()
+  // Forcer le rechargement du dialogue des dettes si on l'ouvre à nouveau
+  debtsListDialogKey.value++
+  // Rouvrir le dialogue des dettes pour voir les changements
+  if (debtsListCustomer.value) {
+    isDebtsListDialogOpen.value = true
+  }
 }
 
 const handlePageChange = (page: number) => {
@@ -137,6 +144,7 @@ const handlePageChange = (page: number) => {
 
     <CustomerPaymentHistoryDialog
       v-model:open="isHistoryDialogOpen"
+      :key="debtsListDialogKey"
       :customer="historyCustomer"
     />
 

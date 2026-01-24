@@ -9,8 +9,8 @@
                 <TableHead :class="groupBy === 'category' ? 'w-[80px]' : 'w-[100px]'">Réf.</TableHead>
                 <TableHead :class="groupBy === 'category' ? 'text-center' : 'w-[250px]'">Désignation</TableHead>
                 <TableHead v-if="groupBy !== 'category'" class="w-[90px]">Type</TableHead>
-                <TableHead v-if="groupBy === 'product'" class="text-right w-[90px]">Quantité</TableHead>
-                <TableHead v-if="groupBy !== 'product'" :class="groupBy === 'category' ? 'text-right w-[80px]' : 'text-right w-[120px]'">C. A.</TableHead>
+                <TableHead v-if="shouldShowQuantity" class="text-right w-[90px]">Quantité</TableHead>
+                <TableHead v-if="shouldShowCA" :class="groupBy === 'category' ? 'text-right w-[80px]' : 'text-right w-[120px]'">C. A.</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody v-if="!loading">
@@ -37,10 +37,10 @@
                     -
                   </span>
                 </TableCell>
-                <TableCell v-if="groupBy === 'product'" class="text-right font-medium text-blue-600">
+                <TableCell v-if="shouldShowQuantity" class="text-right font-medium text-blue-600">
                   {{ vente.quantity || 0 }}
                 </TableCell>
-                <TableCell v-if="groupBy !== 'product'" class="text-right font-semibold text-green-600">
+                <TableCell v-if="shouldShowCA" class="text-right font-semibold text-green-600">
                   {{ formatCurrency(vente.ca) }} FCFA
                 </TableCell>
               </TableRow>
@@ -70,14 +70,29 @@ interface Props {
   ventes: VenteStatistique[]
   loading?: boolean
   groupBy?: 'product' | 'category' | 'service'
+  showQuantity?: boolean
+  showCA?: boolean
 }
 
 const props = defineProps<Props>()
 
+// Computed properties pour contrôler l'affichage des colonnes
+const shouldShowQuantity = computed(() => {
+  return props.groupBy === 'product' && (props.showQuantity ?? true)
+})
+
+const shouldShowCA = computed(() => {
+  return props.groupBy !== 'product' || (props.showCA ?? true)
+})
+
 const getColspan = computed(() => {
   if (props.groupBy === 'category') return 3 // Réf, Désignation, C.A.
   if (props.groupBy === 'service') return 4 // Réf, Désignation, Type, C.A.
-  return 4 // product: Réf, Désignation, Type, Quantité
+  // Pour product: Réf (1) + Désignation (1) + Type (1) + colonnes conditionnelles
+  let count = 3
+  if (props.showQuantity) count++
+  if (props.showCA) count++
+  return count
 })
 
 const formatCurrency = (value: number) => {

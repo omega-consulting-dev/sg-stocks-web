@@ -318,6 +318,12 @@ const handleStoreChange = () => {
   loadAchats(1)
 }
 
+// Gestion du changement de dates
+const handleDateChange = () => {
+  currentPage.value = 1
+  loadAchats(1)
+}
+
 
 // Gestion de l'ajout - Navigation vers la page dédiée
 const handleAdd = () => {
@@ -494,7 +500,7 @@ const handlePageChange = (page: number) => {
                 v-model="filters.start_date"
                 type="date"
                 class="border-slate-300 focus:border-amber-500 focus:ring-amber-500"
-                @change="loadAchats"
+                @change="handleDateChange"
               />
             </div>
             <div class="space-y-2">
@@ -505,7 +511,7 @@ const handlePageChange = (page: number) => {
                 type="date"
                 :min="filters.start_date"
                 class="border-slate-300 focus:border-amber-500 focus:ring-amber-500"
-                @change="loadAchats"
+                @change="handleDateChange"
               />
             </div>
           </div>

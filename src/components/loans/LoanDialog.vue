@@ -59,7 +59,7 @@
           <Label for="store">Point de vente<span v-if="formFields.store.required" class="text-red-500">*</span></Label>
           <Select v-model.number="formData.store" :class="{ 'border-red-500': fieldErrors.store }">
             <SelectTrigger id="store">
-              <SelectValue placeholder="Aucun point de vente" />
+              <SelectValue placeholder="Sélectionnez un point de vente" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem :value="null">Aucun point de vente</SelectItem>

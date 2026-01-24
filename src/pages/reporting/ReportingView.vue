@@ -221,18 +221,16 @@
                   <thead>
                     <tr class="border-b border-gray-300">
                       <th class="py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Catégorie</th>
-                      <th class="py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-24">Qté</th>
                       <th class="py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider w-40">Montant</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(sale, index) in sales" :key="index" class="border-b border-gray-100">
                       <td class="py-4 text-gray-900 font-light">{{ sale.category }}</td>
-                      <td class="py-4 text-center text-gray-700 text-lg font-light">{{ sale.count }}</td>
                       <td class="py-4 text-right text-gray-900 text-lg font-light">{{ formatAmount(sale.amount) }}</td>
                     </tr>
                     <tr class="border-t-2 border-gray-900">
-                      <td colspan="2" class="py-4 text-sm font-medium text-gray-900 uppercase tracking-wider">Total Produits</td>
+                      <td class="py-4 text-sm font-medium text-gray-900 uppercase tracking-wider">Total Produits</td>
                       <td class="py-4 text-right text-2xl font-normal text-gray-900">{{ formatAmount(totalSales) }}</td>
                     </tr>
                   </tbody>
@@ -248,18 +246,16 @@
                   <thead>
                     <tr class="border-b border-gray-300">
                       <th class="py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Catégorie</th>
-                      <th class="py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-24">Qté</th>
                       <th class="py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider w-40">Montant</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(expense, index) in expenses" :key="index" class="border-b border-gray-100">
                       <td class="py-4 text-gray-900 font-light">{{ expense.designation }}</td>
-                      <td class="py-4 text-center text-gray-700 text-lg font-light">{{ expense.count }}</td>
                       <td class="py-4 text-right text-gray-900 text-lg font-light">{{ formatAmount(expense.amount) }}</td>
                     </tr>
                     <tr class="border-t-2 border-gray-900">
-                      <td colspan="2" class="py-4 text-sm font-medium text-gray-900 uppercase tracking-wider">Total Charges</td>
+                      <td class="py-4 text-sm font-medium text-gray-900 uppercase tracking-wider">Total Charges</td>
                       <td class="py-4 text-right text-2xl font-normal text-gray-900">{{ formatAmount(totalExpenses) }}</td>
                     </tr>
                   </tbody>

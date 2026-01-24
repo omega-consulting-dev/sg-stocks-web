@@ -15,6 +15,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Plus, DollarSign } from 'lucide-vue-next'
 import DecaissementSearchBar from '@/components/decaissements/DecaissementSearchBar.vue'
 import DecaissementTable from '@/components/decaissements/DecaissementTable.vue'
@@ -35,6 +44,22 @@ const selectedStoreId = ref<number | string>('')
 
 const isModalOpen = ref(false)
 const isSubmitting = ref(false)
+const isEditing = ref(false)
+const editingId = ref<number | null>(null)
+
+// Delete confirmation dialog
+const deleteDialog = ref({
+  isOpen: false,
+  decaissementId: null as number | null
+})
+
+// Alert Dialog state
+const alertDialog = ref({
+  isOpen: false,
+  title: '',
+  message: '',
+  variant: 'default' as 'default' | 'success' | 'error'
+})
 
 const formData = ref({
   amount: 0,
@@ -44,6 +69,15 @@ const formData = ref({
   notes: '',
   store_id: 0
 })
+
+const showAlert = (title: string, message: string, variant: 'default' | 'success' | 'error' = 'default') => {
+  alertDialog.value = {
+    isOpen: true,
+    title,
+    message,
+    variant
+  }
+}
 
 const loadDecaissements = async () => {
   try {
@@ -68,11 +102,27 @@ const handleExport = async () => {
     await store.exportToExcel(exportFilters)
   } catch (error: any) {
     console.error('Erreur lors de l\'export:', error)
-    alert('Erreur lors de l\'export du fichier Excel')
+    showAlert('Erreur d\'export', 'Impossible d\'exporter le fichier Excel. Veuillez réessayer.', 'error')
+  }
+}
+
+const handleExportPDF = async () => {
+  try {
+    const exportFilters = {
+      start_date: filters.value.start_date || undefined,
+      end_date: filters.value.end_date || undefined,
+      store: filters.value.store,
+    }
+    await store.exportToPDF(exportFilters)
+  } catch (error: any) {
+    console.error('Erreur lors de l\'export PDF:', error)
+    showAlert('Erreur d\'export', 'Impossible d\'exporter le fichier PDF. Veuillez réessayer.', 'error')
   }
 }
 
 const handleNew = () => {
+  isEditing.value = false
+  editingId.value = null
   formData.value = {
     amount: 0,
     payment_method: 'cash',
@@ -84,33 +134,80 @@ const handleNew = () => {
   isModalOpen.value = true
 }
 
+const handleEdit = (decaissement: any) => {
+  isEditing.value = true
+  editingId.value = decaissement.id
+  formData.value = {
+    amount: decaissement.montant,
+    payment_method: decaissement.payment_method,  // Utiliser la valeur brute
+    reference: decaissement.reference || '',
+    description: decaissement.description || '',
+    notes: decaissement.notes || '',
+    store_id: decaissement.store_id || (stores.value.length > 0 ? stores.value[0].id : 0)
+  }
+  isModalOpen.value = true
+}
+
+const handleDeleteClick = (id: number) => {
+  deleteDialog.value = {
+    isOpen: true,
+    decaissementId: id
+  }
+}
+
+const confirmDelete = async () => {
+  if (!deleteDialog.value.decaissementId) return
+
+  try {
+    await store.deleteDecaissement(deleteDialog.value.decaissementId)
+    showAlert('Succès', 'Décaissement supprimé avec succès.', 'success')
+    await loadDecaissements()
+    const storeFilter = selectedStoreId.value === '' ? undefined : selectedStoreId.value
+    await store.fetchCaisseSolde(storeFilter)
+  } catch (error: any) {
+    console.error('Erreur lors de la suppression:', error)
+    showAlert('Erreur de suppression', error.response?.data?.error || 'Erreur lors de la suppression du décaissement.', 'error')
+  } finally {
+    deleteDialog.value = {
+      isOpen: false,
+      decaissementId: null
+    }
+  }
+}
+
 const handleSubmit = async () => {
   if (formData.value.amount <= 0) {
-    alert('Le montant doit être supérieur à 0')
+    showAlert('Montant invalide', 'Le montant doit être supérieur à 0.', 'error')
     return
   }
 
   if (!formData.value.description) {
-    alert('La description est obligatoire')
+    showAlert('Description requise', 'La description est obligatoire.', 'error')
     return
   }
 
   if (!formData.value.store_id) {
-    alert('Veuillez sélectionner un point de vente')
+    showAlert('Point de vente requis', 'Veuillez sélectionner un point de vente.', 'error')
     return
   }
 
   isSubmitting.value = true
   try {
-    await store.createDecaissement(formData.value)
-    alert('Décaissement créé avec succès')
+    if (isEditing.value && editingId.value) {
+      await store.updateDecaissement(editingId.value, formData.value)
+      showAlert('Succès', 'Décaissement modifié avec succès.', 'success')
+    } else {
+      await store.createDecaissement(formData.value)
+      showAlert('Succès', 'Décaissement créé avec succès.', 'success')
+    }
     isModalOpen.value = false
     await loadDecaissements()
     const storeFilter = selectedStoreId.value === '' ? undefined : selectedStoreId.value
     await store.fetchCaisseSolde(storeFilter)
   } catch (error: any) {
-    console.error('Erreur lors de la création:', error)
-    alert(error.response?.data?.error || 'Erreur lors de la création du décaissement')
+    console.error('Erreur lors de l\'opération:', error)
+    const action = isEditing.value ? 'modification' : 'création'
+    showAlert(`Erreur de ${action}`, error.response?.data?.error || `Erreur lors de la ${action} du décaissement.`, 'error')
   } finally {
     isSubmitting.value = false
   }
@@ -242,27 +339,47 @@ onMounted(async () => {
               />
             </div>
           </div>
-          <Button
-            @click="handleExport"
-            class="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg text-white"
-          >
-            Exporter Excel
-          </Button>
+          <div class="flex items-center gap-2">
+            <Button
+              @click="handleExportPDF"
+              variant="outline"
+              class="border-red-500 text-red-600 hover:bg-red-50 shadow-lg"
+            >
+              <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Exporter PDF
+            </Button>
+            <Button
+              @click="handleExport"
+              class="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg text-white"
+            >
+              <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Exporter Excel
+            </Button>
+          </div>
         </div>
       </div>
 
       <!-- Tableau -->
-      <DecaissementTable :decaissements="store.decaissements" :loading="store.loading" />
+      <DecaissementTable 
+        :decaissements="store.decaissements" 
+        :loading="store.loading"
+        @edit="handleEdit"
+        @delete="handleDeleteClick"
+      />
 
       <!-- Modal Approvisionnement Bancaire -->
       <Dialog :open="isModalOpen" @update:open="isModalOpen = $event">
         <DialogContent class="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle class="text-2xl font-bold text-slate-900">
-              Nouvel Approvisionnement Bancaire
+              {{ isEditing ? 'Modifier le Décaissement' : 'Nouvel Approvisionnement Bancaire' }}
             </DialogTitle>
             <DialogDescription class="text-slate-600">
-              Enregistrer une sortie de caisse vers la banque
+              {{ isEditing ? 'Modifier les informations du décaissement' : 'Enregistrer une sortie de caisse vers la banque' }}
             </DialogDescription>
           </DialogHeader>
 
@@ -362,11 +479,99 @@ onMounted(async () => {
               :disabled="isSubmitting"
               class="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
             >
-              {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer' }}
+              {{ isSubmitting ? 'Enregistrement...' : (isEditing ? 'Modifier' : 'Enregistrer') }}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <!-- Alert Dialog -->
+      <AlertDialog :open="alertDialog.isOpen" @update:open="alertDialog.isOpen = $event">
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle 
+              :class="{
+                'text-green-600': alertDialog.variant === 'success',
+                'text-red-600': alertDialog.variant === 'error',
+                'text-slate-900': alertDialog.variant === 'default'
+              }"
+            >
+              {{ alertDialog.title }}
+            </AlertDialogTitle>
+            <AlertDialogDescription class="text-slate-600">
+              {{ alertDialog.message }}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction 
+              @click="alertDialog.isOpen = false"
+              :class="{
+                'bg-green-600 hover:bg-green-700': alertDialog.variant === 'success',
+                'bg-red-600 hover:bg-red-700': alertDialog.variant === 'error',
+                'bg-slate-900 hover:bg-slate-800': alertDialog.variant === 'default'
+              }"
+            >
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <!-- Delete Confirmation Dialog -->
+      <AlertDialog :open="deleteDialog.isOpen" @update:open="deleteDialog.isOpen = $event">
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle class="text-red-600">
+              Confirmer la suppression
+            </AlertDialogTitle>
+            <AlertDialogDescription class="text-slate-600">
+              Êtes-vous sûr de vouloir supprimer ce décaissement ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              variant="outline"
+              @click="deleteDialog.isOpen = false"
+            >
+              Annuler
+            </Button>
+            <Button
+              @click="confirmDelete"
+              class="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Supprimer
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <!-- Delete Confirmation Dialog -->
+      <AlertDialog :open="deleteDialog.isOpen" @update:open="deleteDialog.isOpen = $event">
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle class="text-red-600">
+              Confirmer la suppression
+            </AlertDialogTitle>
+            <AlertDialogDescription class="text-slate-600">
+              Êtes-vous sûr de vouloir supprimer ce décaissement ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              variant="outline"
+              @click="deleteDialog.isOpen = false"
+            >
+              Annuler
+            </Button>
+            <Button
+              @click="confirmDelete"
+              class="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Supprimer
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   </div>
 </template>

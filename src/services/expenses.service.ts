@@ -75,12 +75,14 @@ export const expensesService = {
     const formData = new FormData();
     if (data.expense_number) formData.append('expense_number', data.expense_number);
     if (data.category) formData.append('category', data.category.toString());
-    if (data.store) formData.append('store', data.store.toString());
+    // For store: send empty string when null (FormData can't send null)
+    if ('store' in data) formData.append('store', data.store ? data.store.toString() : '');
     if (data.expense_date) formData.append('expense_date', data.expense_date);
     if (data.description) formData.append('description', data.description);
     if (data.amount) formData.append('amount', data.amount.toString());
     if (data.beneficiary) formData.append('beneficiary', data.beneficiary);
-    if (data.payment_method) formData.append('payment_method', data.payment_method);
+    // For payment_method: send empty string when null (FormData can't send null)
+    if ('payment_method' in data) formData.append('payment_method', data.payment_method || '');
     if (data.payment_reference) formData.append('payment_reference', data.payment_reference);
     if (data.notes) formData.append('notes', data.notes);
     if (data.receipt) formData.append('receipt', data.receipt);

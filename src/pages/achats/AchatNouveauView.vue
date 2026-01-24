@@ -52,18 +52,6 @@ const errorMessage = ref('')
 // Composable pour l'assignation de magasin
 const { shouldShowStoreSelector, getDefaultStoreId, getDefaultStore } = useStoreAssignment()
 
-// Debug temporaire
-console.log('🔍 Debug Store Assignment:', {
-  shouldShowStoreSelector: shouldShowStoreSelector.value,
-  getDefaultStoreId: getDefaultStoreId.value,
-  getDefaultStore: getDefaultStore.value,
-  userData: {
-    user: userStore.user,
-    defaultStore: userStore.defaultStore,
-    isStoreRestricted: userStore.isStoreRestricted
-  }
-})
-
 const editingId = ref<number | null>(null)
 const isEditMode = computed(() => editingId.value !== null)
 
@@ -181,10 +169,8 @@ onMounted(async () => {
     await loadAchatData(editingId.value)
   } else {
     // Générer un nouveau numéro de pièce depuis le backend
-    console.log('Récupération du prochain numéro de pièce depuis le backend...')
     try {
       numeroPiece.value = await achatsStore.getNextReceiptNumber()
-      console.log('Numéro de pièce généré:', numeroPiece.value)
     } catch (error) {
       console.error('Erreur lors de la récupération du numéro:', error)
       // Fallback: générer localement si l'API échoue
@@ -251,8 +237,6 @@ const fillFormWithBon = (achats: any[]) => {
   if (achats.length === 0) return
 
   const firstAchat = achats[0]
-  console.log('Données du bon reçues:', achats)
-  console.log('Premier achat:', firstAchat)
 
   // Remplir les champs communs depuis le premier produit
   numeroPiece.value = firstAchat.receipt_number || ''
@@ -268,7 +252,6 @@ const fillFormWithBon = (achats: any[]) => {
 
   // Remplir les informations de paiement si disponibles
   if (firstAchat.payment_info) {
-    console.log('Payment info trouvé:', firstAchat.payment_info)
     montantVerse.value = firstAchat.payment_info.payment_amount || null
     dateLimiteReglement.value = firstAchat.payment_info.due_date || ''
     naturePayement.value = firstAchat.payment_info.payment_method || ''
@@ -298,17 +281,10 @@ const fillFormWithBon = (achats: any[]) => {
       })
     }
   })
-
-  console.log('Produits chargés:', produitsAjoutes.value.length)
 }
 
 // Remplir le formulaire avec les données existantes
 const fillFormWithAchat = (achat: any) => {
-  console.log('Données achat reçues:', achat)
-  console.log('Payment info:', achat.payment_info)
-  console.log('Reference:', achat.reference)
-  console.log('Unit cost:', achat.unit_cost)
-
   numeroPiece.value = achat.receipt_number || achat.reference || ''
   storeId.value = achat.store
   deliveryReference.value = achat.reference || ''
@@ -322,7 +298,6 @@ const fillFormWithAchat = (achat: any) => {
 
   // Remplir les informations de paiement si disponibles
   if (achat.payment_info) {
-    console.log('Payment info trouvé:', achat.payment_info)
     montantVerse.value = achat.payment_info.payment_amount || null
     dateLimiteReglement.value = achat.payment_info.due_date || ''
     naturePayement.value = achat.payment_info.payment_method || ''
@@ -330,15 +305,6 @@ const fillFormWithAchat = (achat: any) => {
       dateAchat.value = achat.payment_info.payment_date
     }
   }
-
-  console.log('Champs remplis:', {
-    numeroPiece: numeroPiece.value,
-    deliveryReference: deliveryReference.value,
-    montantFacture: montantFacture.value,
-    montantVerse: montantVerse.value,
-    dateLimiteReglement: dateLimiteReglement.value,
-    naturePayement: naturePayement.value
-  })
 
   // Ajouter le produit à la liste
   const product = productsStore.products.find(p => p.id === achat.product)
@@ -435,7 +401,6 @@ const resetForm = async () => {
   // Générer un nouveau numéro de pièce
   try {
     numeroPiece.value = await achatsStore.getNextReceiptNumber()
-    console.log('Nouveau numéro de pièce généré:', numeroPiece.value)
   } catch (error) {
     console.error('Erreur lors de la génération du numéro:', error)
     const receiptNumbers = await achatsStore.fetchAllReferences()
@@ -448,12 +413,9 @@ const resetForm = async () => {
 }
 
 const handleSubmit = async () => {
-  console.log('🔍 handleSubmit appelé')
-  console.log('📊 isEditMode:', isEditMode.value)
-  console.log('🆔 editingId:', editingId.value)
-
   // Réinitialiser les erreurs
   fieldErrors.value = {}
+  errorMessage.value = ''
 
   let hasError = false
 
@@ -477,12 +439,9 @@ const handleSubmit = async () => {
     const isVisible = isFieldVisible(fieldName)
     const isRequired = isFieldRequired(fieldName)
 
-    console.log(`🔍 Champ ${fieldName}:`, { isVisible, isRequired, value: fieldData.value })
-
     if (isVisible && isRequired && !fieldData.value) {
       fieldErrors.value[fieldName] = `Le champ "${fieldData.label}" est obligatoire`
       hasError = true
-      console.log(`❌ Erreur sur ${fieldName}:`, fieldErrors.value[fieldName])
     }
   }
 
@@ -490,7 +449,6 @@ const handleSubmit = async () => {
   if (produitsAjoutes.value.length === 0) {
     fieldErrors.value.produitsAjoutes = 'Veuillez ajouter au moins un produit'
     hasError = true
-    console.log('❌ Erreur: Aucun produit ajouté')
   }
 
   // Si montant facture est renseigné, certains champs deviennent obligatoires
@@ -498,29 +456,21 @@ const handleSubmit = async () => {
     if (montantVerse.value === null && !fieldErrors.value['payment_amount']) {
       fieldErrors.value['payment_amount'] = 'Le montant versé est obligatoire lorsque le montant de la facture est renseigné'
       hasError = true
-      console.log('❌ Erreur: Montant versé manquant')
     }
     if (!naturePayement.value && !fieldErrors.value['payment_method']) {
       fieldErrors.value['payment_method'] = 'La nature du paiement est obligatoire lorsque le montant de la facture est renseigné'
       hasError = true
-      console.log('❌ Erreur: Nature du paiement manquante')
     }
     if (!dateLimiteReglement.value && montantRestant.value > 0 && !fieldErrors.value['due_date']) {
       fieldErrors.value['due_date'] = 'La date limite de règlement est obligatoire en cas de crédit (montant restant > 0)'
       hasError = true
-      console.log('❌ Erreur: Date limite de règlement manquante')
     }
   }
 
-  console.log('📋 Erreurs détectées:', { hasError, fieldErrors: fieldErrors.value })
-
   // Si des erreurs, ne pas continuer
   if (hasError) {
-    console.log('⛔ Soumission bloquée à cause des erreurs')
     return
   }
-
-  console.log('✅ Validation OK, ouverture du dialog de confirmation')
 
   // Ouvrir le dialog de confirmation
   isConfirmDialogOpen.value = true
@@ -532,7 +482,6 @@ const confirmSubmit = async () => {
   try {
     // Mode édition : mise à jour
     if (isEditMode.value && editingId.value) {
-      console.log('✏️ Mode ÉDITION détecté')
       const p = produitsAjoutes.value[0] // Pour l'instant, on gère un seul produit
       const payload = {
         product: p.product_id,
@@ -554,7 +503,6 @@ const confirmSubmit = async () => {
       }
 
       await achatsStore.updateAchat(editingId.value, payload)
-      console.log('✅ Modification réussie')
       router.push('/achats/entree-stock')
       // Alerte après redirection
       setTimeout(() => {
@@ -564,9 +512,6 @@ const confirmSubmit = async () => {
     }
 
     // Mode création
-    console.log('➕ Mode CRÉATION détecté')
-    console.log(`📦 Création d'un bon avec ${produitsAjoutes.value.length} produits`)
-
     for (const p of produitsAjoutes.value) {
       const payload = {
         product: p.product_id,
@@ -587,7 +532,6 @@ const confirmSubmit = async () => {
         payment_date: dateAchat.value,
         payment_method: naturePayement.value || undefined,
       }
-      console.log(`📤 Ajout produit ${p.nom}:`, payload.receipt_number)
       await achatsStore.addAchat(payload)
     }
 
@@ -611,10 +555,33 @@ const confirmSubmit = async () => {
       if (typeof error.response.data === 'string' && error.response.data.includes('<html>')) {
         errorMessage.value = `Erreur serveur (${error.response.status}): Vérifiez les champs du formulaire`
       } else if (typeof error.response.data === 'object') {
+        // Extraire les erreurs de champs et les placer dans fieldErrors
+        Object.entries(error.response.data).forEach(([field, msgs]: [string, any]) => {
+          const errorText = Array.isArray(msgs) ? msgs.join(', ') : msgs
+          
+          // Mapper les noms de champs du backend vers les noms utilisés dans le frontend
+          const fieldMapping: Record<string, string> = {
+            'store': 'store',
+            'supplier': 'supplier',
+            'date': 'date',
+            'receipt_number': 'receipt_number',
+            'notes': 'notes',
+            'invoice_amount': 'invoice_amount',
+            'payment_amount': 'payment_amount',
+            'payment_method': 'payment_method',
+            'due_date': 'due_date',
+            'reference': 'reference'
+          }
+          
+          const frontendField = fieldMapping[field] || field
+          fieldErrors.value[frontendField] = errorText
+        })
+        
+        // Créer aussi un message global si nécessaire
         const messages = Object.entries(error.response.data)
           .map(([field, msgs]: [string, any]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
           .join(', ')
-        errorMessage.value = `Erreur serveur: ${messages}`
+        errorMessage.value = `Veuillez corriger les erreurs dans le formulaire`
       } else {
         errorMessage.value = `Erreur serveur: ${error.response.data}`
       }

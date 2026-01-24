@@ -61,7 +61,10 @@ export const useLoansStore = defineStore('loans', () => {
       }
 
       const response = await loansService.getLoans(page, filters.value);
-      loans.value = response.results;
+      // Sort by loan_number in ascending order
+      loans.value = response.results.sort((a, b) => {
+        return a.loan_number.localeCompare(b.loan_number, undefined, { numeric: true });
+      });
       pagination.value = {
         current_page: page,
         total_pages: Math.ceil(response.count / 20),

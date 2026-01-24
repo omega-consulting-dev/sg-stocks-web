@@ -4,6 +4,7 @@ import type { CustomerDebt, CustomerPayment } from '@/stores/customerDebts'
 import { useCustomerDebtsStore } from '@/stores/customerDebts'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 
 const props = defineProps<{
   open: boolean
@@ -43,6 +44,19 @@ const formatAmount = (amount: number) => {
 const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('fr-FR')
 }
+
+const getStatusVariant = (status: string) => {
+  switch (status) {
+    case 'success':
+      return 'default'  // Green
+    case 'failed':
+      return 'destructive'  // Red
+    case 'pending':
+      return 'secondary'  // Gray
+    default:
+      return 'outline'
+  }
+}
 </script>
 
 <template>
@@ -72,15 +86,16 @@ const formatDate = (dateStr: string) => {
               <TableHead>N° Facture</TableHead>
               <TableHead class="text-right">Montant</TableHead>
               <TableHead>Mode</TableHead>
+              <TableHead>Statut</TableHead>
               <TableHead>Référence</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="loading">
-              <TableCell colspan="6" class="text-center">Chargement...</TableCell>
+              <TableCell colspan="7" class="text-center">Chargement...</TableCell>
             </TableRow>
             <TableRow v-else-if="payments.length === 0">
-              <TableCell colspan="6" class="text-center text-muted-foreground">
+              <TableCell colspan="7" class="text-center text-muted-foreground">
                 Aucun paiement enregistré
               </TableCell>
             </TableRow>
@@ -90,6 +105,11 @@ const formatDate = (dateStr: string) => {
               <TableCell class="font-mono text-sm">{{ payment.invoice_number }}</TableCell>
               <TableCell class="text-right font-semibold text-green-600">{{ formatAmount(payment.amount) }}</TableCell>
               <TableCell>{{ payment.payment_method_display }}</TableCell>
+              <TableCell>
+                <Badge :variant="getStatusVariant(payment.status || 'success')">
+                  {{ payment.status_display || payment.status || 'Réussi' }}
+                </Badge>
+              </TableCell>
               <TableCell class="text-sm text-muted-foreground">{{ payment.reference || '-' }}</TableCell>
             </TableRow>
           </TableBody>

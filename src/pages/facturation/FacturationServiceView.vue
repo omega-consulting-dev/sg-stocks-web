@@ -345,6 +345,12 @@ const submitSale = async () => {
     return
   }
 
+  // VALIDATION: Client obligatoire pour générer la facture
+  if (!formData.value.customer) {
+    toast.error('Veuillez sélectionner un client. Le client est obligatoire pour créer une facture.', 'Client requis')
+    return
+  }
+
   if (isFieldVisible('saleDate') && isFieldRequired('saleDate') && !formData.value.saleDate) {
     toast.warning('La date de vente est obligatoire', 'Date requise')
     return

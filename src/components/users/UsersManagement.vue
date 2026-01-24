@@ -512,7 +512,10 @@ const getInitials = (user: User): string => {
   if (user.first_name && user.last_name) {
     return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
   }
-  return user.username.substring(0, 2).toUpperCase()
+  if (user.username) {
+    return user.username.substring(0, 2).toUpperCase()
+  }
+  return 'US'
 }
 
 const formatDate = (dateString: string): string => {
