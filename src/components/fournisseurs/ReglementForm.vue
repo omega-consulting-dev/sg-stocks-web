@@ -20,6 +20,14 @@ import { useFournisseursStore, type SupplierDebt, type CreateSupplierPaymentDto 
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 const props = defineProps<{
   open: boolean
@@ -48,6 +56,13 @@ const formData = ref({
 const fileInput = ref<HTMLInputElement | null>(null)
 const fileName = ref('')
 const submitting = ref(false)
+const showSuccessDialog = ref(false)
+const paymentDetails = ref({
+  supplier_name: '',
+  amount: 0,
+  payment_method: '',
+  reference: ''
+})
 
 // Fournisseurs avec des dettes (balance > 0)
 const suppliersWithDebts = computed(() => {
@@ -161,14 +176,32 @@ const handleSubmit = async () => {
 
     await store.createPayment(paymentData)
 
-    emit('success')
+    // Préparer les détails pour le dialog de confirmation
+    const supplier = suppliersWithDebts.value.find(s => s.id === formData.value.supplier_id)
+    const method = paymentMethods.find(m => m.value === formData.value.payment_method)
+    
+    paymentDetails.value = {
+      supplier_name: supplier?.name || 'N/A',
+      amount: formData.value.montant,
+      payment_method: method?.label || formData.value.payment_method,
+      reference: formData.value.reference || 'N/A'
+    }
+
+    // Fermer le formulaire et afficher le dialog de confirmation
     emit('update:open', false)
+    showSuccessDialog.value = true
+    
+    emit('success')
   } catch (error) {
     console.error('Erreur lors du règlement:', error)
     alert('Impossible d\'enregistrer le règlement')
   } finally {
     submitting.value = false
   }
+}
+
+const handleSuccessDialogClose = () => {
+  showSuccessDialog.value = false
 }
 
 const handleClose = () => {
@@ -489,4 +522,49 @@ const handleClose = () => {
       </div>
     </DialogContent>
   </Dialog>
+
+  <!-- Dialog de confirmation de succès -->
+  <AlertDialog :open="showSuccessDialog" @update:open="handleSuccessDialogClose">
+    <AlertDialogContent class="max-w-md">
+      <AlertDialogHeader>
+        <div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-green-100">
+          <CheckCircle2 class="w-8 h-8 text-green-600" />
+        </div>
+        <AlertDialogTitle class="text-center text-xl">
+          Règlement effectué avec succès !
+        </AlertDialogTitle>
+        <AlertDialogDescription class="text-center space-y-3 pt-4">
+          <div class="bg-gray-50 rounded-lg p-4 space-y-2 text-left">
+            <div class="flex justify-between items-center">
+              <span class="text-gray-600 text-sm">Fournisseur :</span>
+              <span class="font-semibold text-gray-900">{{ paymentDetails.supplier_name }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-600 text-sm">Montant :</span>
+              <span class="font-bold text-green-600 text-lg">{{ paymentDetails.amount.toLocaleString() }} FCFA</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-600 text-sm">Mode de paiement :</span>
+              <span class="font-medium text-gray-900">{{ paymentDetails.payment_method }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-600 text-sm">Référence :</span>
+              <span class="font-medium text-gray-900">{{ paymentDetails.reference }}</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500 italic">
+            Le règlement a été enregistré et la dette fournisseur a été mise à jour.
+          </p>
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <Button
+          @click="handleSuccessDialogClose"
+          class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+        >
+          OK, compris
+        </Button>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </template>

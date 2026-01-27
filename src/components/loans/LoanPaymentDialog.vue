@@ -103,6 +103,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useLoansStore } from '@/stores/loans';
+import { useToast } from '@/composables/useToast';
 import { formatCurrency } from '@/lib/formatters';
 import type { Loan, MakePaymentRequest } from '@/types/loans';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -123,6 +124,7 @@ const emit = defineEmits<{
 }>();
 
 const loansStore = useLoansStore();
+const toast = useToast();
 const isSubmitting = ref(false);
 
 const formData = ref<MakePaymentRequest>({
@@ -139,10 +141,12 @@ async function handleSubmit() {
 
   try {
     await loansStore.makePayment(props.loan.id, formData.value);
+    toast.success('Règlement enregistré avec succès', 'Succès');
     emit('confirm');
     handleClose();
-  } catch (error) {
-    console.error('Error making payment:', error);
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.response?.data?.detail || 'Erreur lors de l\'enregistrement du règlement';
+    toast.error(errorMessage, 'Erreur de règlement');
   } finally {
     isSubmitting.value = false;
   }

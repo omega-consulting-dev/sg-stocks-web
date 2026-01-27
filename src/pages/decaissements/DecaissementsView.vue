@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useDecaissementsStore } from '@/stores/decaissements'
+import { useStoreAssignment } from '@/composables/useStoreAssignment'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +31,7 @@ import DecaissementTable from '@/components/decaissements/DecaissementTable.vue'
 import { encaissementsApi } from '@/services/api/encaissements.api'
 
 const store = useDecaissementsStore()
+const { shouldShowStoreSelector, getDefaultStoreId } = useStoreAssignment()
 
 const filters = ref({
   start_date: '',
@@ -123,13 +125,22 @@ const handleExportPDF = async () => {
 const handleNew = () => {
   isEditing.value = false
   editingId.value = null
+  
+  // Auto-assigner le store pour les utilisateurs avec store assigné
+  let defaultStoreId = 0
+  if (getDefaultStoreId.value) {
+    defaultStoreId = getDefaultStoreId.value
+  } else if (stores.value.length > 0) {
+    defaultStoreId = stores.value[0].id
+  }
+  
   formData.value = {
     amount: 0,
     payment_method: 'cash',
     reference: '',
     description: '',
     notes: '',
-    store_id: stores.value.length > 0 ? stores.value[0].id : 0
+    store_id: defaultStoreId
   }
   isModalOpen.value = true
 }
@@ -207,7 +218,24 @@ const handleSubmit = async () => {
   } catch (error: any) {
     console.error('Erreur lors de l\'opération:', error)
     const action = isEditing.value ? 'modification' : 'création'
-    showAlert(`Erreur de ${action}`, error.response?.data?.error || `Erreur lors de la ${action} du décaissement.`, 'error')
+    
+    // Récupérer le message d'erreur détaillé
+    let errorMessage = `Erreur lors de la ${action} du décaissement.`
+    
+    if (error.response?.data) {
+      // Si c'est une erreur de validation (comme solde insuffisant)
+      if (error.response.data.amount) {
+        errorMessage = error.response.data.amount
+      } else if (error.response.data.error) {
+        errorMessage = error.response.data.error
+      } else if (error.response.data.detail) {
+        errorMessage = error.response.data.detail
+      } else if (typeof error.response.data === 'string') {
+        errorMessage = error.response.data
+      }
+    }
+    
+    showAlert(`Erreur de ${action}`, errorMessage, 'error')
   } finally {
     isSubmitting.value = false
   }
@@ -225,7 +253,16 @@ onMounted(async () => {
   // Charger la liste des stores
   stores.value = await encaissementsApi.getStores()
 
-  await store.fetchCaisseSolde()
+  // Déterminer le store par défaut et appeler fetchCaisseSolde avec le bon paramètre
+  const defaultStore = getDefaultStoreId.value
+  if (defaultStore) {
+    selectedStoreId.value = defaultStore
+    filters.value.store = defaultStore
+    await store.fetchCaisseSolde(defaultStore)
+  } else {
+    await store.fetchCaisseSolde()
+  }
+  
   await loadDecaissements()
 })
 </script>
@@ -243,7 +280,7 @@ onMounted(async () => {
             <div>
               <h1 class="text-3xl font-bold tracking-tight text-slate-900">Décaissements</h1>
               <p class="text-sm text-slate-600">
-                Gérer les approvisionnements bancaires et sorties de caisse
+                Gérer les approvisionnements et sorties de caisse
               </p>
             </div>
           </div>
@@ -280,16 +317,29 @@ onMounted(async () => {
         <Card class="border-none bg-white/80 shadow-xl backdrop-blur-sm transition-all hover:shadow-2xl">
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle class="text-sm font-medium text-slate-600">Montant en Caisse</CardTitle>
-            <div class="rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 p-2.5">
+            <div :class="[
+              'rounded-lg p-2.5',
+              store.soldeCaisse >= 0 
+                ? 'bg-gradient-to-br from-green-500 to-emerald-500' 
+                : 'bg-gradient-to-br from-red-500 to-rose-500'
+            ]">
               <DollarSign class="h-5 w-5 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div class="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            <div :class="[
+              'text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent',
+              store.soldeCaisse >= 0 
+                ? 'from-green-600 to-emerald-600' 
+                : 'from-red-600 to-rose-600'
+            ]">
               {{ store.soldeCaisse.toLocaleString('fr-FR') }} FCFA
             </div>
             <p class="mt-1 text-xs text-slate-500">
-              Solde actuel de la caisse
+              Solde actuel de la caisse{{ selectedStoreId ? ' (Store sélectionné)' : ' (Tous les stores)' }}
+            </p>
+            <p v-if="store.soldeCaisse < 0" class="mt-2 text-xs text-red-600 font-medium">
+              ⚠️ Attention : Solde négatif. Réapprovisionnez la caisse avant de faire un décaissement.
             </p>
           </CardContent>
         </Card>
@@ -364,8 +414,8 @@ onMounted(async () => {
       </div>
 
       <!-- Tableau -->
-      <DecaissementTable 
-        :decaissements="store.decaissements" 
+      <DecaissementTable
+        :decaissements="store.decaissements"
         :loading="store.loading"
         @edit="handleEdit"
         @delete="handleDeleteClick"
@@ -385,7 +435,7 @@ onMounted(async () => {
 
           <div class="space-y-4 py-4">
             <!-- Point de vente -->
-            <div class="space-y-2">
+            <div class="space-y-2" v-if="shouldShowStoreSelector">
               <Label for="store" class="text-slate-700">Point de Vente *</Label>
               <select
                 id="store"
@@ -489,7 +539,7 @@ onMounted(async () => {
       <AlertDialog :open="alertDialog.isOpen" @update:open="alertDialog.isOpen = $event">
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle 
+            <AlertDialogTitle
               :class="{
                 'text-green-600': alertDialog.variant === 'success',
                 'text-red-600': alertDialog.variant === 'error',
@@ -503,7 +553,7 @@ onMounted(async () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction 
+            <AlertDialogAction
               @click="alertDialog.isOpen = false"
               :class="{
                 'bg-green-600 hover:bg-green-700': alertDialog.variant === 'success',

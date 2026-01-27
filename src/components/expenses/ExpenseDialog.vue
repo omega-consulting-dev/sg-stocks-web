@@ -23,7 +23,7 @@
             <span v-if="errors.category" class="error">{{ errors.category }}</span>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" v-if="shouldShowStoreSelector">
             <label>Point de vente</label>
             <select v-model.number="formData.store">
               <option value="">Aucun</option>
@@ -163,6 +163,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useExpensesStore } from '@/stores/expenses';
 import { useStoresStore } from '@/stores/stores.store';
+import { useStoreAssignment } from '@/composables/useStoreAssignment';
 import type { Expense, CreateExpenseRequest } from '@/types/expenses';
 
 const props = defineProps<{
@@ -176,6 +177,7 @@ const emit = defineEmits<{
 
 const expensesStore = useExpensesStore()
 const storesStore = useStoresStore()
+const { shouldShowStoreSelector, getDefaultStoreId } = useStoreAssignment()
 
 const isSubmitting = ref(false)
 const submitError = ref('')
@@ -223,6 +225,9 @@ onMounted(async () => {
       receipt: props.expense.receipt || undefined,
     };
     currentReceipt.value = props.expense.receipt;
+  } else if (getDefaultStoreId.value) {
+    // Auto-assigner le store par défaut pour les utilisateurs avec store assigné
+    formData.value.store = getDefaultStoreId.value;
   }
 });
 

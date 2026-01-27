@@ -236,6 +236,16 @@
               @update="updatePermission"
             />
 
+            <!-- Banque -->
+            <PermissionCard
+              title="Banque"
+              icon="building-2"
+              :permissions="[
+                { id: 'can_manage_bank', label: 'Gérer la banque', checked: formData.can_manage_bank }
+              ]"
+              @update="updatePermission"
+            />
+
             <!-- Emprunts -->
             <PermissionCard
               title="Emprunts"
@@ -386,6 +396,7 @@ const formData = reactive<{
   can_manage_customers: boolean
   can_manage_suppliers: boolean
   can_manage_cashbox: boolean
+  can_manage_bank: boolean
   can_manage_loans: boolean
   can_manage_expenses: boolean
   can_view_analytics: boolean
@@ -408,6 +419,7 @@ const formData = reactive<{
   can_manage_customers: false,
   can_manage_suppliers: false,
   can_manage_cashbox: false,
+  can_manage_bank: false,
   can_manage_loans: false,
   can_manage_expenses: false,
   can_view_analytics: false,
@@ -446,6 +458,7 @@ const resetForm = () => {
   formData.can_manage_customers = false
   formData.can_manage_suppliers = false
   formData.can_manage_cashbox = false
+  formData.can_manage_bank = false
   formData.can_manage_loans = false
   formData.can_manage_expenses = false
   formData.can_view_analytics = false
@@ -474,6 +487,7 @@ const loadRoleData = () => {
     formData.can_manage_customers = props.role.can_manage_customers === true
     formData.can_manage_suppliers = props.role.can_manage_suppliers === true
     formData.can_manage_cashbox = props.role.can_manage_cashbox === true
+    formData.can_manage_bank = props.role.can_manage_bank === true
     formData.can_manage_loans = props.role.can_manage_loans === true
     formData.can_manage_expenses = props.role.can_manage_expenses === true
     formData.can_view_analytics = props.role.can_view_analytics === true
@@ -522,6 +536,7 @@ const updatePermission = (permissionId: string, value: boolean) => {
     case 'can_manage_customers': formData.can_manage_customers = value; break;
     case 'can_manage_suppliers': formData.can_manage_suppliers = value; break;
     case 'can_manage_cashbox': formData.can_manage_cashbox = value; break;
+    case 'can_manage_bank': formData.can_manage_bank = value; break;
     case 'can_manage_loans': formData.can_manage_loans = value; break;
     case 'can_manage_expenses': formData.can_manage_expenses = value; break;
     case 'can_view_analytics': formData.can_view_analytics = value; break;

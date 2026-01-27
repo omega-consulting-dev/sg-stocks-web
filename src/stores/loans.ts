@@ -181,8 +181,7 @@ export const useLoansStore = defineStore('loans', () => {
 
       return payment;
     } catch (err: any) {
-      error.value = err.response?.data?.detail || 'Erreur lors de l\'enregistrement du paiement';
-      console.error('Make payment error:', err);
+      error.value = err.response?.data?.error || err.response?.data?.detail || 'Erreur lors de l\'enregistrement du paiement';
       throw err;
     } finally {
       isLoading.value = false;

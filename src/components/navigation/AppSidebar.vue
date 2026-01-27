@@ -21,6 +21,7 @@ import {
   Store,
   Package,
   Receipt,
+  Building2,
 
 } from "lucide-vue-next"
 import NavMain from '@/components/navigation/MenuMain.vue'
@@ -127,6 +128,12 @@ const allMenus = [
     url: "/emprunts",
     icon: HandCoins,
     permissions: ['can_manage_loans']
+  },
+  {
+    title: "Banque",
+    url: "/banque",
+    icon: Building2,
+    permissions: ['can_manage_bank']
   },
   {
     title: "Mouvement",

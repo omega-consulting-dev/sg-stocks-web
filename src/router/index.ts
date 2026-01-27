@@ -264,6 +264,12 @@ const router = createRouter({
       meta: { requiresAuth: true, permissions: ['can_manage_loans'] }
     },
     {
+      path: '/banque',
+      name: 'banque',
+      component: () => import('@/pages/banque/BanqueView.vue'),
+      meta: { requiresAuth: true, permissions: ['can_manage_cashbox'] }
+    },
+    {
       path: '/reporting',
       name: 'reporting',
       component: () => import('@/pages/reporting/ReportingView.vue'),

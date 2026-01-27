@@ -23,8 +23,12 @@ export const loansService = {
       if (filters.loan_type) params.loan_type = filters.loan_type;
       if (filters.status) params.status = filters.status;
       if (filters.search) params.search = filters.search;
-      if (filters.dateFrom) params.start_date__gte = filters.dateFrom;
-      if (filters.dateTo) params.start_date__lte = filters.dateTo;
+      if (filters.dateFrom && filters.dateFrom.trim() !== '') {
+        params.start_date__gte = filters.dateFrom;
+      }
+      if (filters.dateTo && filters.dateTo.trim() !== '') {
+        params.start_date__lte = filters.dateTo;
+      }
     }
 
     const response = await loansApi.getLoans(params);

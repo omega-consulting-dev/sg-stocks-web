@@ -33,6 +33,7 @@ export interface Role {
   can_manage_customers: boolean
   can_manage_suppliers: boolean
   can_manage_cashbox: boolean
+  can_manage_bank: boolean
   can_manage_loans: boolean
   can_manage_expenses: boolean
   can_view_analytics: boolean
@@ -180,6 +181,7 @@ export interface RoleCreate {
   can_manage_customers?: boolean
   can_manage_suppliers?: boolean
   can_manage_cashbox?: boolean
+  can_manage_bank?: boolean
   can_manage_loans?: boolean
   can_manage_expenses?: boolean
   can_view_analytics?: boolean

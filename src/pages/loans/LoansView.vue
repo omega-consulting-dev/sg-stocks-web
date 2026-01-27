@@ -164,17 +164,29 @@
             />
           </div>
 
-          <!-- Clear filters button -->
-          <div class="flex items-end">
-            <Button
-              @click="clearFiltersClick"
-              variant="outline"
-              class="w-full px-2 sm:px-4"
-            >
-              <RotateCcw class="h-4 w-4" />
-              <span class="hidden sm:inline">Réinitialiser</span>
-            </Button>
+          <!-- Date to filter -->
+          <div class="flex flex-col gap-2">
+            <Label for="date-to" class="text-[13px] font-medium text-[#9197B3]">Date fin</Label>
+            <Input
+              id="date-to"
+              type="date"
+              v-model="dateTo"
+              @change="applyFilters"
+              class="h-[38px] rounded-[10px] border-[#E5E5E5] bg-white hover:border-[#5932EA] transition-colors"
+            />
           </div>
+        </div>
+        
+        <!-- Clear filters button (nouvelle ligne) -->
+        <div class="mt-4">
+          <Button
+            @click="clearFiltersClick"
+            variant="outline"
+            class="px-4"
+          >
+            <RotateCcw class="h-4 w-4 mr-2" />
+            <span>Réinitialiser les filtres</span>
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -392,6 +404,7 @@ const selectedLoanForHistory = ref<Loan | null>(null);
 const selectedType = ref<string>('all');
 const selectedStatus = ref<string>('all');
 const dateFrom = ref('');
+const dateTo = ref('');
 
 // Field configurations
 const tableColumns = computed(() => {
@@ -463,17 +476,27 @@ async function deleteLoan(id: number) {
 }
 
 function applyFilters() {
-  loansStore.fetchLoans(1, {
+  const filterData: any = {
     loan_type: selectedType.value === 'all' ? undefined : selectedType.value as any,
     status: selectedStatus.value === 'all' ? undefined : selectedStatus.value as any,
-    dateFrom: dateFrom.value,
-  });
+  };
+  
+  // N'ajouter les dates que si elles sont renseignées
+  if (dateFrom.value && dateFrom.value.trim() !== '') {
+    filterData.dateFrom = dateFrom.value;
+  }
+  if (dateTo.value && dateTo.value.trim() !== '') {
+    filterData.dateTo = dateTo.value;
+  }
+  
+  loansStore.fetchLoans(1, filterData);
 }
 
 function clearFiltersClick() {
   selectedType.value = 'all';
   selectedStatus.value = 'all';
   dateFrom.value = '';
+  dateTo.value = '';
   loansStore.clearFilters();
   loansStore.fetchLoans();
 }
