@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+﻿import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { inventoryApi } from '@/services/api/inventory.api'
 import type {
@@ -58,7 +58,6 @@ export const useAchatsStore = defineStore('achats', () => {
       currentPage.value = page
     } catch (e: any) {
       error.value = 'Erreur lors du chargement des entrées de stock'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -77,10 +76,8 @@ export const useAchatsStore = defineStore('achats', () => {
         page_size: 1000 // Récupérer jusqu'à 1000 entrées
       })
       const receiptNumbers = response.results.map(a => a.receipt_number || '').filter(Boolean)
-      console.log('Receipt numbers récupérés:', receiptNumbers)
       return receiptNumbers
     } catch (e) {
-      console.error('Erreur lors de la récupération des numéros de pièces:', e)
       return achats.value.map(a => a.receipt_number || '').filter(Boolean)
     }
   }
@@ -98,7 +95,6 @@ export const useAchatsStore = defineStore('achats', () => {
       return newAchat
     } catch (e: any) {
       error.value = "Erreur lors de l'ajout de l'entrée de stock"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -118,7 +114,6 @@ export const useAchatsStore = defineStore('achats', () => {
       return updated
     } catch (e: any) {
       error.value = e.response?.data?.detail || "Erreur lors de la modification de l'entrée"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -138,7 +133,6 @@ export const useAchatsStore = defineStore('achats', () => {
       }
     } catch (e: any) {
       error.value = e.response?.data?.detail || "Erreur lors de la suppression de l'entrée"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -153,7 +147,6 @@ export const useAchatsStore = defineStore('achats', () => {
     try {
       return await inventoryApi.getNextReceiptNumber()
     } catch (e) {
-      console.error('Erreur lors de la récupération du prochain numéro:', e)
       throw e
     }
   }
@@ -177,7 +170,6 @@ export const useAchatsStore = defineStore('achats', () => {
       window.URL.revokeObjectURL(url)
     } catch (e) {
       error.value = "Erreur lors de l'export Excel"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -203,7 +195,6 @@ export const useAchatsStore = defineStore('achats', () => {
       window.URL.revokeObjectURL(url)
     } catch (e) {
       error.value = "Erreur lors de l'export PDF"
-      console.error(e)
       throw e
     } finally {
       loading.value = false

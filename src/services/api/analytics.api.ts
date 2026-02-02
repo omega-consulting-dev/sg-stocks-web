@@ -135,10 +135,13 @@ export interface ReportData {
 export const analyticsApi = {
   /**
    * Get dashboard overview
+   * @param storeId - Optional store ID to filter data
    */
-  async getOverview(): Promise<DashboardOverview> {
+  async getOverview(storeId?: number): Promise<DashboardOverview> {
+    const params = storeId ? { store: storeId } : {}
     const response: AxiosResponse<DashboardOverview> = await Axios.get(
-      '/analytics/dashboard/overview/'
+      '/analytics/dashboard/overview/',
+      { params }
     )
     return response.data
   },
@@ -146,11 +149,14 @@ export const analyticsApi = {
   /**
    * Get sales chart data
    * @param period - day, week, month, year
+   * @param storeId - Optional store ID to filter data
    */
-  async getSalesChart(period: 'day' | 'week' | 'month' | 'year' = 'month'): Promise<SalesChartData[]> {
+  async getSalesChart(period: 'day' | 'week' | 'month' | 'year' = 'month', storeId?: number): Promise<SalesChartData[]> {
+    const params: any = { period }
+    if (storeId) params.store = storeId
     const response: AxiosResponse<SalesChartData[]> = await Axios.get(
       '/analytics/dashboard/sales_chart/',
-      { params: { period } }
+      { params }
     )
     return response.data
   },
@@ -192,11 +198,14 @@ export const analyticsApi = {
   /**
    * Get cash flow analysis
    * @param days - Number of days to analyze
+   * @param storeId - Optional store ID to filter data
    */
-  async getCashFlow(days: number = 30): Promise<CashFlowData[]> {
+  async getCashFlow(days: number = 30, storeId?: number): Promise<CashFlowData[]> {
+    const params: any = { days }
+    if (storeId) params.store = storeId
     const response: AxiosResponse<CashFlowData[]> = await Axios.get(
       '/analytics/dashboard/cash_flow/',
-      { params: { days } }
+      { params }
     )
     return response.data
   },
@@ -213,10 +222,13 @@ export const analyticsApi = {
 
   /**
    * Get financial summary
+   * @param storeId - Optional store ID to filter data
    */
-  async getFinancialSummary(): Promise<FinancialSummary> {
+  async getFinancialSummary(storeId?: number): Promise<FinancialSummary> {
+    const params = storeId ? { store: storeId } : {}
     const response: AxiosResponse<FinancialSummary> = await Axios.get(
-      '/analytics/dashboard/financial_summary/'
+      '/analytics/dashboard/financial_summary/',
+      { params }
     )
     return response.data
   },

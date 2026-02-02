@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+﻿import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { servicesApi } from '@/services/api/services.api'
 import type {
@@ -29,7 +29,6 @@ export const useServicesStore = defineStore('services', () => {
       services.value = data
     } catch (e) {
       error.value = 'Erreur lors du chargement des services'
-      console.error(e)
     } finally {
       loading.value = false
     }
@@ -44,7 +43,6 @@ export const useServicesStore = defineStore('services', () => {
       const allServices = await servicesApi.fetchAll(undefined, true)
       return allServices.map(s => s.reference)
     } catch (e) {
-      console.error('Erreur lors de la récupération des références:', e)
       return services.value.map(s => s.reference)
     }
   }
@@ -70,7 +68,6 @@ export const useServicesStore = defineStore('services', () => {
       return newService
     } catch (e) {
       error.value = "Erreur lors de l'ajout du service"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -100,7 +97,6 @@ export const useServicesStore = defineStore('services', () => {
       return updatedService
     } catch (e) {
       error.value = 'Erreur lors de la modification du service'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -117,7 +113,6 @@ export const useServicesStore = defineStore('services', () => {
       return true
     } catch (e) {
       error.value = 'Erreur lors de la suppression du service'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -141,7 +136,6 @@ export const useServicesStore = defineStore('services', () => {
       window.URL.revokeObjectURL(url)
     } catch (e) {
       error.value = "Erreur lors de l'export Excel"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -161,7 +155,6 @@ export const useServicesStore = defineStore('services', () => {
       window.URL.revokeObjectURL(url)
     } catch (e) {
       error.value = "Erreur lors de l'export PDF"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -178,7 +171,6 @@ export const useServicesStore = defineStore('services', () => {
       return result
     } catch (e) {
       error.value = "Erreur lors de l'import Excel"
-      console.error(e)
       throw e
     } finally {
       loading.value = false

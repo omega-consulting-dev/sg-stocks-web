@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import {
   Dialog,
@@ -83,7 +83,7 @@ const availableSourceStores = computed(() =>
 )
 
 const availableDestinationStores = computed(() =>
-  storesStore.stores.filter(s => s.id !== formData.value.source_store)
+  storesStore.activeStores.filter(s => s.id !== formData.value.source_store)
 )
 
 // Methods
@@ -174,7 +174,6 @@ const handleSubmit = async (shouldValidate: boolean = false) => {
     emit('update:open', false)
     resetForm()
   } catch (error: any) {
-    console.error('Error saving transfer:', error)
     errors.value.submit = error.message || 'Erreur lors de la sauvegarde'
   } finally {
     isLoading.value = false
@@ -227,7 +226,7 @@ watch(() => props.open, (isOpen) => {
 // Load data on mount
 onMounted(async () => {
   await Promise.all([
-    storesStore.fetchStores(),
+    storesStore.fetchAllStoresForTransfers(),
     productsStore.fetchProducts()
   ])
 })

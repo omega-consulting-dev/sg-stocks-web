@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import Axios from '@/services/axios.service'
 
@@ -56,7 +56,6 @@ export const useChargesStatistiquesStore = defineStore('chargesStatistiques', ()
       const response = await Axios.get(`/expenses/expenses/stats/?${params.toString()}`)
       charges.value = response.data
     } catch (error) {
-      console.error('Erreur lors de la récupération des charges:', error)
       charges.value = []
     } finally {
       loading.value = false
@@ -68,7 +67,6 @@ export const useChargesStatistiquesStore = defineStore('chargesStatistiques', ()
       const response = await Axios.get('/expenses/categories/')
       categories.value = response.data.results || response.data
     } catch (error) {
-      console.error('Erreur lors de la récupération des catégories:', error)
       categories.value = []
     }
   }
@@ -107,7 +105,6 @@ export const useChargesStatistiquesStore = defineStore('chargesStatistiques', ()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Erreur lors de l\'export Excel:', error)
       throw error
     }
   }
@@ -144,7 +141,6 @@ export const useChargesStatistiquesStore = defineStore('chargesStatistiques', ()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Erreur lors de l\'export PDF:', error)
       throw error
     }
   }

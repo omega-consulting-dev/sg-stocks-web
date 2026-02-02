@@ -172,8 +172,16 @@ export const productsApi = {
 
       // Ajouter tous les champs sauf l'image
       Object.keys(data).forEach(key => {
-        if (key !== 'image' && data[key as keyof typeof data] !== undefined) {
-          formData.append(key, String(data[key as keyof typeof data]))
+        if (key !== 'image' && data[key as keyof typeof data] !== undefined && data[key as keyof typeof data] !== null) {
+          const value = data[key as keyof typeof data]
+          // Gérer correctement les booléens et les nombres
+          if (typeof value === 'boolean') {
+            formData.append(key, value ? 'true' : 'false')
+          } else if (typeof value === 'number') {
+            formData.append(key, String(value))
+          } else if (typeof value === 'string') {
+            formData.append(key, value)
+          }
         }
       })
 

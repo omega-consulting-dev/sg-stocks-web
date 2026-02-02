@@ -131,7 +131,6 @@ async function get_users() {
             link.remove();
         })
         .catch((error) => {
-            console.error('Erreur lors du téléchargement du fichier Excel :', error);
         })
 }
 </script>
@@ -217,7 +216,7 @@ async function get_users() {
                         </div>
                     </div>
 
-                    <form @submit.prevent="console.log('blabla')" class="space-y-5">
+                    <form @submit.prevent="" class="space-y-5">
                         <div class="space-y-4">
                             <Field label="Nom client/R_social :" :icon="User" v-model="form.name" required
                                 placeholder="Ex : Nkadon Landry" />

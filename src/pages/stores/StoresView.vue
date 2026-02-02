@@ -118,7 +118,6 @@ const handleDelete = async () => {
     isDeleteDialogOpen.value = false
     storeToDelete.value = null
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
     alert('Erreur lors de la suppression du magasin')
   }
 }
@@ -135,7 +134,6 @@ const toggleStatus = async (store: Store) => {
   try {
     await storesStore.toggleStoreStatus(store.id)
   } catch (error) {
-    console.error('Erreur lors du changement de statut:', error)
   }
 }
 
@@ -171,7 +169,6 @@ const handleView = async (store: Store) => {
     const response = await Axios.get(`/inventory/stores/${store.id}/products/`)
     storeProducts.value = response.data
   } catch (error) {
-    console.error('Erreur chargement produits:', error)
     alert('Erreur: Impossible de charger les produits du magasin')
   } finally {
     loadingProducts.value = false

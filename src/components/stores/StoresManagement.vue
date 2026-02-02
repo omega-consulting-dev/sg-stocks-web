@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <!-- Header avec bouton d'ajout -->
     <div class="flex items-center justify-between">
@@ -457,7 +457,6 @@ async function handleDelete() {
     deleteDialogOpen.value = false
     storeToDelete.value = null
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
   }
 }
 
@@ -465,7 +464,6 @@ async function toggleStatus(store: Store) {
   try {
     await storesStore.toggleStoreStatus(store.id)
   } catch (error) {
-    console.error('Erreur lors du changement de statut:', error)
   }
 }
 

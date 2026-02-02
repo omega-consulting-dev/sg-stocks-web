@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { Building2, User, Phone, Mail, MapPin, Hash, CreditCard, X, Globe } from 'lucide-vue-next'
 import type { Supplier, SupplierDetail, CreateSupplierDto, UpdateSupplierDto } from '@/stores/fournisseurs'
@@ -56,7 +56,6 @@ const formData = ref({
 const formFields = computed(() => {
   const configsByForm = fieldConfigStore.getConfigsByForm()
   const configs = configsByForm['supplier'] || []
-  console.log('Supplier field configs:', configs)
   return {
     name: { 
       visible: configs.find(c => c.field_name === 'name')?.is_visible ?? true, 
@@ -200,7 +199,6 @@ watch(
             notes: detail.notes || '',
           }
         } catch (e) {
-          console.error('Erreur chargement:', e)
           formError.value = 'Erreur lors du chargement'
         } finally {
           loading.value = false
@@ -217,10 +215,6 @@ watch(
 // Validation du formulaire
 const validateForm = (): boolean => {
   fieldErrors.value = {}
-
-  console.log('Validation - formFields:', formFields.value)
-  console.log('Validation - formData:', formData.value)
-
   // Validate required fields based on field configurations
   if (formFields.value.name.visible && formFields.value.name.required && !formData.value.name?.trim()) {
     fieldErrors.value.name = 'Le nom est obligatoire'
@@ -279,9 +273,6 @@ const validateForm = (): boolean => {
   }
 
   const hasErrors = Object.keys(fieldErrors.value).length > 0
-  console.log('Validation errors:', fieldErrors.value)
-  console.log('Validation result:', !hasErrors)
-
   return !hasErrors
 }
 
@@ -293,20 +284,11 @@ const isFormValid = computed(() => {
 
 // Soumission
 const handleSubmit = async () => {
-  console.log('=== SUBMIT CLICKED ===')
-  console.log('Calling validateForm...')
-  
   const isValid = validateForm()
-  console.log('validateForm returned:', isValid)
-  
   if (!isValid) {
-    console.log('Form is invalid, blocking submission')
     toast.error('Veuillez remplir tous les champs obligatoires')
     return
   }
-
-  console.log('Form is valid, proceeding with submission')
-
   loading.value = true
   formError.value = null
 
@@ -357,7 +339,6 @@ const handleSubmit = async () => {
     }
   } catch (e) {
     formError.value = store.error || 'Une erreur est survenue'
-    console.error('Erreur sauvegarde:', e)
   } finally {
     loading.value = false
   }

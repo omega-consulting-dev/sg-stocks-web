@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6">
     <!-- Breadcrumb -->
     <Breadcrumb>
@@ -322,7 +322,6 @@ async function createNewCategory() {
       description: '',
     }
   } catch (error) {
-    console.error('Erreur lors de la création de la catégorie:', error)
   } finally {
     isCreating.value = false
   }
@@ -344,7 +343,6 @@ async function saveEditCategory() {
     })
     editingCategory.value = null
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la catégorie:', error)
   } finally {
     isUpdating.value = false
   }
@@ -355,7 +353,6 @@ async function confirmDeleteCategory(id: number) {
     try {
       await expensesStore.deleteCategory(id)
     } catch (error) {
-      console.error('Erreur lors de la suppression de la catégorie:', error)
     }
   }
 }

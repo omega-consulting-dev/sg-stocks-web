@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import {
   Dialog,
@@ -81,7 +81,6 @@ const handleSubmit = async () => {
     emit('update:open', false)
     resetForm()
   } catch (error: any) {
-    console.error('Error creating inventory:', error)
     errors.value.submit = error.message || 'Erreur lors de la création'
   } finally {
     isLoading.value = false

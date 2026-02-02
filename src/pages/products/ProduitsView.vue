@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useProductsStore, type Product } from '@/stores/products'
 import { useProductFamiliesStore } from '@/stores/productFamilies'
@@ -99,9 +99,7 @@ const loadStoreStocks = async (storeId: number) => {
     })
 
     storeStocks.value = stocksMap
-    console.log(`Stocks chargés pour le magasin ${storeId}:`, stocksMap)
   } catch (error) {
-    console.error('Erreur chargement stocks magasin:', error)
     storeStocks.value.clear()
   }
 }
@@ -151,10 +149,8 @@ const handleImport = () => {
     if (file) {
       try {
         const result = await store.importExcel(file)
-        console.log('Import réussi:', result)
         alert(`Import terminé: ${result.created} créés, ${result.updated} mis à jour`)
       } catch (error) {
-        console.error("Erreur lors de l'import:", error)
         alert("Erreur lors de l'import du fichier")
       }
     }
@@ -171,7 +167,6 @@ const handleExportPdf = async () => {
   try {
     await store.exportPdf()
   } catch (error) {
-    console.error("Erreur lors de l'export PDF:", error)
     alert("Erreur lors de l'export PDF")
   }
 }
@@ -185,19 +180,14 @@ const handleExportExcel = async () => {
   try {
     await store.exportExcel()
   } catch (error) {
-    console.error("Erreur lors de l'export Excel:", error)
     alert("Erreur lors de l'export Excel")
   }
 }
 
 // Gestion de la modification
 const handleEdit = (product: Product) => {
-  console.log('ProduitsView handleEdit appelé avec:', product)
-  console.log('isFormOpen avant:', isFormOpen.value)
   selectedProduct.value = product
   isFormOpen.value = true
-  console.log('isFormOpen après:', isFormOpen.value)
-  console.log('selectedProduct:', selectedProduct.value)
 }
 
 // Gestion de la suppression
@@ -218,7 +208,6 @@ const confirmDelete = async () => {
     successMessage.value = 'Produit supprimé avec succès !'
     isSuccessDialogOpen.value = true
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
     successMessage.value = 'Erreur lors de la suppression du produit'
     isSuccessDialogOpen.value = true
   }
@@ -229,12 +218,7 @@ const handleFormSubmit = async (data: CreateProductDto) => {
   try {
     if (selectedProduct.value) {
       // Modification
-      console.log('Modification du produit:', selectedProduct.value)
-      console.log('ID du produit:', selectedProduct.value.id)
-      console.log('Data à envoyer:', data)
-
       if (!selectedProduct.value.id) {
-        console.error('ERREUR: ID du produit est undefined!', selectedProduct.value)
         successMessage.value = 'Erreur: ID du produit manquant'
         isSuccessDialogOpen.value = true
         return
@@ -262,7 +246,6 @@ const handleFormSubmit = async (data: CreateProductDto) => {
       isSuccessDialogOpen.value = true
     }
   } catch (error) {
-    console.error("Erreur lors de l'enregistrement:", error)
     successMessage.value = 'Erreur lors de l\'enregistrement du produit'
     isSuccessDialogOpen.value = true
   }

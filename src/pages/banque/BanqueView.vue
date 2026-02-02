@@ -5,10 +5,16 @@
         <h1 class="text-3xl font-bold tracking-tight">Gestion Bancaire</h1>
         <p class="text-muted-foreground">Gérez les dépôts et retraits bancaires</p>
       </div>
-      <Button @click="openWithdrawalDialog" size="lg">
-        <BanknoteArrowDown class="mr-2 h-5 w-5" />
-        Nouveau Retrait
-      </Button>
+      <div class="flex gap-3">
+        <Button @click="openDepositDialog" size="lg" variant="default">
+          <BanknoteArrowUp class="mr-2 h-5 w-5" />
+          Faire un Dépôt
+        </Button>
+        <Button @click="openWithdrawalDialog" size="lg" variant="outline">
+          <BanknoteArrowDown class="mr-2 h-5 w-5" />
+          Nouveau Retrait
+        </Button>
+      </div>
     </div>
 
     <!-- Bank Balance Card -->
@@ -186,6 +192,15 @@
         </DialogHeader>
         <form @submit.prevent="handleWithdrawal" class="space-y-4">
           <div>
+            <Label for="withdrawal_date">Date *</Label>
+            <Input
+              id="withdrawal_date"
+              type="date"
+              v-model="withdrawalForm.date"
+              required
+            />
+          </div>
+          <div>
             <Label for="withdrawal_amount">Montant *</Label>
             <Input
               id="withdrawal_amount"
@@ -206,23 +221,6 @@
               rows="3"
             />
           </div>
-          <div>
-            <Label for="withdrawal_store">Magasin de destination *</Label>
-            <Select v-model="withdrawalForm.store_id" required>
-              <SelectTrigger id="withdrawal_store">
-                <SelectValue placeholder="Sélectionnez un magasin" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="store in stores"
-                  :key="store.id"
-                  :value="store.id.toString()"
-                >
-                  {{ store.name }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           <DialogFooter>
             <Button type="button" variant="outline" @click="showWithdrawalDialog = false">
               Annuler
@@ -233,6 +231,62 @@
                 <span>Enregistrement...</span>
               </div>
               <span v-else>Enregistrer le Retrait</span>
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Deposit Dialog -->
+    <Dialog v-model:open="showDepositDialog">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Faire un Dépôt Bancaire</DialogTitle>
+          <DialogDescription>
+            Enregistrez un dépôt d'argent vers le compte bancaire
+          </DialogDescription>
+        </DialogHeader>
+        <form @submit.prevent="handleDeposit" class="space-y-4">
+          <div>
+            <Label for="deposit_date">Date *</Label>
+            <Input
+              id="deposit_date"
+              type="date"
+              v-model="depositForm.date"
+              required
+            />
+          </div>
+          <div>
+            <Label for="deposit_amount">Montant *</Label>
+            <Input
+              id="deposit_amount"
+              type="number"
+              step="0.01"
+              min="0"
+              v-model.number="depositForm.amount"
+              placeholder="Entrez le montant à déposer"
+              required
+            />
+          </div>
+          <div>
+            <Label for="deposit_description">Motif</Label>
+            <Textarea
+              id="deposit_description"
+              v-model="depositForm.description"
+              placeholder="Motif du dépôt..."
+              rows="3"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="showDepositDialog = false">
+              Annuler
+            </Button>
+            <Button type="submit" :disabled="submitting">
+              <div v-if="submitting" class="flex items-center gap-2">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Enregistrement...</span>
+              </div>
+              <span v-else>Enregistrer le Dépôt</span>
             </Button>
           </DialogFooter>
         </form>
@@ -264,6 +318,7 @@ const storeStore = useStoresStore()
 const loading = ref(false)
 const submitting = ref(false)
 const showWithdrawalDialog = ref(false)
+const showDepositDialog = ref(false)
 
 const filters = ref({
   date_debut: '',
@@ -274,7 +329,13 @@ const filters = ref({
 const withdrawalForm = ref({
   amount: 0,
   description: '',
-  store_id: ''
+  date: new Date().toISOString().split('T')[0]
+})
+
+const depositForm = ref({
+  amount: 0,
+  description: '',
+  date: new Date().toISOString().split('T')[0]
 })
 
 const transactions = computed(() => banqueStore.transactions)
@@ -307,14 +368,23 @@ const openWithdrawalDialog = () => {
   withdrawalForm.value = {
     amount: 0,
     description: '',
-    store_id: ''
+    date: new Date().toISOString().split('T')[0]
   }
   showWithdrawalDialog.value = true
 }
 
+const openDepositDialog = () => {
+  depositForm.value = {
+    amount: 0,
+    description: '',
+    date: new Date().toISOString().split('T')[0]
+  }
+  showDepositDialog.value = true
+}
+
 const handleWithdrawal = async () => {
-  if (!withdrawalForm.value.amount || !withdrawalForm.value.store_id) {
-    toast.error('Veuillez remplir tous les champs obligatoires', 'Erreur')
+  if (!withdrawalForm.value.amount || withdrawalForm.value.amount <= 0) {
+    toast.error('Veuillez entrer un montant valide', 'Erreur')
     return
   }
 
@@ -323,7 +393,7 @@ const handleWithdrawal = async () => {
     await banqueStore.createWithdrawal({
       amount: withdrawalForm.value.amount,
       description: withdrawalForm.value.description || 'Retrait bancaire',
-      store_id: parseInt(withdrawalForm.value.store_id)
+      date: withdrawalForm.value.date
     })
     
     toast.success('Retrait bancaire enregistré avec succès', 'Succès')
@@ -332,6 +402,32 @@ const handleWithdrawal = async () => {
     await fetchTransactions()
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Impossible d\'enregistrer le retrait'
+    toast.error(errorMessage, 'Erreur')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const handleDeposit = async () => {
+  if (!depositForm.value.amount || depositForm.value.amount <= 0) {
+    toast.error('Veuillez entrer un montant valide', 'Erreur')
+    return
+  }
+
+  submitting.value = true
+  try {
+    await banqueStore.createDeposit({
+      amount: depositForm.value.amount,
+      description: depositForm.value.description || 'Dépôt bancaire',
+      date: depositForm.value.date
+    })
+    
+    toast.success('Dépôt bancaire enregistré avec succès', 'Succès')
+    
+    showDepositDialog.value = false
+    await fetchTransactions()
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Impossible d\'enregistrer le dépôt'
     toast.error(errorMessage, 'Erreur')
   } finally {
     submitting.value = false

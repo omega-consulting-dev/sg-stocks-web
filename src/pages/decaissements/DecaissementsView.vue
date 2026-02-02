@@ -1,6 +1,7 @@
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
+﻿<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { useDecaissementsStore } from '@/stores/decaissements'
+import { useAuthStore } from '@/stores/auth.store'
 import { useStoreAssignment } from '@/composables/useStoreAssignment'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,12 @@ import DecaissementTable from '@/components/decaissements/DecaissementTable.vue'
 import { encaissementsApi } from '@/services/api/encaissements.api'
 
 const store = useDecaissementsStore()
+const authStore = useAuthStore()
+
+// Vérifier si l'utilisateur est admin
+const isAdmin = computed(() => authStore.isAdmin)
+const isUserAdmin = computed(() => authStore.isAdmin)
+
 const { shouldShowStoreSelector, getDefaultStoreId } = useStoreAssignment()
 
 const filters = ref({
@@ -85,7 +92,6 @@ const loadDecaissements = async () => {
   try {
     await store.fetchDecaissements(filters.value)
   } catch (error: any) {
-    console.error('Erreur lors du chargement des décaissements:', error)
   }
 }
 
@@ -103,7 +109,6 @@ const handleExport = async () => {
     }
     await store.exportToExcel(exportFilters)
   } catch (error: any) {
-    console.error('Erreur lors de l\'export:', error)
     showAlert('Erreur d\'export', 'Impossible d\'exporter le fichier Excel. Veuillez réessayer.', 'error')
   }
 }
@@ -117,7 +122,6 @@ const handleExportPDF = async () => {
     }
     await store.exportToPDF(exportFilters)
   } catch (error: any) {
-    console.error('Erreur lors de l\'export PDF:', error)
     showAlert('Erreur d\'export', 'Impossible d\'exporter le fichier PDF. Veuillez réessayer.', 'error')
   }
 }
@@ -125,7 +129,7 @@ const handleExportPDF = async () => {
 const handleNew = () => {
   isEditing.value = false
   editingId.value = null
-  
+
   // Auto-assigner le store pour les utilisateurs avec store assigné
   let defaultStoreId = 0
   if (getDefaultStoreId.value) {
@@ -133,7 +137,7 @@ const handleNew = () => {
   } else if (stores.value.length > 0) {
     defaultStoreId = stores.value[0].id
   }
-  
+
   formData.value = {
     amount: 0,
     payment_method: 'cash',
@@ -176,7 +180,6 @@ const confirmDelete = async () => {
     const storeFilter = selectedStoreId.value === '' ? undefined : selectedStoreId.value
     await store.fetchCaisseSolde(storeFilter)
   } catch (error: any) {
-    console.error('Erreur lors de la suppression:', error)
     showAlert('Erreur de suppression', error.response?.data?.error || 'Erreur lors de la suppression du décaissement.', 'error')
   } finally {
     deleteDialog.value = {
@@ -216,12 +219,11 @@ const handleSubmit = async () => {
     const storeFilter = selectedStoreId.value === '' ? undefined : selectedStoreId.value
     await store.fetchCaisseSolde(storeFilter)
   } catch (error: any) {
-    console.error('Erreur lors de l\'opération:', error)
     const action = isEditing.value ? 'modification' : 'création'
-    
+
     // Récupérer le message d'erreur détaillé
     let errorMessage = `Erreur lors de la ${action} du décaissement.`
-    
+
     if (error.response?.data) {
       // Si c'est une erreur de validation (comme solde insuffisant)
       if (error.response.data.amount) {
@@ -234,7 +236,7 @@ const handleSubmit = async () => {
         errorMessage = error.response.data
       }
     }
-    
+
     showAlert(`Erreur de ${action}`, errorMessage, 'error')
   } finally {
     isSubmitting.value = false
@@ -250,6 +252,9 @@ const handleStoreChange = async () => {
 }
 
 onMounted(async () => {
+  // Toujours charger l'utilisateur pour s'assurer d'avoir les données à jour
+  await authStore.fetchCurrentUser()
+
   // Charger la liste des stores
   stores.value = await encaissementsApi.getStores()
 
@@ -262,7 +267,7 @@ onMounted(async () => {
   } else {
     await store.fetchCaisseSolde()
   }
-  
+
   await loadDecaissements()
 })
 </script>
@@ -294,8 +299,8 @@ onMounted(async () => {
         </Button>
       </div>
 
-      <!-- Filtre par point de vente -->
-      <div class="border-none bg-white/80 shadow-xl backdrop-blur-sm rounded-lg p-4">
+      <!-- Filtre par point de vente (visible uniquement pour admin et super admin) -->
+      <div v-if="isUserAdmin" class="border-none bg-white/80 shadow-xl backdrop-blur-sm rounded-lg p-4">
         <label for="store-select" class="block text-sm font-medium text-slate-700 mb-2">
           Point de Vente
         </label>
@@ -319,8 +324,8 @@ onMounted(async () => {
             <CardTitle class="text-sm font-medium text-slate-600">Montant en Caisse</CardTitle>
             <div :class="[
               'rounded-lg p-2.5',
-              store.soldeCaisse >= 0 
-                ? 'bg-gradient-to-br from-green-500 to-emerald-500' 
+              store.soldeCaisse >= 0
+                ? 'bg-gradient-to-br from-green-500 to-emerald-500'
                 : 'bg-gradient-to-br from-red-500 to-rose-500'
             ]">
               <DollarSign class="h-5 w-5 text-white" />
@@ -329,8 +334,8 @@ onMounted(async () => {
           <CardContent>
             <div :class="[
               'text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent',
-              store.soldeCaisse >= 0 
-                ? 'from-green-600 to-emerald-600' 
+              store.soldeCaisse >= 0
+                ? 'from-green-600 to-emerald-600'
                 : 'from-red-600 to-rose-600'
             ]">
               {{ store.soldeCaisse.toLocaleString('fr-FR') }} FCFA
@@ -464,12 +469,12 @@ onMounted(async () => {
               />
             </div>
 
-            <!-- Mode de paiement -->
+            <!-- Nature de paiement -->
             <div class="space-y-2">
-              <Label for="payment_method" class="text-slate-700">Mode de paiement *</Label>
+              <Label for="payment_method" class="text-slate-700">Nature de paiement *</Label>
               <Select v-model="formData.payment_method">
                 <SelectTrigger class="border-slate-300 focus:border-red-500 focus:ring-red-500">
-                  <SelectValue placeholder="Sélectionnez un mode" />
+                  <SelectValue placeholder="Sélectionnez une nature" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">Espèces</SelectItem>

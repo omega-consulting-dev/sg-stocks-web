@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAchatsStore, type Achat } from '@/stores/achats'
@@ -112,7 +112,6 @@ const handleExportPdf = async () => {
     if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportPdf(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export PDF:', error)
     alert('Erreur lors de l\'export PDF')
   }
 }
@@ -128,7 +127,6 @@ const handleExportExcel = async () => {
     if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportExcel(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export Excel:', error)
     alert('Erreur lors de l\'export Excel')
   }
 }
@@ -149,7 +147,6 @@ const confirmDelete = async () => {
     // Recharger la liste après suppression
     await store.fetchAchats()
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
     alert(store.error || 'Erreur lors de la suppression de l\'entrée')
   }
 }

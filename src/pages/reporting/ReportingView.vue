@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
     <div class="mx-auto max-w-7xl space-y-6">
       <!-- En-tête -->
@@ -424,7 +424,6 @@ const fetchStats = async () => {
       totalSales: response.data.total_sales || 0
     }
   } catch (error) {
-    console.error('Erreur lors de la récupération des statistiques:', error)
   }
 }
 
@@ -447,7 +446,6 @@ const generateReport = async () => {
 
     reportData.value = response.data
   } catch (error: any) {
-    console.error('Erreur lors de la génération du rapport:', error)
     alert('Erreur lors de la génération du rapport')
   } finally {
     isGenerating.value = false
@@ -490,7 +488,6 @@ const exportReport = async (format: 'pdf' | 'excel') => {
     link.remove()
     window.URL.revokeObjectURL(url)
   } catch (error: any) {
-    console.error('Erreur lors de l\'export:', error)
     alert('Erreur lors de l\'export du rapport')
   }
 }

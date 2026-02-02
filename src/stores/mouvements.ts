@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+﻿import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { inventoryApi } from '@/services/api/inventory.api'
 import type {
@@ -78,7 +78,6 @@ export const useMouvementsStore = defineStore('mouvements', () => {
       currentPage.value = page
     } catch (e: any) {
       error.value = 'Erreur lors du chargement des mouvements'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -94,7 +93,6 @@ export const useMouvementsStore = defineStore('mouvements', () => {
       totalCount.value--
     } catch (e: any) {
       error.value = 'Erreur lors de la suppression du mouvement'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -118,7 +116,6 @@ export const useMouvementsStore = defineStore('mouvements', () => {
       window.URL.revokeObjectURL(url)
     } catch (e: any) {
       error.value = 'Erreur lors de l\'export Excel'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -142,7 +139,6 @@ export const useMouvementsStore = defineStore('mouvements', () => {
       window.URL.revokeObjectURL(url)
     } catch (e: any) {
       error.value = 'Erreur lors de l\'export PDF'
-      console.error(e)
       throw e
     } finally {
       loading.value = false

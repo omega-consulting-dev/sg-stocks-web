@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+﻿import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { encaissementsApi, type Encaissement, type EncaissementsFilters, type CaisseSolde } from '@/services/api/encaissements.api'
 
@@ -30,7 +30,6 @@ export const useEncaissementsStore = defineStore('encaissements', () => {
       totalCount.value = response.count
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Une erreur est survenue'
-      console.error('Error fetching encaissements:', e)
     } finally {
       loading.value = false
     }
@@ -40,7 +39,6 @@ export const useEncaissementsStore = defineStore('encaissements', () => {
     try {
       caisseSolde.value = await encaissementsApi.getCaisseSolde(storeId)
     } catch (e) {
-      console.error('Error fetching caisse solde:', e)
     }
   }
 
@@ -48,7 +46,6 @@ export const useEncaissementsStore = defineStore('encaissements', () => {
     try {
       return await encaissementsApi.getStores()
     } catch (e) {
-      console.error('Error fetching stores:', e)
       return []
     }
   }
@@ -80,7 +77,6 @@ export const useEncaissementsStore = defineStore('encaissements', () => {
       window.URL.revokeObjectURL(url)
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Erreur lors de l\'export'
-      console.error('Error exporting encaissements:', e)
       throw e
     }
   }

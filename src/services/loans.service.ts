@@ -78,7 +78,7 @@ export const loansService = {
    * Export loans to Excel
    */
   async exportToExcel(filters?: LoanFilters): Promise<Blob> {
-    const params: Record<string, any> = { format: 'xlsx' };
+    const params: Record<string, any> = {};
 
     if (filters) {
       if (filters.loan_type) params.loan_type = filters.loan_type;

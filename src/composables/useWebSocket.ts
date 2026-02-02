@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+﻿import { ref } from 'vue'
 
 // Global singleton variables to ensure only one WebSocket instance
 let globalSocket: WebSocket | null = null
@@ -6,10 +6,11 @@ let globalIsConnecting = false
 let globalReconnectAttempts = 0
 let globalMessageHandler: ((data: any) => void) | null = null
 let globalPingInterval: any = null
+let globalHasConnectedOnce = false  // Track if connection was ever successful
 
 // Configuration
-const maxReconnectAttempts = 5
-const reconnectDelay = 3000
+const maxReconnectAttempts = 3  // Réduit de 5 à 3
+const reconnectDelay = 5000  // Augmenté de 3s à 5s
 const pingInterval = 25000 // 25 seconds - keep connection alive
 
 // Reactive states
@@ -47,9 +48,6 @@ export function useWebSocket() {
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsUrl = `${wsProtocol}//${hostname}:8000/ws/notifications/?token=${token}`
-
-    console.log('[WebSocket] Connecting to:', wsUrl)
-
     try {
       globalSocket = new WebSocket(wsUrl)
 
@@ -58,6 +56,7 @@ export function useWebSocket() {
         globalIsConnecting = false
         globalReconnectAttempts = 0
         globalLastError.value = null
+        globalHasConnectedOnce = true  // Mark that we've connected successfully
 
         // Send initial ping
         if (globalSocket) {
@@ -89,13 +88,13 @@ export function useWebSocket() {
             globalMessageHandler(data)
           }
         } catch (error) {
-          console.error('[WebSocket] Error parsing message:', error)
         }
       }
 
-      globalSocket.onerror = (error) => {
-        console.error('[WebSocket] Error:', error)
+      globalSocket.onerror = () => {
+        // Silently handle connection errors
         globalLastError.value = 'Connection error'
+        globalIsConnecting = false
       }
 
       globalSocket.onclose = (event) => {
@@ -108,18 +107,28 @@ export function useWebSocket() {
           globalPingInterval = null
         }
 
-        // Attempt to reconnect if not a normal closure
-        if (event.code !== 1000 && globalReconnectAttempts < maxReconnectAttempts) {
+        // Only attempt to reconnect if we've successfully connected before
+        // and it's not a normal closure (code 1000)
+        // code 1006 = abnormal closure (server unavailable)
+        const shouldReconnect = globalHasConnectedOnce &&
+                               event.code !== 1000 &&
+                               event.code !== 1006 &&
+                               globalReconnectAttempts < maxReconnectAttempts
+
+        if (shouldReconnect) {
           globalReconnectAttempts++
           setTimeout(() => {
             connect(token)
           }, reconnectDelay)
         } else if (globalReconnectAttempts >= maxReconnectAttempts) {
-          globalLastError.value = 'Connection lost'
+          globalLastError.value = 'Connection lost - server unavailable'
+        } else if (!globalHasConnectedOnce && event.code === 1006) {
+          // Initial connection failed - server not available
+          // Don't spam reconnection attempts
+          globalLastError.value = 'WebSocket server not available'
         }
       }
     } catch (error) {
-      console.error('[WebSocket] Connection error:', error)
       globalIsConnecting = false
       globalLastError.value = 'Failed to connect'
     }

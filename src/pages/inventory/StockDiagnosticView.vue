@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="container mx-auto p-6">
     <div class="max-w-6xl mx-auto">
       <!-- En-tête -->
@@ -212,7 +212,6 @@ const runDiagnostic = async () => {
       successMessage.value = 'Diagnostic terminé : aucune incohérence détectée !'
     }
   } catch (error: any) {
-    console.error('Erreur lors du diagnostic:', error)
     errorMessage.value = error.response?.data?.detail || 'Erreur lors du diagnostic'
   } finally {
     loading.value = false
@@ -236,7 +235,6 @@ const fixIssues = async () => {
     // Recharger le diagnostic
     await runDiagnostic()
   } catch (error: any) {
-    console.error('Erreur lors de la correction:', error)
     errorMessage.value = error.response?.data?.detail || 'Erreur lors de la correction'
   } finally {
     fixing.value = false

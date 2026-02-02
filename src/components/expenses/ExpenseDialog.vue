@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="modal-overlay" @click="closeOnBackdrop">
     <div class="modal-dialog">
       <div class="modal-header">
@@ -71,7 +71,7 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label>Mode de paiement</label>
+              <label>Nature de paiement</label>
               <select v-model="formData.payment_method">
                 <option :value="null">Non défini</option>
                 <option value="cash">💵 Espèces (Caisse)</option>
@@ -207,7 +207,6 @@ onMounted(async () => {
     try {
       await storesStore.fetchStores()
     } catch (error) {
-      console.error('Erreur lors du chargement des points de vente:', error)
     }
   }
 
@@ -236,20 +235,20 @@ function handleFileChange(event: Event) {
   const input = event.target as HTMLInputElement;
   if (input.files && input.files[0]) {
     const file = input.files[0];
-    
+
     // Vérifier la taille du fichier (max 5 Mo)
     if (file.size > 5 * 1024 * 1024) {
       submitError.value = 'Le fichier est trop volumineux (max 5 Mo)';
       return;
     }
-    
+
     // Vérifier le type de fichier
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
       submitError.value = 'Type de fichier non accepté. Utilisez PDF, JPG ou PNG';
       return;
     }
-    
+
     selectedFile.value = file;
     formData.value.receipt = file;
     submitError.value = '';
@@ -267,10 +266,10 @@ function clearFile() {
 
 function getFileIcon(file: File | string | undefined): string {
   if (!file) return '📄';
-  
+
   const fileName = typeof file === 'string' ? file : file.name;
   const extension = fileName.split('.').pop()?.toLowerCase();
-  
+
   switch (extension) {
     case 'pdf':
       return '📕';
@@ -311,8 +310,6 @@ async function submitForm() {
       store: formData.value.store === '' || formData.value.store === null ? null : formData.value.store,
       payment_method: formData.value.payment_method === null || formData.value.payment_method === '' ? null : formData.value.payment_method,
     };
-    
-    console.log('Submitting expense with data:', dataToSubmit);
     let result: Expense;
 
     if (isEdit.value && props.expense) {
@@ -320,13 +317,9 @@ async function submitForm() {
     } else {
       result = await expensesStore.createExpense(dataToSubmit);
     }
-
-    console.log('Expense created/updated:', result);
     emit('save', result);
     close();
   } catch (error: any) {
-    console.error('Submit error details:', error);
-    console.error('Error response:', error.response?.data);
     submitError.value = error.response?.data?.detail || error.response?.data?.message || JSON.stringify(error.response?.data) || 'Une erreur est survenue';
   } finally {
     isSubmitting.value = false;

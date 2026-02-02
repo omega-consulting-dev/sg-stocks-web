@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+﻿import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import {
   serviceFamiliesApi,
@@ -30,9 +30,16 @@ export const useServiceFamiliesStore = defineStore('serviceFamilies', () => {
     error.value = null
     try {
       families.value = await serviceFamiliesApi.fetchAll()
-    } catch (e) {
-      error.value = 'Erreur lors du chargement des familles de services'
-      console.error('fetchFamilies error:', e)
+    } catch (e: any) {
+      // Gérer spécifiquement l'erreur 403 (permission denied)
+      if (e.response?.status === 403) {
+        error.value = 'Accès refusé : vous n\'avez pas les permissions nécessaires pour consulter les familles de services'
+      } else if (e.response?.status === 404) {
+        error.value = 'Endpoint non trouvé : les familles de services ne sont pas disponibles'
+      } else {
+        error.value = e.response?.data?.message || 'Erreur lors du chargement des familles de services'
+      }
+      families.value = [] // Vider la liste en cas d'erreur
     } finally {
       loading.value = false
     }
@@ -46,7 +53,6 @@ export const useServiceFamiliesStore = defineStore('serviceFamilies', () => {
       return currentFamily.value
     } catch (e) {
       error.value = 'Erreur lors du chargement de la famille'
-      console.error('fetchFamilyById error:', e)
       throw e
     } finally {
       loading.value = false
@@ -62,7 +68,6 @@ export const useServiceFamiliesStore = defineStore('serviceFamilies', () => {
       return newFamily
     } catch (e) {
       error.value = "Erreur lors de l'ajout de la famille"
-      console.error('addFamily error:', e)
       throw e
     } finally {
       loading.value = false
@@ -81,7 +86,6 @@ export const useServiceFamiliesStore = defineStore('serviceFamilies', () => {
       return updatedFamily
     } catch (e) {
       error.value = 'Erreur lors de la modification de la famille'
-      console.error('updateFamily error:', e)
       throw e
     } finally {
       loading.value = false
@@ -100,7 +104,6 @@ export const useServiceFamiliesStore = defineStore('serviceFamilies', () => {
       return true
     } catch (e) {
       error.value = 'Erreur lors de la suppression de la famille'
-      console.error('deleteFamily error:', e)
       throw e
     } finally {
       loading.value = false

@@ -24,9 +24,8 @@ import { MoreVertical, Pencil, Trash2 } from 'lucide-vue-next'
 const fieldConfigStore = useFieldConfigStore()
 
 onMounted(async () => {
-  if (!fieldConfigStore.configurations || fieldConfigStore.configurations.length === 0) {
-    await fieldConfigStore.fetchConfigurations()
-  }
+  // Always fetch fresh configurations to ensure we have the latest
+  await fieldConfigStore.fetchConfigurations()
 })
 
 // Column configurations

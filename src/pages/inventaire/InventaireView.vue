@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 p-6">
     <div class="mx-auto max-w-7xl space-y-6">
       <!-- En-tête avec design moderne -->
@@ -322,8 +322,6 @@ const handleFilterChange = () => {
   if (filters.value.date_to) {
     apiFilters.date_to = filters.value.date_to
   }
-
-  console.log('Filtres appliqués:', apiFilters)
   store.fetchStocks(apiFilters, 1)
 }
 
@@ -387,7 +385,6 @@ const handleExportExcel = async () => {
   try {
     await store.exportExcel(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export Excel:', error)
     alert('Erreur lors de l\'export Excel')
   }
 }
@@ -401,7 +398,6 @@ const handleExportPdf = async () => {
       const response = await CompanySettingsService.getSettings()
       companyInfo = response.data
     } catch (error) {
-      console.warn('Impossible de récupérer les informations de l\'entreprise:', error)
     }
 
     const doc = new jsPDF()
@@ -547,7 +543,6 @@ const handleExportPdf = async () => {
     doc.save(`inventaire_${new Date().toISOString().split('T')[0]}.pdf`)
 
   } catch (error) {
-    console.error('Erreur lors de l\'export PDF:', error)
     alert('Erreur lors de l\'export PDF')
   }
 }

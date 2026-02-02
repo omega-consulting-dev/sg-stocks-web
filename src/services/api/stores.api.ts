@@ -82,6 +82,14 @@ export const storesApi = {
   }> {
     const response = await Axios.get(`/inventory/stores/${id}/stats/`)
     return response.data
+  },
+
+  /**
+   * Récupérer tous les magasins actifs pour les transferts (sans restriction d'accès)
+   */
+  async getAllStoresForTransfers(): Promise<Store[]> {
+    const response: AxiosResponse<Store[]> = await Axios.get('/inventory/stores/all_for_transfers/')
+    return response.data
   }
 }
 

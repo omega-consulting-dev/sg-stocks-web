@@ -57,6 +57,22 @@ export const useStoresStore = defineStore('stores', () => {
     }
   }
 
+  async function fetchAllStoresForTransfers() {
+    loading.value = true
+    error.value = null
+    
+    try {
+      const allStores = await storesApi.getAllStoresForTransfers()
+      stores.value = allStores
+      totalItems.value = allStores.length
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Erreur lors du chargement des magasins'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function fetchStore(id: number) {
     loading.value = true
     error.value = null
@@ -180,6 +196,7 @@ export const useStoresStore = defineStore('stores', () => {
     
     // Actions
     fetchStores,
+    fetchAllStoresForTransfers,
     fetchStore,
     createStore,
     updateStore,

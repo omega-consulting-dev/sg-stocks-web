@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAchatsStore } from '@/stores/achats'
@@ -32,6 +32,7 @@ interface ProduitAjoute {
   nom: string
   enStock: number
   quantiteAjoutee: number
+  unitPriceInput: number | null
   total: number
   selected: boolean
 }
@@ -61,14 +62,14 @@ const dateAchat = ref(new Date().toISOString().split('T')[0])
 const montantFacture = ref<number | null>(null)
 const naturePayement = ref('')
 const fournisseurId = ref<number | null>(null)
-const montantVerse = ref<number | null>(null)
+const montantVerse = ref<number>(0)
 const dateLimiteReglement = ref('')
 const storeId = ref<number | null>(getDefaultStoreId.value) // Magasin sélectionné (auto-assigné pour utilisateurs restreints)
 const deliveryReference = ref('') // Référence du bon de livraison
-const unitCost = ref<number | null>(null) // Prix unitaire
 const pieceJointeName = ref('')
 const produitSelectionne = ref<number | null>(null)
 const quantiteAjoutee = ref<number | null>(null)
+const prixUnitaireProduit = ref<number | null>(null)
 const produitsAjoutes = ref<ProduitAjoute[]>([])
 
 // Dialog de confirmation
@@ -92,6 +93,24 @@ const montantPaye = computed(() => montantVerse.value || 0)
 const montantRestant = computed(() => montantTotal.value - montantPaye.value)
 const hasSelectedProducts = computed(() => produitsAjoutes.value.some(p => p.selected))
 const canAddProduct = computed(() => produitSelectionne.value !== null && quantiteAjoutee.value !== null && quantiteAjoutee.value > 0)
+
+// Vérifier si le produit sélectionné a déjà un prix d'achat
+const selectedProductHasPrice = computed(() => {
+  if (!produitSelectionne.value) return false
+  const product = productsStore.products.find(p => p.id === produitSelectionne.value)
+  return product && product.purchase_price !== null && product.purchase_price !== undefined && product.purchase_price > 0
+})
+
+// Calculer automatiquement le montant total de la facture à partir des produits
+const calculatedInvoiceAmount = computed(() => {
+  let total = 0
+  for (const p of produitsAjoutes.value) {
+    if (p.unitPriceInput !== null && p.unitPriceInput !== undefined) {
+      total += p.unitPriceInput * p.quantiteAjoutee
+    }
+  }
+  return total > 0 ? total : null
+})
 
 // Field configuration helpers
 const fieldConfigs = computed(() => {
@@ -148,10 +167,8 @@ const isFormValid = computed(() => {
 })
 
 onMounted(async () => {
-  // Load field configurations
-  if (!fieldConfigStore.configurations || fieldConfigStore.configurations.length === 0) {
-    await fieldConfigStore.fetchConfigurations()
-  }
+  // Always fetch fresh configurations to ensure we have the latest
+  await fieldConfigStore.fetchConfigurations()
 
   if (productsStore.products.length === 0) await productsStore.fetchProducts()
   if (fournisseursStore.fournisseurs.length === 0) await fournisseursStore.fetchFournisseurs()
@@ -172,7 +189,6 @@ onMounted(async () => {
     try {
       numeroPiece.value = await achatsStore.getNextReceiptNumber()
     } catch (error) {
-      console.error('Erreur lors de la récupération du numéro:', error)
       // Fallback: générer localement si l'API échoue
       const receiptNumbers = await achatsStore.fetchAllReferences()
       const existingNumbers = receiptNumbers
@@ -203,7 +219,6 @@ const loadBonData = async (receiptNumber: string) => {
       fillFormWithBon(achatsWithReceipt)
     }
   } catch (error) {
-    console.error('Erreur lors du chargement du bon:', error)
     alert('Erreur lors du chargement des données')
     router.back()
   }
@@ -226,7 +241,6 @@ const loadAchatData = async (id: number) => {
       fillFormWithAchat(achat)
     }
   } catch (error) {
-    console.error('Erreur lors du chargement:', error)
     alert('Erreur lors du chargement des données')
     router.back()
   }
@@ -276,6 +290,7 @@ const fillFormWithBon = (achats: any[]) => {
         nom: product.name,
         enStock: stockAvant,
         quantiteAjoutee: quantiteAjoutee,
+        unitPriceInput: achat.unit_cost || null,
         total: stockActuel,
         selected: false,
       })
@@ -291,7 +306,6 @@ const fillFormWithAchat = (achat: any) => {
   intitule.value = achat.notes || ''
   dateAchat.value = achat.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
   fournisseurId.value = achat.supplier || null
-  unitCost.value = achat.unit_cost || null
 
   // Remplir le montant de la facture depuis le champ invoice_amount
   montantFacture.value = achat.invoice_amount || null
@@ -320,6 +334,7 @@ const fillFormWithAchat = (achat: any) => {
       nom: product.name,
       enStock: stockAvant,
       quantiteAjoutee: quantiteAjoutee,
+      unitPriceInput: achat.unit_cost || null,
       total: stockActuel,
       selected: false,
     }]
@@ -344,10 +359,25 @@ const ajouterProduit = () => {
   if (!canAddProduct.value) return
   const product = productsStore.products.find(p => p.id === produitSelectionne.value)
   if (!product) return
+
+  // Déterminer le prix unitaire à utiliser
+  let prixUnitaire: number | null = null
+  if (product.purchase_price !== null && product.purchase_price !== undefined && product.purchase_price > 0) {
+    // Utiliser le prix d'achat du produit
+    prixUnitaire = product.purchase_price
+  } else if (prixUnitaireProduit.value !== null) {
+    // Utiliser le prix saisi manuellement
+    prixUnitaire = prixUnitaireProduit.value
+  }
+
   const existing = produitsAjoutes.value.find(p => p.product_id === product.id)
   if (existing) {
     existing.quantiteAjoutee = Number(existing.quantiteAjoutee) + Number(quantiteAjoutee.value!)
     existing.total = Number(existing.enStock) + Number(existing.quantiteAjoutee)
+    // Mettre à jour le prix unitaire si fourni
+    if (prixUnitaire !== null) {
+      existing.unitPriceInput = prixUnitaire
+    }
   } else {
     const stockActuel = Number(product.current_stock || 0)
     const quantite = Number(quantiteAjoutee.value!)
@@ -358,16 +388,33 @@ const ajouterProduit = () => {
       nom: product.name,
       enStock: stockActuel,
       quantiteAjoutee: quantite,
+      unitPriceInput: prixUnitaire,
       total: stockActuel + quantite,
       selected: false,
     })
   }
+
+  // Mettre à jour automatiquement le montant de la facture si tous les produits ont un prix
+  if (calculatedInvoiceAmount.value !== null && montantFacture.value === null) {
+    montantFacture.value = calculatedInvoiceAmount.value
+  } else if (calculatedInvoiceAmount.value !== null) {
+    // Recalculer automatiquement si le montant n'a pas été modifié manuellement
+    montantFacture.value = calculatedInvoiceAmount.value
+  }
+
   produitSelectionne.value = null
   quantiteAjoutee.value = null
+  prixUnitaireProduit.value = null
 }
 
 const supprimerProduit = (id: number) => {
   produitsAjoutes.value = produitsAjoutes.value.filter(p => p.id !== id)
+  // Recalculer le montant de la facture
+  if (calculatedInvoiceAmount.value !== null) {
+    montantFacture.value = calculatedInvoiceAmount.value
+  } else {
+    montantFacture.value = null
+  }
 }
 
 const supprimerSelectionnes = () => {
@@ -386,11 +433,10 @@ const resetForm = async () => {
   montantFacture.value = null
   naturePayement.value = ''
   fournisseurId.value = null
-  montantVerse.value = null
+  montantVerse.value = 0
   dateLimiteReglement.value = ''
   dateAchat.value = new Date().toISOString().split('T')[0]
   deliveryReference.value = ''
-  unitCost.value = null
   produitsAjoutes.value = []
   produitSelectionne.value = null
   quantiteAjoutee.value = null
@@ -402,7 +448,6 @@ const resetForm = async () => {
   try {
     numeroPiece.value = await achatsStore.getNextReceiptNumber()
   } catch (error) {
-    console.error('Erreur lors de la génération du numéro:', error)
     const receiptNumbers = await achatsStore.fetchAllReferences()
     const existingNumbers = receiptNumbers
       .filter(r => r?.startsWith('RECEIPT-'))
@@ -428,7 +473,6 @@ const handleSubmit = async () => {
     'date': { value: dateAchat.value, label: 'Date de réalisation' },
     'notes': { value: intitule.value?.trim(), label: 'Intitulé de l\'opération' },
     'invoice_amount': { value: montantFacture.value, label: 'Montant de la facture' },
-    'unit_cost': { value: unitCost.value, label: 'Coût unitaire' },
     'payment_amount': { value: montantVerse.value, label: 'Montant versé' },
     'payment_method': { value: naturePayement.value, label: 'Nature du paiement' },
     'due_date': { value: dateLimiteReglement.value, label: 'Date limite de règlement' },
@@ -451,16 +495,14 @@ const handleSubmit = async () => {
     hasError = true
   }
 
-  // Si montant facture est renseigné, certains champs deviennent obligatoires
+  // Si montant facture est renseigné et qu'il y a un paiement, certains champs deviennent obligatoires
   if (montantFacture.value !== null && montantFacture.value > 0) {
-    if (montantVerse.value === null && !fieldErrors.value['payment_amount']) {
-      fieldErrors.value['payment_amount'] = 'Le montant versé est obligatoire lorsque le montant de la facture est renseigné'
+    // La nature du paiement est obligatoire seulement si un montant est versé
+    if (montantVerse.value !== null && montantVerse.value > 0 && !naturePayement.value && !fieldErrors.value['payment_method']) {
+      fieldErrors.value['payment_method'] = 'La nature du paiement est obligatoire lorsqu\'un montant est versé'
       hasError = true
     }
-    if (!naturePayement.value && !fieldErrors.value['payment_method']) {
-      fieldErrors.value['payment_method'] = 'La nature du paiement est obligatoire lorsque le montant de la facture est renseigné'
-      hasError = true
-    }
+    // La date limite de règlement est obligatoire en cas de crédit
     if (!dateLimiteReglement.value && montantRestant.value > 0 && !fieldErrors.value['due_date']) {
       fieldErrors.value['due_date'] = 'La date limite de règlement est obligatoire en cas de crédit (montant restant > 0)'
       hasError = true
@@ -491,13 +533,13 @@ const confirmSubmit = async () => {
         reference: deliveryReference.value,
         notes: intitule.value,
         supplier: fournisseurId.value || undefined,
-        unit_cost: unitCost.value || undefined,
+        unit_cost: p.unitPriceInput || undefined,
         invoice_amount: montantFacture.value || undefined,
         movement_type: 'in',
         date: dateAchat.value,
         is_debt: montantRestant.value > 0,
         due_date: dateLimiteReglement.value || undefined,
-        payment_amount: montantVerse.value ?? 0,
+        payment_amount: Number(montantVerse.value) || 0,
         payment_date: dateAchat.value,
         payment_method: naturePayement.value || undefined,
       }
@@ -512,7 +554,8 @@ const confirmSubmit = async () => {
     }
 
     // Mode création
-    for (const p of produitsAjoutes.value) {
+    for (let i = 0; i < produitsAjoutes.value.length; i++) {
+      const p = produitsAjoutes.value[i]
       const payload = {
         product: p.product_id,
         store: storeId.value || getDefaultStoreId.value,
@@ -521,14 +564,16 @@ const confirmSubmit = async () => {
         reference: deliveryReference.value,
         notes: intitule.value,
         supplier: fournisseurId.value || undefined,
-        unit_cost: unitCost.value || undefined,
-        invoice_amount: montantFacture.value || undefined,
+        unit_cost: p.unitPriceInput || undefined,
+        // Stocker le montant de la facture SEULEMENT sur la première ligne
+        // pour l'afficher au niveau du bon (pas réparti sur chaque produit)
+        invoice_amount: (i === 0 && montantFacture.value) ? montantFacture.value : undefined,
         movement_type: 'in',
         date: dateAchat.value,
         // Gestion du paiement
         is_debt: montantRestant.value > 0,
         due_date: dateLimiteReglement.value || undefined,
-        payment_amount: montantVerse.value ?? 0,
+        payment_amount: Number(montantVerse.value) || 0,
         payment_date: dateAchat.value,
         payment_method: naturePayement.value || undefined,
       }
@@ -545,11 +590,6 @@ const confirmSubmit = async () => {
       router.push('/achats/entree-stock')
     }, 2000)
   } catch (error: any) {
-    console.error('❌ Erreur complète:', error)
-    console.error('📋 Réponse du serveur:', error.response?.data)
-    console.error('📌 Status:', error.response?.status)
-    console.error('📌 Headers:', error.response?.headers)
-
     if (error.response?.data) {
       // Vérifier si c'est HTML (erreur Django)
       if (typeof error.response.data === 'string' && error.response.data.includes('<html>')) {
@@ -558,7 +598,7 @@ const confirmSubmit = async () => {
         // Extraire les erreurs de champs et les placer dans fieldErrors
         Object.entries(error.response.data).forEach(([field, msgs]: [string, any]) => {
           const errorText = Array.isArray(msgs) ? msgs.join(', ') : msgs
-          
+
           // Mapper les noms de champs du backend vers les noms utilisés dans le frontend
           const fieldMapping: Record<string, string> = {
             'store': 'store',
@@ -572,11 +612,11 @@ const confirmSubmit = async () => {
             'due_date': 'due_date',
             'reference': 'reference'
           }
-          
+
           const frontendField = fieldMapping[field] || field
           fieldErrors.value[frontendField] = errorText
         })
-        
+
         // Créer aussi un message global si nécessaire
         const messages = Object.entries(error.response.data)
           .map(([field, msgs]: [string, any]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
@@ -687,7 +727,9 @@ const handleFileUpload = (e: Event) => {
               type="number"
               placeholder="Ex : 50000"
               :class="['h-9 text-xs w-full', getFieldError('invoice_amount') ? 'border-red-500' : 'border-slate-300']"
+              :disabled="calculatedInvoiceAmount !== null"
             />
+            <p v-if="calculatedInvoiceAmount !== null" class="text-green-600 text-xs mt-1">Calcul automatique à partir des produits</p>
             <p v-if="getFieldError('invoice_amount')" class="text-red-500 text-xs mt-1">{{ getFieldError('invoice_amount') }}</p>
           </div>
           <div v-if="isFieldVisible('payment_method')">
@@ -817,7 +859,7 @@ const handleFileUpload = (e: Event) => {
 
           <!-- Add Product Section -->
           <div class="space-y-3 mb-4">
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-4 gap-3">
               <div>
                 <label class="block text-xs font-medium text-slate-700 mb-1.5">Produit :</label>
                 <Select v-model="produitSelectionne">
@@ -831,15 +873,27 @@ const handleFileUpload = (e: Event) => {
                   </SelectContent>
                 </Select>
               </div>
+              <div v-if="!selectedProductHasPrice">
+                <label class="block text-xs font-medium text-slate-700 mb-1.5">Prix unitaire :</label>
+                <Input v-model.number="prixUnitaireProduit" type="number" placeholder="Ex : 1000" class="h-9 text-xs border-slate-300 w-full" min="0" step="0.01" />
+              </div>
+              <div v-else>
+                <label class="block text-xs font-medium text-slate-700 mb-1.5">Prix unitaire :</label>
+                <div class="h-9 px-3 bg-green-50 border border-green-200 rounded-md flex items-center">
+                  <span class="text-xs font-medium text-green-900">
+                    {{ productsStore.products.find(p => p.id === produitSelectionne)?.purchase_price?.toLocaleString() }} FCFA (automatique)
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1.5">Quantité ajoutée :</label>
+                <Input v-model.number="quantiteAjoutee" type="number" placeholder="Ex : 50" class="h-9 text-xs border-slate-300 w-full" min="1" />
+              </div>
               <div>
                 <label class="block text-xs font-medium text-slate-700 mb-1.5">Le produit n'existe pas encore ?</label>
                 <Button @click="showProductModal = true" type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 font-medium">
                   Créer ici
                 </Button>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1.5">Quantité ajoutée :</label>
-                <Input v-model.number="quantiteAjoutee" type="number" placeholder="Ex : 50" class="h-9 text-xs border-slate-300 w-full" min="1" />
               </div>
             </div>
             <div class="flex justify-end">
@@ -867,6 +921,7 @@ const handleFileUpload = (e: Event) => {
                     </th>
                     <th class="px-3 py-2 text-center text-[11px] font-semibold w-32">N° Pièce</th>
                     <th class="px-3 py-2 text-left text-[11px] font-semibold">Produit</th>
+                    <th class="px-3 py-2 text-center text-[11px] font-semibold w-24">Prix unitaire</th>
                     <th class="px-3 py-2 text-center text-[11px] font-semibold w-20">En stock</th>
                     <th class="px-3 py-2 text-center text-[11px] font-semibold w-20">Ajoutée</th>
                     <th class="px-3 py-2 text-center text-[11px] font-semibold w-20">Total</th>
@@ -875,7 +930,7 @@ const handleFileUpload = (e: Event) => {
                 </thead>
                 <tbody class="bg-slate-50">
                   <tr v-if="produitsAjoutes.length === 0">
-                    <td colspan="7" class="px-3 py-6 text-center text-slate-500 text-xs">
+                    <td colspan="8" class="px-3 py-6 text-center text-slate-500 text-xs">
                       Aucun produit ajouté
                     </td>
                   </tr>
@@ -885,6 +940,7 @@ const handleFileUpload = (e: Event) => {
                     </td>
                     <td class="px-3 py-2 text-center text-blue-600 font-mono text-[11px] font-semibold">{{ numeroPiece }}</td>
                     <td class="px-3 py-2 font-medium text-slate-900">{{ p.nom }}</td>
+                    <td class="px-3 py-2 text-center text-slate-600">{{ p.unitPriceInput !== null ? p.unitPriceInput.toLocaleString() + ' FCFA' : '-' }}</td>
                     <td class="px-3 py-2 text-center text-slate-600">{{ p.enStock }}</td>
                     <td class="px-3 py-2 text-center font-semibold text-slate-900">{{ p.quantiteAjoutee }}</td>
                     <td class="px-3 py-2 text-center font-semibold text-slate-900">{{ p.total }}</td>

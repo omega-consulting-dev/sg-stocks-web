@@ -86,9 +86,7 @@ export const useExpensesStore = defineStore('expenses', () => {
     try {
       const data = await expensesService.getSummary();
       summary.value = data;
-      console.log('Summary loaded:', data);
     } catch (err: any) {
-      console.error('Fetch summary error:', err);
     }
   }
 
@@ -121,7 +119,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       };
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors du chargement des dépenses';
-      console.error('Fetch expenses error:', err);
     } finally {
       isLoading.value = false;
     }
@@ -139,7 +136,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       return currentExpense.value;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors du chargement de la dépense';
-      console.error('Fetch expense error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -164,15 +160,11 @@ export const useExpensesStore = defineStore('expenses', () => {
         expense_number: expenseNumber,
       };
 
-      console.log('Creating expense with number:', expenseData.expense_number);
-      console.log('Full expense data:', expenseData);
-
       const newExpense = await expensesService.createExpense(expenseData);
       expenses.value.unshift(newExpense);
       return newExpense;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de la création de la dépense';
-      console.error('Create expense error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -201,7 +193,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       return updated;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de la mise à jour de la dépense';
-      console.error('Update expense error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -224,7 +215,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       }
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de la suppression de la dépense';
-      console.error('Delete expense error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -253,7 +243,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       return updated;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de l\'approbation de la dépense';
-      console.error('Approve expense error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -282,7 +271,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       return updated;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors du rejet de la dépense';
-      console.error('Reject expense error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -311,7 +299,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       return updated;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors du marquage comme payé';
-      console.error('Mark as paid error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -329,7 +316,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       categories.value = await expensesService.getCategories();
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors du chargement des catégories';
-      console.error('Fetch categories error:', err);
     } finally {
       isLoading.value = false;
     }
@@ -348,7 +334,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       return newCategory;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de la création de la catégorie';
-      console.error('Create category error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -371,7 +356,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       return updatedCategory;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de la mise à jour de la catégorie';
-      console.error('Update category error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -390,7 +374,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       categories.value = categories.value.filter(cat => cat.id !== id);
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de la suppression de la catégorie';
-      console.error('Delete category error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -416,7 +399,6 @@ export const useExpensesStore = defineStore('expenses', () => {
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de l\'export';
-      console.error('Export error:', err);
       throw err;
     } finally {
       isLoading.value = false;

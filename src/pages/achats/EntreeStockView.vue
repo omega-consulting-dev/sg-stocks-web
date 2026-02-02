@@ -1,8 +1,9 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAchatsStore, type Achat, type BonEntree } from '@/stores/achats'
 import { useFieldConfigStore } from '@/stores/field-config.store'
+import { useAuthStore } from '@/stores/auth.store'
 import AchatTable from '@/components/achats/AchatTable.vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,6 +27,7 @@ const router = useRouter()
 const route = useRoute()
 const store = useAchatsStore()
 const fieldConfigStore = useFieldConfigStore()
+const authStore = useAuthStore()
 
 // Column configurations
 const columnConfigs = computed(() => {
@@ -51,7 +53,7 @@ const isColumnVisible = (columnName: string): boolean => {
 // État local
 const searchQuery = ref('')
 const currentPage = ref(1)
-const pageSize = ref(3)
+const pageSize = ref(10)
 const isDeleteDialogOpen = ref(false)
 const achatToDelete = ref<Achat | null>(null)
 const stores = ref<Array<{ id: number; name: string; code: string }>>([])
@@ -139,7 +141,6 @@ const confirmDeleteBon = async () => {
     // Recharger la liste
     await store.fetchAchats()
   } catch (error) {
-    console.error('Erreur lors de la suppression du bon:', error)
     alert(store.error || 'Erreur lors de la suppression du bon')
   }
 }
@@ -155,7 +156,6 @@ const exportBonToPdf = async () => {
       const response = await CompanySettingsService.getSettings()
       companyInfo = response.data
     } catch (error) {
-      console.warn('Impossible de récupérer les informations de l\'entreprise:', error)
     }
 
     const doc = new jsPDF()
@@ -185,32 +185,45 @@ const exportBonToPdf = async () => {
       doc.text(`Notes: ${bon.notes}`, 20, 70)
     }
 
-    // Tableau des produits
-    const tableData = bon.products.map(p => [
-      p.product_name || '',
-      String(p.quantity),
-      Math.round(Number(p.invoice_amount || 0) / p.quantity) + ' FCFA',
-      Math.round(Number(p.invoice_amount || 0)) + ' FCFA'
-    ])
+    // Vérifier si l'utilisateur peut voir les prix
+    const canViewPrices = authStore.isAdmin || authStore.isAccountant
+
+    // Tableau des produits - seulement produit et quantité (pas de prix unitaire)
+    const tableData = bon.products.map(p => {
+      return [
+        p.product_name || '',
+        String(p.quantity)
+      ]
+    })
 
     // Calculer les totaux exacts
     const totalQuantite = bon.products.reduce((sum, p) => sum + Number(p.quantity), 0)
-    const totalMontant = bon.products.reduce((sum, p) => sum + Number(p.invoice_amount || 0), 0)
+    const totalMontant = bon.total_amount || bon.products.reduce((sum, p) => sum + Number(p.invoice_amount || 0), 0)
+
+    // En-têtes de colonnes - juste Produit et Quantité
+    const headColumns = [['Produit', 'Quantité']]
+
+    // Ligne de total avec le montant si l'utilisateur a la permission
+    const footRow = canViewPrices
+      ? [['TOTAL', String(totalQuantite), Math.round(totalMontant) + ' FCFA']]
+      : [['TOTAL', String(totalQuantite)]]
 
     autoTable(doc, {
       startY: bon.notes ? 78 : 70,
-      head: [['Produit', 'Quantité', 'Prix unitaire', 'Montant']],
+      head: headColumns,
       body: tableData,
-      foot: [['TOTAL', String(totalQuantite), '', Math.round(totalMontant) + ' FCFA']],
+      foot: footRow,
       theme: 'grid',
       headStyles: { fillColor: [245, 158, 11], textColor: 255, fontStyle: 'bold' },
       footStyles: { fillColor: [245, 158, 11], textColor: 255, fontStyle: 'bold' },
       styles: { fontSize: 9 },
-      columnStyles: {
-        0: { cellWidth: 80 },
-        1: { cellWidth: 30, halign: 'right' },
-        2: { cellWidth: 40, halign: 'right' },
-        3: { cellWidth: 40, halign: 'right' }
+      columnStyles: canViewPrices ? {
+        0: { cellWidth: 100 },
+        1: { cellWidth: 40, halign: 'right' },
+        2: { cellWidth: 50, halign: 'right' }
+      } : {
+        0: { cellWidth: 130 },
+        1: { cellWidth: 60, halign: 'right' }
       },
       margin: { bottom: 50 } // Espace pour le pied de page
     })
@@ -275,17 +288,14 @@ const exportBonToPdf = async () => {
     // Sauvegarder le PDF
     doc.save(`bon-entree-${bon.receipt_number}.pdf`)
   } catch (error) {
-    console.error('Erreur export PDF:', error)
     alert('Erreur lors de l\'export PDF')
   }
 }
 
 // Charger les données au montage
 onMounted(async () => {
-  // Charger les configurations de champs
-  if (!fieldConfigStore.configurations || fieldConfigStore.configurations.length === 0) {
-    await fieldConfigStore.fetchConfigurations()
-  }
+  // Always fetch fresh configurations to ensure we have the latest
+  await fieldConfigStore.fetchConfigurations()
 
   // Charger la liste des stores
   stores.value = await encaissementsApi.getStores()
@@ -341,7 +351,6 @@ const handleExportPdf = async () => {
     if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportPdf(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export PDF:', error)
     alert('Erreur lors de l\'export PDF')
   }
 }
@@ -357,7 +366,6 @@ const handleExportExcel = async () => {
     if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportExcel(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export Excel:', error)
     alert('Erreur lors de l\'export Excel')
   }
 }
@@ -383,7 +391,6 @@ const confirmDelete = async () => {
     // Recharger la liste après suppression
     await store.fetchAchats()
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
     alert(store.error || 'Erreur lors de la suppression de l\'entrée')
   }
 }
@@ -491,54 +498,52 @@ const handlePageChange = (page: number) => {
         </div>
 
         <!-- Ligne 2: Dates et Actions -->
-        <div class="flex items-end justify-between gap-4">
-          <div class="flex items-end gap-4 flex-1">
-            <div class="space-y-2">
-              <Label for="start-date" class="text-sm font-medium text-slate-700">Du</Label>
-              <Input
-                id="start-date"
-                v-model="filters.start_date"
-                type="date"
-                class="border-slate-300 focus:border-amber-500 focus:ring-amber-500"
-                @change="handleDateChange"
-              />
-            </div>
-            <div class="space-y-2">
-              <Label for="end-date" class="text-sm font-medium text-slate-700">Au</Label>
-              <Input
-                id="end-date"
-                v-model="filters.end_date"
-                type="date"
-                :min="filters.start_date"
-                class="border-slate-300 focus:border-amber-500 focus:ring-amber-500"
-                @change="handleDateChange"
-              />
-            </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <Label for="start-date" class="text-sm font-medium text-slate-700">Du</Label>
+            <Input
+              id="start-date"
+              v-model="filters.start_date"
+              type="date"
+              class="border-slate-300 focus:border-amber-500 focus:ring-amber-500"
+              @change="handleDateChange"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="end-date" class="text-sm font-medium text-slate-700">Au</Label>
+            <Input
+              id="end-date"
+              v-model="filters.end_date"
+              type="date"
+              :min="filters.start_date"
+              class="border-slate-300 focus:border-amber-500 focus:ring-amber-500"
+              @change="handleDateChange"
+            />
           </div>
         </div>
       </div>
 
     <!-- Tableau des bons d'entrée -->
     <Card class="border-none bg-white/80 shadow-xl backdrop-blur-sm">
-      <CardContent class="p-6">
+      <CardContent class="p-3 sm:p-6">
         <div class="rounded-lg border border-slate-200 overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full">
+          <div class="overflow-x-auto -mx-3 sm:mx-0">
+            <table class="w-full min-w-[800px]">
               <thead class="bg-gradient-to-r from-amber-50 to-orange-50">
                 <tr>
-                  <th v-if="isColumnVisible('receipt_number')" class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th v-if="isColumnVisible('receipt_number')" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     N° Bon
                   </th>
-                  <th v-if="isColumnVisible('created_at')" class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th v-if="isColumnVisible('created_at')" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Date
                   </th>
-                  <th v-if="isColumnVisible('store_name')" class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th v-if="isColumnVisible('store_name')" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Point de vente
                   </th>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th v-if="isColumnVisible('supplier_name')" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Fournisseur
                   </th>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th v-if="isColumnVisible('product_name')" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Produits
                   </th>
                   <th v-if="isColumnVisible('quantity')" class="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -583,27 +588,27 @@ const handlePageChange = (page: number) => {
                       </div>
                     </div>
                   </td>
-                  <td v-if="isColumnVisible('created_at')" class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                  <td v-if="isColumnVisible('created_at')" class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-slate-700">
                     {{ new Date(bon.date).toLocaleDateString('fr-FR') }}
                   </td>
-                  <td v-if="isColumnVisible('store_name')" class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                  <td v-if="isColumnVisible('store_name')" class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-slate-700">
                     {{ bon.store_name }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                  <td v-if="isColumnVisible('supplier_name')" class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-slate-700">
                     {{ bon.supplier_name || '-' }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                  <td v-if="isColumnVisible('product_name')" class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-slate-700">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       {{ bon.products.length }} produit{{ bon.products.length > 1 ? 's' : '' }}
                     </span>
                   </td>
-                  <td v-if="isColumnVisible('quantity')" class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-slate-900">
+                  <td v-if="isColumnVisible('quantity')" class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-sm font-medium text-slate-900">
                     {{ bon.total_quantity.toLocaleString('fr-FR') }}
                   </td>
-                  <td v-if="isColumnVisible('invoice_amount')" class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-slate-900">
+                  <td v-if="isColumnVisible('invoice_amount')" class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-sm font-semibold text-slate-900">
                     {{ bon.total_amount.toLocaleString('fr-FR') }} FCFA
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center text-sm font-medium">
                     <div class="flex items-center justify-center gap-2">
                       <Button
                         variant="ghost"
@@ -641,18 +646,19 @@ const handlePageChange = (page: number) => {
         </div>
 
         <!-- Pagination -->
-        <div v-if="store.totalCount > pageSize" class="mt-6 flex items-center justify-between border-t border-slate-200 pt-4">
-          <div class="text-sm text-slate-700">
+        <div v-if="store.totalCount > pageSize" class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200 pt-4">
+          <div class="text-sm text-slate-700 text-center sm:text-left">
             Affichage de {{ (currentPage - 1) * pageSize + 1 }} à
             {{ Math.min(currentPage * pageSize, filteredBons.length) }} sur
             {{ filteredBons.length }} bons
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               :disabled="currentPage === 1"
               @click="handlePageChange(currentPage - 1)"
+              class="flex-1 sm:flex-none"
             >
               Précédent
             </Button>
@@ -661,6 +667,7 @@ const handlePageChange = (page: number) => {
               size="sm"
               :disabled="currentPage >= totalPages"
               @click="handlePageChange(currentPage + 1)"
+              class="flex-1 sm:flex-none"
             >
               Suivant
             </Button>
@@ -686,7 +693,7 @@ const handlePageChange = (page: number) => {
 
         <div v-if="selectedBon" class="space-y-6">
           <!-- Informations du bon -->
-          <div class="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
             <div>
               <div class="text-xs text-slate-500 font-medium">Date</div>
               <div class="text-sm font-semibold text-slate-900">
@@ -730,12 +737,6 @@ const handlePageChange = (page: number) => {
                   <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700 uppercase">
                     Quantité
                   </th>
-                  <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700 uppercase">
-                    Prix unitaire
-                  </th>
-                  <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700 uppercase">
-                    Montant
-                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 bg-white">
@@ -750,17 +751,11 @@ const handlePageChange = (page: number) => {
                   <td class="px-4 py-3 text-right text-sm font-medium text-slate-900">
                     {{ product.quantity.toLocaleString('fr-FR') }}
                   </td>
-                  <td class="px-4 py-3 text-right text-sm text-slate-700">
-                    {{ (Number(product.invoice_amount || 0) / product.quantity).toLocaleString('fr-FR') }} FCFA
-                  </td>
-                  <td class="px-4 py-3 text-right text-sm font-semibold text-slate-900">
-                    {{ Number(product.invoice_amount || 0).toLocaleString('fr-FR') }} FCFA
-                  </td>
                 </tr>
               </tbody>
               <tfoot class="bg-gradient-to-r from-amber-50 to-orange-50">
                 <tr>
-                  <td colspan="3" class="px-4 py-3 text-sm font-bold text-slate-900 text-right">
+                  <td class="px-4 py-3 text-sm font-bold text-slate-900 text-right">
                     TOTAL
                   </td>
                   <td class="px-4 py-3 text-right text-sm font-bold text-slate-900">

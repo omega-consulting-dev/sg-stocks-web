@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTenantStore } from '@/stores/tenant.store'
@@ -43,7 +43,6 @@ const loadSettings = async () => {
       allowFlexiblePricing.value = tenant.allow_flexible_pricing || false
     }
   } catch (error) {
-    console.error('Erreur lors du chargement:', error)
     toast.error('Impossible de charger les paramètres', 'Erreur')
   } finally {
     loading.value = false
@@ -52,18 +51,14 @@ const loadSettings = async () => {
 
 const saveSettings = async () => {
   saving.value = true
-  console.log('[InvoiceConfig] Tentative de sauvegarde, allow_flexible_pricing:', allowFlexiblePricing.value)
 
   try {
     // Mettre à jour via l'API tenant
     const result = await tenantStore.updateTenant({
       allow_flexible_pricing: allowFlexiblePricing.value
     })
-
-    console.log('[InvoiceConfig] Sauvegarde réussie:', result)
     toast.success('Paramètres enregistrés avec succès!', 'Succès')
   } catch (error) {
-    console.error('[InvoiceConfig] Erreur lors de l\'enregistrement:', error)
     toast.error('Impossible d\'enregistrer les paramètres', 'Erreur')
   } finally {
     saving.value = false

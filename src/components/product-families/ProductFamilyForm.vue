@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { FileText, Camera } from 'lucide-vue-next'
 import type { ProductFamily } from '@/stores/productFamilies'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -59,6 +59,13 @@ const handleClose = () => {
 <template>
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent class="max-w-[457px] p-0 gap-0 border border-[#0072C1] rounded-[10px]">
+      <DialogHeader class="sr-only">
+        <DialogTitle>{{ isEditing ? 'Modifier' : 'Ajouter' }} une famille de produits</DialogTitle>
+        <DialogDescription>
+          Formulaire pour {{ isEditing ? 'modifier' : 'créer' }} une famille de produits
+        </DialogDescription>
+      </DialogHeader>
+
       <!-- En-tête avec avatar et titre -->
       <div class="relative px-[46px] pt-[27px] pb-[20px]">
         <!-- Bouton fermer -->

@@ -16,6 +16,5 @@ const clicked = ref(false)
 
 const testClick = () => {
   clicked.value = true
-  console.log('Bouton cliqué !')
 }
 </script>

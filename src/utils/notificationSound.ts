@@ -54,7 +54,6 @@ export const generateNotificationSound = async () => {
     oscillator2.start(ctx.currentTime + 0.1)
     oscillator2.stop(ctx.currentTime + 0.25)
   } catch (error) {
-    console.error('Erreur lors de la lecture du son:', error)
   }
 }
 
@@ -67,7 +66,6 @@ export const initAudioContext = async () => {
     }
     return true
   } catch (error) {
-    console.error('Erreur initialisation audio:', error)
     return false
   }
 }

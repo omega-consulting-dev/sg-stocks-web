@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import Axios from '@/services/axios.service'
 
@@ -62,7 +62,6 @@ export const useVentesStatistiquesStore = defineStore('ventesStatistiques', () =
       const response = await Axios.get('/sales/sales/stats/', { params })
       ventes.value = response.data
     } catch (err) {
-      console.error('Erreur lors de la récupération des statistiques:', err)
       error.value = 'Erreur lors de la récupération des statistiques'
     } finally {
       loading.value = false
@@ -74,7 +73,6 @@ export const useVentesStatistiquesStore = defineStore('ventesStatistiques', () =
       const response = await Axios.get('/products/categories/')
       categories.value = response.data.results || response.data
     } catch (err) {
-      console.error('Erreur lors de la récupération des catégories:', err)
     }
   }
 
@@ -83,7 +81,6 @@ export const useVentesStatistiquesStore = defineStore('ventesStatistiques', () =
       const response = await Axios.get('/products/products/', { params: { page_size: 1000 } })
       products.value = response.data.results || response.data
     } catch (err) {
-      console.error('Erreur lors de la récupération des produits:', err)
     }
   }
 
@@ -92,7 +89,6 @@ export const useVentesStatistiquesStore = defineStore('ventesStatistiques', () =
       const response = await Axios.get('/cashbox/stores/')
       stores.value = response.data.results || response.data
     } catch (err) {
-      console.error('Erreur lors de la récupération des magasins:', err)
     }
   }
 
@@ -125,7 +121,6 @@ export const useVentesStatistiquesStore = defineStore('ventesStatistiques', () =
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('Erreur lors de l\'export Excel:', err)
       error.value = 'Erreur lors de l\'export Excel'
       throw err
     } finally {
@@ -162,7 +157,6 @@ export const useVentesStatistiquesStore = defineStore('ventesStatistiques', () =
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('Erreur lors de l\'export PDF:', err)
       error.value = 'Erreur lors de l\'export PDF'
       throw err
     } finally {

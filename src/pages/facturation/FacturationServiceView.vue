@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Trash2, Store } from 'lucide-vue-next'
@@ -157,7 +157,6 @@ onMounted(async () => {
       tenantStore.fetchCurrentTenant() // Charger les infos du tenant pour allow_flexible_pricing
     ])
   } catch (error: unknown) {
-    console.error('Erreur lors du chargement des données:', error)
     const errorMsg = error instanceof Error ? error.message : 'Erreur inconnue'
     toast.error(`Erreur lors du chargement des données: ${errorMsg}`, 'Erreur')
   } finally {
@@ -169,16 +168,18 @@ onMounted(async () => {
 const filteredFacturations = computed(() => {
   // Filter to get only service sales (lines with line_type='service')
   let result = salesStore.sales.filter(sale =>
-    sale.lines && sale.lines.some(line => line.line_type === 'service')
+    sale && sale.lines && Array.isArray(sale.lines) && sale.lines.some(line => line && line.line_type === 'service')
   )
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(
       (s) =>
-        s.sale_number.toLowerCase().includes(query) ||
-        s.customer.name.toLowerCase().includes(query) ||
-        s.total_amount.toString().includes(query)
+        s && (
+          s.sale_number?.toLowerCase().includes(query) ||
+          s.customer?.name?.toLowerCase().includes(query) ||
+          s.total_amount?.toString().includes(query)
+        )
     )
   }
 
@@ -222,9 +223,7 @@ const formatCurrencyShort = (value: number) => {
 
 // Modal functions
 const openModal = async () => {
-  console.log('openModal: Début')
   try {
-    console.log('openModal: Ouverture du modal...')
     isModalOpen.value = true
     modalStep.value = 1
     resetForm()
@@ -233,10 +232,7 @@ const openModal = async () => {
     if (getDefaultStoreId.value) {
       selectedStore.value = String(getDefaultStoreId.value)
     }
-
-    console.log('openModal: Modal ouvert, isModalOpen =', isModalOpen.value)
   } catch (error) {
-    console.error('Erreur lors de l\'ouverture du modal:', error)
     alert('Erreur lors de l\'ouverture du formulaire')
   }
 }
@@ -395,6 +391,7 @@ const submitSale = async () => {
       sale_date: formData.value.saleDate || new Date().toISOString().split('T')[0],
       notes: formData.value.notes,
       paid_amount: formData.value.amountPaid,
+      payment_method: formData.value.paymentMethod as 'cash' | 'card' | 'transfer' | 'mobile_money',
       due_date: formData.value.dueDate || undefined,
       lines: lines.value.map(line => ({
         line_type: 'service',
@@ -411,10 +408,7 @@ const submitSale = async () => {
 
     if (isEditMode.value && editingSaleId.value) {
       // Mode modification
-      console.log('Modification de la vente service ID:', editingSaleId.value, 'avec les données:', saleData)
       await salesStore.updateSale(editingSaleId.value, saleData)
-      console.log('Vente service modifiée')
-
       await servicesStore.fetchServices()
       closeModal()
       await salesStore.fetchSales()
@@ -422,20 +416,13 @@ const submitSale = async () => {
       toast.success('Vente service modifiée avec succès!', 'Modification réussie')
     } else {
       // Mode création
-      console.log('Création de la vente service avec les données:', saleData)
       const newSale = await salesStore.createSale(saleData)
-      console.log('Vente service créée:', newSale)
-
       if (!newSale || !newSale.id) {
         throw new Error('La vente a été créée mais aucun ID n\'a été retourné')
       }
 
       // Automatically confirm the sale (generate invoice)
-      console.log('Confirmation de la vente service ID:', newSale.id)
       const confirmedSale = await salesStore.confirmSale(newSale.id)
-      console.log('Vente confirmée, données retournées:', confirmedSale)
-      console.log('Invoice info après confirmation:', confirmedSale?.sale?.invoice || 'Aucune facture')
-
       toast.success('Vente service créée et confirmée avec succès! La facture a été générée automatiquement.', 'Succès')
 
       // Reload services and sales
@@ -446,12 +433,6 @@ const submitSale = async () => {
 
   } catch (error: unknown) {
     const axiosError = error as { config?: { url?: string; data?: string }; response?: { status?: number; data?: unknown }; message?: string }
-    console.error('Erreur lors de la création de la vente service:', error)
-    console.error('URL appelée:', axiosError?.config?.url)
-    console.error('Données envoyées:', axiosError?.config?.data)
-    console.error('Statut:', axiosError?.response?.status)
-    console.error('Réponse:', axiosError?.response?.data)
-
     let errorMessage = 'Erreur inconnue'
     if (axiosError?.response?.data) {
       const backendErrors = axiosError.response.data as { detail?: string; error?: string; [key: string]: unknown }
@@ -499,7 +480,6 @@ async function handleGenerateInvoice(id: number) {
 
     // Si invoice_id n'existe pas dans la liste, récupérer les détails complets
     if (!sale.invoice_id) {
-      console.log('invoice_id non trouvé dans la liste, récupération des détails...')
       const detailedSale = await salesStore.fetchSale(id)
       if (!detailedSale.invoice_id) {
         // Essayer de confirmer la vente pour générer la facture
@@ -544,8 +524,6 @@ async function handleGenerateInvoice(id: number) {
 
   } catch (err: unknown) {
     const error = err as { message?: string; response?: { status?: number; data?: unknown } }
-    console.error('Erreur lors du téléchargement de la facture:', error)
-
     let errorMessage = 'Impossible de télécharger la facture.'
 
     if (error.response?.status === 404) {
@@ -629,14 +607,11 @@ async function handleEdit(id: number) {
     modalStep.value = 1
 
   } catch (error) {
-    console.error('Erreur lors du chargement de la vente:', error)
     toast.error('Impossible de charger la vente', 'Erreur')
   }
 }
 
 function handleExportAll() {
-  console.log('Export all facturations service to Excel')
-
   // Importer l'utilitaire Excel
   import('@/utils/excelExporter').then(({ ExcelExporter }) => {
     // Préparer les données pour Excel
@@ -669,9 +644,7 @@ function handleExportAll() {
 }
 
 async function handleNew() {
-  console.log('FacturationServiceView: handleNew appelé')
   await openModal()
-  console.log('FacturationServiceView: openModal terminé, isModalOpen =', isModalOpen.value)
 }
 </script>
 
@@ -944,8 +917,7 @@ async function handleNew() {
                     <SelectItem value="cash">Espèces</SelectItem>
                     <SelectItem value="card">Carte</SelectItem>
                     <SelectItem value="transfer">Virement</SelectItem>
-                    <SelectItem value="mobile">Mobile Money</SelectItem>
-                    <SelectItem value="check">Chèque</SelectItem>
+                    <SelectItem value="mobile_money">Mobile Money (MTN/Orange)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

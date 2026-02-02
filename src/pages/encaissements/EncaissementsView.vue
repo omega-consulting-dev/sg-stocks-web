@@ -1,6 +1,7 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useEncaissementsStore, type Encaissement } from '@/stores/encaissements'
+import { useAuthStore } from '@/stores/auth.store'
 import EncaissementSearchBar from '@/components/encaissements/EncaissementSearchBar.vue'
 import EncaissementTable from '@/components/encaissements/EncaissementTable.vue'
 import {
@@ -15,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Wallet } from 'lucide-vue-next'
 
 const store = useEncaissementsStore()
+const authStore = useAuthStore()
 
 // État local
 const searchQuery = ref('')
@@ -28,6 +30,9 @@ const selectedEncaissement = ref<Encaissement | null>(null)
 const encaissementToDelete = ref<Encaissement | null>(null)
 const stores = ref<Array<{ id: number; name: string; code: string }>>([])
 const selectedStoreId = ref<number | string>('')
+
+// Vérifier si l'utilisateur est admin (pour le filtre Point de Vente)
+const isUserAdmin = computed(() => authStore.isAdmin)
 
 // Computed
 const filteredEncaissements = computed(() => {
@@ -71,6 +76,9 @@ const formatMontant = (montant: number): string => {
 
 // Charger les données au montage
 onMounted(async () => {
+  // Toujours charger l'utilisateur pour s'assurer d'avoir les données à jour
+  await authStore.fetchCurrentUser()
+
   // Charger la liste des stores
   const storesData = await store.fetchStores()
   stores.value = storesData
@@ -129,7 +137,6 @@ const handleExportExcel = async () => {
     })
   } catch (error) {
     alert('Une erreur est survenue lors de l\'export du fichier')
-    console.error('Export error:', error)
   }
 }
 
@@ -154,7 +161,6 @@ const confirmDelete = async () => {
     encaissementToDelete.value = null
   } catch (error) {
     alert('Une erreur est survenue lors de la suppression')
-    console.error('Delete error:', error)
   }
 }
 
@@ -184,8 +190,8 @@ const handlePageChange = (page: number) => {
         </div>
       </div>
 
-      <!-- Filtre par point de vente -->
-      <div class="border-none bg-white/80 shadow-xl backdrop-blur-sm rounded-lg p-4">
+      <!-- Filtre par point de vente (visible uniquement pour admin et super admin) -->
+      <div v-if="isUserAdmin" class="border-none bg-white/80 shadow-xl backdrop-blur-sm rounded-lg p-4">
         <label for="store-select" class="block text-sm font-medium text-slate-700 mb-2">
           Point de Vente
         </label>

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <!-- Main Category Management Dialog -->
     <Dialog :open="true" @update:open="$emit('close')">
@@ -239,7 +239,6 @@ async function createNewCategory() {
       description: '',
     }
   } catch (error) {
-    console.error('Erreur lors de la création de la catégorie:', error)
   } finally {
     isCreating.value = false
   }
@@ -261,7 +260,6 @@ async function saveEditCategory() {
     })
     editingCategory.value = null
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la catégorie:', error)
   } finally {
     isUpdating.value = false
   }
@@ -272,7 +270,6 @@ async function confirmDeleteCategory(id: number) {
     try {
       await expensesStore.deleteCategory(id)
     } catch (error) {
-      console.error('Erreur lors de la suppression de la catégorie:', error)
     }
   }
 }

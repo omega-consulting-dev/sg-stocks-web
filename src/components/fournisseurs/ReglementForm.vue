@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import {
   User,
@@ -193,7 +193,6 @@ const handleSubmit = async () => {
     
     emit('success')
   } catch (error) {
-    console.error('Erreur lors du règlement:', error)
     alert('Impossible d\'enregistrer le règlement')
   } finally {
     submitting.value = false

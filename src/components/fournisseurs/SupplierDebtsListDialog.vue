@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { FileText, CreditCard } from 'lucide-vue-next'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -56,7 +56,6 @@ const fetchSupplierDebts = async () => {
 
     debts.value = response.data
   } catch (error) {
-    console.error('Erreur lors du chargement des dettes:', error)
     debts.value = []
   } finally {
     loading.value = false

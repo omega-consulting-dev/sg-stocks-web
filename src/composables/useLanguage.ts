@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+﻿import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Axios from '@/services/axios.service'
 
@@ -22,7 +22,6 @@ export function useLanguage() {
 
       return true
     } catch (error) {
-      console.error('Error changing language:', error)
       return false
     }
   }

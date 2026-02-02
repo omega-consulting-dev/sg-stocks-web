@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { CompanySettingsService, type CompanySettings, type CompanySettingsUpdate } from '@/services/company-settings.service'
@@ -67,7 +67,6 @@ const loadSettings = async () => {
       logoPreview.value = response.data.logo_url
     }
   } catch (error) {
-    console.error('Erreur lors du chargement des paramètres:', error)
     alert('Impossible de charger les paramètres')
   } finally {
     loading.value = false
@@ -95,7 +94,6 @@ const uploadLogo = async () => {
     await loadSettings()
     logoFile.value = null
   } catch (error) {
-    console.error('Erreur lors du téléchargement du logo:', error)
     alert('Impossible de télécharger le logo')
   }
 }
@@ -109,7 +107,6 @@ const removeLogo = async () => {
     alert('Logo supprimé avec succès!')
     await loadSettings()
   } catch (error) {
-    console.error('Erreur lors de la suppression du logo:', error)
     alert('Impossible de supprimer le logo')
   }
 }
@@ -128,7 +125,6 @@ const saveSettings = async () => {
     alert('Paramètres enregistrés avec succès!')
     await loadSettings()
   } catch (error) {
-    console.error('Erreur lors de l\'enregistrement:', error)
     alert('Impossible d\'enregistrer les paramètres')
   } finally {
     saving.value = false

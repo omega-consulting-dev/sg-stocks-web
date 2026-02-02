@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useMouvementsStore, type Mouvement } from '@/stores/mouvements'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -146,11 +146,6 @@ const loadProductStocks = async () => {
 
     // Charger TOUS les stocks (pas seulement la page 1)
     const response = await inventoryApi.getStockLevels(stockFilters, 1, 10000)
-
-    console.log('Filter appliqué:', stockFilters)
-    console.log('Nombre de stocks retournés:', response.results.length)
-    console.log('Stocks bruts:', response.results)
-
     // Créer un map product_id -> stock actuel
     // Si aucun store n'est sélectionné, SOMMER les stocks de tous les stores pour chaque produit
     const stockMap: Record<number, number> = {}
@@ -181,11 +176,7 @@ const loadProductStocks = async () => {
 
     productStocks.value = stockMap
 
-    console.log('Stocks calculés (après sommation si nécessaire):', stockMap)
-    console.log('Nombre total de mouvements chargés:', store.allMouvements.length)
-    console.log('Produits uniques:', Array.from(uniqueProductIds))
   } catch (error) {
-    console.error('Erreur lors du chargement des stocks:', error)
   }
 }
 
@@ -217,7 +208,6 @@ const loadAllProductMouvements = async () => {
     const response = await inventoryApi.getMovements(productFilters, 1)
     allProductMouvements.value = response.results
   } catch (error) {
-    console.error('Erreur lors du chargement de tous les mouvements:', error)
     allProductMouvements.value = []
   }
 }
@@ -319,7 +309,6 @@ const handleExportPdf = async () => {
     if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportPdf(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export PDF:', error)
     alert('Erreur lors de l\'export PDF')
   }
 }
@@ -336,7 +325,6 @@ const handleExportExcel = async () => {
     if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportExcel(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export Excel:', error)
     alert('Erreur lors de l\'export Excel')
   }
 }
@@ -357,7 +345,6 @@ const confirmDelete = async () => {
     // Recharger la liste après suppression
     await store.fetchMouvements()
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
     alert(store.error || 'Erreur lors de la suppression du mouvement')
   }
 }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="isOpen">
     <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
@@ -509,24 +509,30 @@ const handleSubmit = async () => {
       // Mode création
       data.password = formData.value.password
       data.password_confirm = confirmPassword.value
-      console.log('📤 Données envoyées pour création utilisateur:', data)
       await usersStore.createUser(data as UserCreateData)
     }
 
     emit('saved')
     closeDialog()
   } catch (e: any) {
-    console.error('❌ Erreur création utilisateur:', e.response?.data)
-
     // Extraire les erreurs de validation
     const validationErrors = e.response?.data
-    if (validationErrors?.password) {
+
+    // Gérer l'erreur de quota d'utilisateurs atteint
+    if (validationErrors?.detail && typeof validationErrors.detail === 'string') {
+      error.value = validationErrors.detail
+    }
+    // Gérer les erreurs de mot de passe
+    else if (validationErrors?.password) {
       passwordError.value = Array.isArray(validationErrors.password)
         ? validationErrors.password[0]
         : validationErrors.password
+      error.value = "Veuillez corriger les erreurs dans le formulaire"
     }
-
-    error.value = e.response?.data?.message || e.response?.data?.detail || "Une erreur s'est produite. Vérifiez les champs."
+    // Gérer les autres erreurs
+    else {
+      error.value = e.response?.data?.message || e.response?.data?.detail || "Une erreur s'est produite. Vérifiez les champs."
+    }
   } finally {
     loading.value = false
   }

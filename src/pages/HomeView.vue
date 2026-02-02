@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref, watch } from 'vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useUserStore } from '@/stores/user'
-import { UserCircle } from 'lucide-vue-next'
+import { useStoresStore } from '@/stores/stores.store'
+import { UserCircle, Store } from 'lucide-vue-next'
 import StatCard from '@/components/dashboard/StatCard.vue'
 import DashboardChart from '@/components/dashboard/DashboardChart.vue'
 import StockPieChart from '@/components/dashboard/StockPieChart.vue'
@@ -10,6 +11,9 @@ import StockTable from '@/components/dashboard/StockTable.vue'
 
 const dashboardStore = useDashboardStore()
 const userStore = useUserStore()
+const storesStore = useStoresStore()
+
+const selectedStoreId = ref<number | string>('')
 
 const userName = computed(() => {
   if (!userStore.user) return 'Administrateur'
@@ -25,7 +29,15 @@ const userRole = computed(() => {
   return userStore.user.role.display_name || userStore.user.role.name || 'Utilisateur'
 })
 
+const handleStoreChange = async () => {
+  const storeId = selectedStoreId.value === '' ? null : Number(selectedStoreId.value)
+  dashboardStore.selectedStoreId = storeId
+  await dashboardStore.fetchDashboardData(storeId)
+}
+
 onMounted(async () => {
+  // Charger les stores
+  await storesStore.fetchStores()
   // Charger les données du dashboard
   await dashboardStore.fetchDashboardData()
 })
@@ -51,6 +63,28 @@ onMounted(async () => {
             <p class="text-xs text-indigo-200">{{ userRole }}</p>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Filtre par point de vente -->
+    <div class="mb-6 bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+      <div class="flex items-center gap-4">
+        <Store class="w-5 h-5 text-indigo-600" />
+        <label class="text-sm font-medium text-gray-700">Point de vente :</label>
+        <select
+          v-model="selectedStoreId"
+          @change="handleStoreChange"
+          class="flex-1 max-w-xs px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+        >
+          <option value="">Tous les points de vente</option>
+          <option
+            v-for="store in storesStore.stores"
+            :key="store.id"
+            :value="store.id"
+          >
+            {{ store.name }} {{ store.code ? `(${store.code})` : '' }}
+          </option>
+        </select>
       </div>
     </div>
 

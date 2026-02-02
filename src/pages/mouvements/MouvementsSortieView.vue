@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useSortiesStore, type Sortie } from '@/stores/sorties'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -79,13 +79,6 @@ const loadSorties = async (page: number = 1) => {
   if (filters.value.store) apiFilters.store = filters.value.store
   if (filters.value.product) apiFilters.product = filters.value.product
   if (searchQuery.value) apiFilters.search = searchQuery.value
-
-  console.log('🔍 [SORTIES] Filtres appliqués:', {
-    start_date: filters.value.start_date,
-    end_date: filters.value.end_date,
-    apiFilters
-  })
-
   await store.fetchSorties(apiFilters, page, pageSize.value)
   currentPage.value = page
 }
@@ -114,7 +107,6 @@ const handleExportPdf = async () => {
     if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportPdf(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export PDF:', error)
     alert('Erreur lors de l\'export PDF')
   }
 }
@@ -130,7 +122,6 @@ const handleExportExcel = async () => {
     if (searchQuery.value) apiFilters.search = searchQuery.value
     await store.exportExcel(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export Excel:', error)
     alert('Erreur lors de l\'export Excel')
   }
 }
@@ -151,7 +142,6 @@ const confirmDelete = async () => {
     // Recharger la liste après suppression
     await store.fetchSorties()
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
     alert(store.error || 'Erreur lors de la suppression de la sortie')
   }
 }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useFournisseursStore, type Supplier } from '@/stores/fournisseurs'
 import CompteSearchBar from '@/components/fournisseurs/CompteSearchBar.vue'
@@ -131,7 +131,6 @@ const handleDeleteConfirm = async () => {
     successMessage.value = 'Fournisseur supprimé avec succès !'
     isSuccessDialogOpen.value = true
   } catch (error) {
-    console.error('Erreur suppression:', error)
     successMessage.value = 'Erreur lors de la suppression'
     isSuccessDialogOpen.value = true
   } finally {
@@ -144,7 +143,6 @@ const handleExportPdf = async () => {
   try {
     await store.exportPdf()
   } catch (error) {
-    console.error('Erreur export PDF:', error)
   }
 }
 
@@ -153,7 +151,6 @@ const handleExportExcel = async () => {
   try {
     await store.exportExcel()
   } catch (error) {
-    console.error('Erreur export Excel:', error)
   }
 }
 
@@ -164,7 +161,6 @@ const handleImportExcel = async (file: File) => {
     importResult.value = result
     isImportResultOpen.value = true
   } catch (error) {
-    console.error('Erreur import Excel:', error)
     importResult.value = {
       success: false,
       message: "Erreur lors de l'import",
@@ -181,7 +177,6 @@ const handleDownloadTemplate = async () => {
   try {
     await store.downloadTemplate()
   } catch (error) {
-    console.error('Erreur téléchargement template:', error)
   }
 }
 

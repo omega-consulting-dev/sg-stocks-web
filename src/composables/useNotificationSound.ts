@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+﻿import { ref } from 'vue'
 import { generateNotificationSound, initAudioContext } from '@/utils/notificationSound'
 
 interface NotificationSoundOptions {
@@ -20,7 +20,6 @@ export const useNotificationSound = (options: NotificationSoundOptions = {}) => 
       }
       return true
     } catch (error) {
-      console.warn('Notification permission denied:', error)
       return false
     }
   }
@@ -32,7 +31,6 @@ export const useNotificationSound = (options: NotificationSoundOptions = {}) => 
     try {
       await generateNotificationSound()
     } catch (error) {
-      console.error('Error playing notification sound:', error)
     }
   }
 

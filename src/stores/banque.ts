@@ -34,6 +34,11 @@ export const useBanqueStore = defineStore('banque', () => {
     await fetchTransactions()
   }
 
+  const createDeposit = async (data: banqueApi.CreateDepositData) => {
+    await banqueApi.createBankDeposit(data)
+    await fetchTransactions()
+  }
+
   const nextPage = async () => {
     if (hasNext.value) {
       currentPage.value++
@@ -68,6 +73,7 @@ export const useBanqueStore = defineStore('banque', () => {
     loading,
     fetchTransactions,
     createWithdrawal,
+    createDeposit,
     nextPage,
     previousPage,
     exportPDF,

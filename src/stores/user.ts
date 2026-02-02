@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/services/api/auth.api'
 import type { User, LoginCredentials } from '@/types/auth.types'
@@ -47,15 +47,13 @@ export const useUserStore = defineStore('user', () => {
       // Sauvegarder l'utilisateur dans localStorage
       localStorage.setItem('user', JSON.stringify(response.user))
 
-      // Debug: Vérifier les données de magasin
-      console.log('🔐 Connexion réussie - Données utilisateur:', {
-        username: response.user.username,
-        role: response.user.role,
-        default_store: response.user.default_store,
-        is_store_restricted: response.user.is_store_restricted,
-        has_assigned_stores: response.user.has_assigned_stores
-      })
+      // Synchroniser authStore pour que les permissions soient immédiatement disponibles
+      const { useAuthStore } = await import('./auth.store')
+      const authStore = useAuthStore()
+      authStore.setUser(response.user)
+      authStore.setToken(response.access)
 
+      // Debug: Vérifier les données de magasin
       return response
     } catch (e: any) {
       const errorMessage =
@@ -63,7 +61,6 @@ export const useUserStore = defineStore('user', () => {
         e.response?.data?.detail ||
         'Email ou mot de passe incorrect'
       error.value = errorMessage
-      console.error('Erreur de connexion:', e)
       throw e
     } finally {
       loading.value = false
@@ -81,7 +78,6 @@ export const useUserStore = defineStore('user', () => {
         await authApi.logout(refresh_token.value)
       }
     } catch (e) {
-      console.error('Erreur lors de la déconnexion:', e)
       // On continue quand même la déconnexion côté client
     } finally {
       // Nettoyer tout
@@ -109,7 +105,6 @@ export const useUserStore = defineStore('user', () => {
 
       return expirationTime < (now + fiveMinutes)
     } catch (e) {
-      console.error('Erreur lors de la vérification du token:', e)
       return true
     }
   }
@@ -124,7 +119,6 @@ export const useUserStore = defineStore('user', () => {
 
     // Vérifier si le token est expiré (seulement si un token existe)
     if (storedToken && isTokenExpired(storedToken)) {
-      console.warn('⚠️ Token expiré, déconnexion automatique')
       clearUser()
       return
     }
@@ -135,7 +129,6 @@ export const useUserStore = defineStore('user', () => {
       try {
         user.value = JSON.parse(storedUser)
       } catch (e) {
-        console.error('Erreur lors du parsing de l\'utilisateur:', e)
         clearUser()
       }
     } else if (storedUser === 'undefined' || storedUser === 'null') {
@@ -153,11 +146,9 @@ export const useUserStore = defineStore('user', () => {
 
     try {
       // TODO: Implémenter Google OAuth
-      console.log('Google OAuth login')
       throw new Error('Google OAuth non implémenté')
     } catch (e: any) {
       error.value = 'Erreur lors de la connexion avec Google'
-      console.error(e)
       throw e
     } finally {
       loading.value = false

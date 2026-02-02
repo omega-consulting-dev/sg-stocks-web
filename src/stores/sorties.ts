@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+﻿import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { inventoryApi } from '@/services/api/inventory.api'
 import type {
@@ -29,18 +29,11 @@ export const useSortiesStore = defineStore('sorties', () => {
     try {
       // Récupérer les sorties (type "out") et les transferts (type "transfer") en un seul appel
       // L'API backend accepte plusieurs movement_types via BaseInFilter (movement_type__in)
-      console.log('[SORTIES] Chargement avec filters:', { ...filters, movement_type: 'out,transfer', page_size, page })
-      console.log('[SORTIES] Date filters:', { date_from: filters?.date_from, date_to: filters?.date_to })
-
       const response = await inventoryApi.getMovements({
         ...filters,
         movement_type: 'out,transfer',
         page_size
       }, page)
-
-      console.log('[SORTIES] Réponse reçue:', response)
-      console.log('[SORTIES] Nombre de mouvements:', response.results.length)
-      console.log('[SORTIES] Types de mouvements:', response.results.map(m => ({ type: m.movement_type, product: m.product_name, date: m.date })))
 
       sorties.value = response.results
       totalCount.value = response.count
@@ -60,23 +53,14 @@ export const useSortiesStore = defineStore('sorties', () => {
           // Calculer les totaux globaux
           totalQuantity.value = statsResponse.results.reduce((sum, sortie) => sum + Number(sortie.quantity), 0)
           totalAmount.value = statsResponse.results.reduce((sum, sortie) => sum + Number(sortie.invoice_amount || sortie.total_value || 0), 0)
-
-          console.log('[SORTIES] Statistiques globales calculées:', {
-            totalCount: statsResponse.count,
-            totalQuantity: totalQuantity.value,
-            totalAmount: totalAmount.value
-          })
         } catch (statsError) {
-          console.error('[SORTIES] Erreur calcul statistiques:', statsError)
           // Utiliser les valeurs de la page courante si le calcul échoue
           totalQuantity.value = response.results.reduce((sum, sortie) => sum + Number(sortie.quantity), 0)
           totalAmount.value = response.results.reduce((sum, sortie) => sum + Number(sortie.invoice_amount || sortie.total_value || 0), 0)
         }
       }
     } catch (e: any) {
-      console.error('[SORTIES] Erreur:', e)
       error.value = 'Erreur lors du chargement des sorties de stock'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -92,7 +76,6 @@ export const useSortiesStore = defineStore('sorties', () => {
       totalCount.value--
     } catch (e: any) {
       error.value = 'Erreur lors de la suppression de la sortie'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -118,7 +101,6 @@ export const useSortiesStore = defineStore('sorties', () => {
       window.URL.revokeObjectURL(url)
     } catch (e: any) {
       error.value = 'Erreur lors de l\'export Excel'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -144,7 +126,6 @@ export const useSortiesStore = defineStore('sorties', () => {
       window.URL.revokeObjectURL(url)
     } catch (e: any) {
       error.value = 'Erreur lors de l\'export PDF'
-      console.error(e)
       throw e
     } finally {
       loading.value = false

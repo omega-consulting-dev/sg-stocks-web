@@ -75,7 +75,6 @@ export const useLoansStore = defineStore('loans', () => {
       };
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors du chargement des emprunts';
-      console.error('Fetch loans error:', err);
     } finally {
       isLoading.value = false;
     }
@@ -93,7 +92,6 @@ export const useLoansStore = defineStore('loans', () => {
       return currentLoan.value;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors du chargement de l\'emprunt';
-      console.error('Fetch loan error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -113,7 +111,6 @@ export const useLoansStore = defineStore('loans', () => {
       return newLoan;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de la création de l\'emprunt';
-      console.error('Create loan error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -136,7 +133,6 @@ export const useLoansStore = defineStore('loans', () => {
       return updatedLoan;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de la mise à jour de l\'emprunt';
-      console.error('Update loan error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -155,7 +151,6 @@ export const useLoansStore = defineStore('loans', () => {
       loans.value = loans.value.filter(loan => loan.id !== id);
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors de la suppression de l\'emprunt';
-      console.error('Delete loan error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -198,16 +193,32 @@ export const useLoansStore = defineStore('loans', () => {
     try {
       const blob = await loansService.exportToExcel(filters.value);
 
+      if (!blob || blob.size === 0) {
+        throw new Error('Le fichier exporté est vide');
+      }
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `emprunts_${new Date().toISOString().split('T')[0]}.xlsx`;
-      link.click();
-      window.URL.revokeObjectURL(url);
+      link.style.display = 'none';
+
+      // Ajouter au DOM pour compatibilité navigateur
+      document.body.appendChild(link);
+
+      // Forcer le téléchargement
+      setTimeout(() => {
+        link.click();
+
+        // Nettoyer après un délai
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+      }, 100);
     } catch (err: any) {
-      error.value = err.response?.data?.detail || 'Erreur lors de l\'export';
-      console.error('Export error:', err);
+      error.value = err.response?.data?.detail || err.message || 'Erreur lors de l\'export';
       throw err;
     } finally {
       isLoading.value = false;
@@ -225,7 +236,6 @@ export const useLoansStore = defineStore('loans', () => {
       payments.value = await loansService.getPayments(loanId);
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors du chargement des paiements';
-      console.error('Fetch payments error:', err);
     } finally {
       isLoading.value = false;
     }

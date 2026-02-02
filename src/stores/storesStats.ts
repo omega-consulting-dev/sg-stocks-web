@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Stores Statistics Store (Pinia)
  * Gère les statistiques de vente et dépenses par point de vente
  */
@@ -84,7 +84,6 @@ export const useStoresStatsStore = defineStore('storesStats', () => {
       expenses.value = expensesData;
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Erreur lors du chargement des données';
-      console.error('Fetch stores stats error:', err);
     } finally {
       isLoading.value = false;
     }

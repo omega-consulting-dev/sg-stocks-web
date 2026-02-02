@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog :open="props.open" @update:open="emit('update:open', $event)">
     <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
@@ -299,9 +299,9 @@ async function handleSubmit() {
     emit('success')
     resetForm()
   } catch (error: unknown) {
-    console.error('Erreur lors de l\'enregistrement:', error)
-    const err = error as { response?: { data?: { message?: string } } }
-    alert(err.response?.data?.message || 'Une erreur est survenue')
+    const err = error as { response?: { data?: { detail?: string; message?: string } } }
+    const errorMessage = err.response?.data?.detail || err.response?.data?.message || 'Une erreur est survenue'
+    alert(errorMessage)
   } finally {
     loading.value = false
   }

@@ -80,9 +80,6 @@ const loadInvoices = async () => {
     const response = await InvoiceServices.getInvoices(params)
     invoices.value = response.data.results
 
-    console.log('Factures chargées:', invoices.value.length, 'factures')
-    console.log('Paramètres de recherche:', params)
-
     toast({
       title: 'Factures chargées',
       description: `${invoices.value.length} facture(s) trouvée(s)`,

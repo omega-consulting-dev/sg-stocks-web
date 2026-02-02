@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Composable pour gérer l'assignation automatique de magasin
  * selon le rôle de l'utilisateur (admin vs magasinier/caissier)
  */
@@ -10,19 +10,11 @@ export function useStoreAssignment() {
   const userStore = useUserStore()
 
   // Debug: Afficher les valeurs du store
-  console.log('🏪 useStoreAssignment - État actuel:', {
-    user: userStore.user,
-    defaultStore: userStore.defaultStore,
-    isStoreRestricted: userStore.isStoreRestricted,
-    hasAssignedStores: userStore.hasAssignedStores
-  })
-
   /**
    * Vérifie si l'utilisateur a un magasin par défaut assigné
    */
   const hasDefaultStore = computed(() => {
     const result = userStore.defaultStore !== null
-    console.log('🏪 hasDefaultStore:', result, userStore.defaultStore)
     return result
   })
 

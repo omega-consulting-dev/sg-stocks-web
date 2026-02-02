@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { CustomerDebt, CustomerPayment } from '@/stores/customerDebts'
 import { useCustomerDebtsStore } from '@/stores/customerDebts'
@@ -31,7 +31,6 @@ const loadPayments = async () => {
   try {
     payments.value = await store.fetchCustomerPayments(props.customer.id)
   } catch (error) {
-    console.error('Erreur chargement historique:', error)
   } finally {
     loading.value = false
   }

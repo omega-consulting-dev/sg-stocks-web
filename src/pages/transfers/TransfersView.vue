@@ -330,7 +330,6 @@ onMounted(async () => {
     await loadTransfers()
     await transfersStore.fetchStats()
   } catch (error) {
-    console.error('Error loading transfers:', error)
   }
 })
 
@@ -396,7 +395,6 @@ const handleExportExcel = async () => {
 
     await transfersStore.exportExcel(filterData as TransferFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export Excel:', error)
     alert('Erreur lors de l\'export Excel')
   }
 }

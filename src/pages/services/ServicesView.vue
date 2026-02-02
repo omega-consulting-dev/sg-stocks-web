@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useServicesStore, type Service } from '@/stores/services'
 import { useServiceFamiliesStore } from '@/stores/serviceFamilies'
@@ -85,11 +85,9 @@ const handleImport = () => {
     if (file) {
       try {
         const result = await store.importExcel(file)
-        console.log('Import réussi:', result)
         successMessage.value = `Import terminé: ${result.created} créés, ${result.updated} mis à jour`
         isSuccessDialogOpen.value = true
       } catch (error) {
-        console.error("Erreur lors de l'import:", error)
         successMessage.value = "Erreur lors de l'import du fichier"
         isSuccessDialogOpen.value = true
       }
@@ -109,7 +107,6 @@ const handleExportPdf = async () => {
     successMessage.value = 'Export PDF réussi !'
     isSuccessDialogOpen.value = true
   } catch (error) {
-    console.error("Erreur lors de l'export PDF:", error)
     successMessage.value = "Erreur lors de l'export PDF"
     isSuccessDialogOpen.value = true
   }
@@ -126,7 +123,6 @@ const handleExportExcel = async () => {
     successMessage.value = 'Export Excel réussi !'
     isSuccessDialogOpen.value = true
   } catch (error) {
-    console.error("Erreur lors de l'export Excel:", error)
     successMessage.value = "Erreur lors de l'export Excel"
     isSuccessDialogOpen.value = true
   }
@@ -138,7 +134,6 @@ const handleEdit = (service: Service) => {
     toast.error(getPermissionErrorMessage('can_manage_services'), 'Accès refusé')
     return
   }
-  console.log('ServicesView handleEdit appelé avec:', service)
   selectedService.value = service
   isFormOpen.value = true
 }
@@ -165,7 +160,6 @@ const confirmDelete = async () => {
     successMessage.value = 'Service supprimé avec succès !'
     isSuccessDialogOpen.value = true
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
     successMessage.value = 'Erreur lors de la suppression du service'
     isSuccessDialogOpen.value = true
   }
@@ -198,7 +192,6 @@ const handleFormSubmit = async (data: CreateServiceDto) => {
       isSuccessDialogOpen.value = true
     }
   } catch (error) {
-    console.error("Erreur lors de l'enregistrement:", error)
     successMessage.value = 'Erreur lors de l\'enregistrement du service'
     isSuccessDialogOpen.value = true
   }

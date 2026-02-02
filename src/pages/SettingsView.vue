@@ -621,12 +621,10 @@ const router = useRouter()
 
 // Handle menu click - navigate if route exists, otherwise change section
 function handleMenuClick(item: { id: string; route?: string }) {
-  console.log('Menu clicked:', item)
   if (item.route) {
     router.push(item.route)
   } else {
     activeSection.value = item.id
-    console.log('Active section changed to:', activeSection.value)
   }
 }
 
@@ -642,7 +640,6 @@ async function loadTenantInfo() {
       }
     }
   } catch (error) {
-    console.error('Erreur lors du chargement des informations:', error)
   }
 }
 
@@ -657,7 +654,6 @@ async function updateTenantInfo() {
     await tenantStore.updateTenant(tenantSettings.value)
     alert(t('settings.company.updateSuccess'))
   } catch (error: unknown) {
-    console.error('Erreur lors de la mise à jour:', error)
     const err = error as { response?: { data?: { message?: string } } }
     alert(err.response?.data?.message || t('settings.company.updateError'))
   } finally {
@@ -687,26 +683,20 @@ onMounted(async () => {
 })
 
 async function loadLanguages() {
-  console.log('Loading languages...')
   try {
     const response = await Axios.get('/main/languages/')
-    console.log('Languages loaded:', response.data)
     // La langue actuelle est déjà gérée par i18n
   } catch (error) {
-    console.error('Erreur lors du chargement des langues:', error)
   }
 }
 
 async function changeLanguage(languageCode: string) {
-  console.log('Changing language to:', languageCode)
   if (languageCode === currentLanguage.value) {
-    console.log('Same language, skipping')
     return
   }
 
   changingLanguage.value = true
   try {
-    console.log('Sending request to change language...')
     const success = await changeAppLanguage(languageCode)
 
     if (success) {
@@ -719,7 +709,6 @@ async function changeLanguage(languageCode: string) {
       alert(t('settings.language.changeError'))
     }
   } catch (error: unknown) {
-    console.error('Erreur lors du changement de langue:', error)
     const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
     alert(`${t('settings.language.changeError')}: ${errorMessage}`)
   } finally {

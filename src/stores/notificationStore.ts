@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from '@/services/axios.service'
 import { useWebSocket } from '@/composables/useWebSocket'
@@ -55,7 +55,6 @@ export const useNotificationStore = defineStore('notifications', () => {
       await fetchUnreadCount()
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement des notifications'
-      console.error('Error fetching notifications:', err)
     } finally {
       isLoading.value = false
     }
@@ -68,7 +67,6 @@ export const useNotificationStore = defineStore('notifications', () => {
     } catch (err: any) {
       // Ignorer silencieusement l'erreur 404 (endpoint non disponible)
       if (err.response?.status !== 404) {
-        console.error('Error fetching unread count:', err)
       }
     }
   }
@@ -85,7 +83,6 @@ export const useNotificationStore = defineStore('notifications', () => {
       }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du marquage'
-      console.error('Error marking as read:', err)
     }
   }
 
@@ -106,7 +103,6 @@ export const useNotificationStore = defineStore('notifications', () => {
       await fetchUnreadCount()
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du marquage multiple'
-      console.error('Error marking multiple as read:', err)
     }
   }
 
@@ -126,7 +122,6 @@ export const useNotificationStore = defineStore('notifications', () => {
       unreadCount.value = 0
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du marquage de toutes'
-      console.error('Error marking all as read:', err)
     }
   }
 
@@ -136,7 +131,6 @@ export const useNotificationStore = defineStore('notifications', () => {
       notifications.value = notifications.value.filter(n => !n.is_read)
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la suppression'
-      console.error('Error deleting read notifications:', err)
     }
   }
 
@@ -155,7 +149,6 @@ export const useNotificationStore = defineStore('notifications', () => {
         })
       }
     } catch (err: any) {
-      console.error('Error fetching stock rupture notifications:', err)
     }
   }
 

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import {
   User,
@@ -174,13 +174,7 @@ const handleSubmit = async () => {
     if (formData.value.invoice_id) {
       paymentData.invoice_id = formData.value.invoice_id
     }
-
-    console.log('Creating payment for customer:', selectedCustomer.value.id, paymentData)
-
     const response = await store.createPayment(selectedCustomer.value.id, paymentData)
-
-    console.log('Payment response:', response)
-
     // Préparer les détails pour le dialog de succès
     successDetails.value = {
       amount: formData.value.montant,
@@ -198,8 +192,6 @@ const handleSubmit = async () => {
     emit('success')
 
   } catch (error: any) {
-    console.error('Erreur lors du règlement:', error)
-
     // Extraire le message d'erreur détaillé
     let errorMsg = 'Une erreur est survenue lors de l\'enregistrement du règlement'
 

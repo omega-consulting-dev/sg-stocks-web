@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { transfersApi } from '@/services/api/transfers.api'
 import { useProductsStore } from './products'
@@ -44,7 +44,6 @@ export const useTransfersStore = defineStore('transfers', () => {
       currentPage.value = page
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement des transferts'
-      console.error('Error fetching transfers:', err)
     } finally {
       loading.value = false
     }
@@ -62,7 +61,6 @@ export const useTransfersStore = defineStore('transfers', () => {
       return currentTransfer.value
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement du transfert'
-      console.error('Error fetching transfer:', err)
       throw err
     } finally {
       loading.value = false
@@ -86,7 +84,6 @@ export const useTransfersStore = defineStore('transfers', () => {
       return newTransfer
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la création du transfert'
-      console.error('Error creating transfer:', err)
       throw err
     } finally {
       loading.value = false
@@ -112,7 +109,6 @@ export const useTransfersStore = defineStore('transfers', () => {
       }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la mise à jour du transfert'
-      console.error('Error updating transfer:', err)
       throw err
     } finally {
       loading.value = false
@@ -136,7 +132,6 @@ export const useTransfersStore = defineStore('transfers', () => {
       }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la suppression du transfert'
-      console.error('Error deleting transfer:', err)
       throw err
     } finally {
       loading.value = false
@@ -165,7 +160,6 @@ export const useTransfersStore = defineStore('transfers', () => {
       }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la validation du transfert'
-      console.error('Error validating transfer:', err)
       throw err
     } finally {
       loading.value = false
@@ -194,7 +188,6 @@ export const useTransfersStore = defineStore('transfers', () => {
       }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la réception du transfert'
-      console.error('Error receiving transfer:', err)
       throw err
     } finally {
       loading.value = false
@@ -220,7 +213,6 @@ export const useTransfersStore = defineStore('transfers', () => {
       }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de l\'annulation du transfert'
-      console.error('Error cancelling transfer:', err)
       throw err
     } finally {
       loading.value = false
@@ -247,7 +239,6 @@ export const useTransfersStore = defineStore('transfers', () => {
         cancelled
       }
     } catch (err) {
-      console.error('Error calculating transfer stats:', err)
     }
   }
 
@@ -291,7 +282,6 @@ export const useTransfersStore = defineStore('transfers', () => {
       document.body.removeChild(a)
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de l\'export Excel'
-      console.error('Error exporting Excel:', err)
       throw err
     } finally {
       loading.value = false

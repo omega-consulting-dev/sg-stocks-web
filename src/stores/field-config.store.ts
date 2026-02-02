@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Field Configuration Store
  */
 
@@ -23,7 +23,6 @@ export const useFieldConfigStore = defineStore('fieldConfig', () => {
       configurations.value = Array.isArray(response) ? response : (response.results || [])
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement des configurations'
-      console.error('Error fetching configurations:', err)
       throw err
     } finally {
       loading.value = false
@@ -41,7 +40,6 @@ export const useFieldConfigStore = defineStore('fieldConfig', () => {
       return configs
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement des configurations'
-      console.error('Error fetching configurations by form:', err)
       throw err
     } finally {
       loading.value = false
@@ -60,7 +58,6 @@ export const useFieldConfigStore = defineStore('fieldConfig', () => {
       return result
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de l\'initialisation'
-      console.error('Error initializing configurations:', err)
       throw err
     } finally {
       loading.value = false
@@ -75,11 +72,11 @@ export const useFieldConfigStore = defineStore('fieldConfig', () => {
     error.value = null
     try {
       const result = await fieldConfigApi.bulkUpdate({ configurations: updates })
-      await fetchConfigurations()
+      // DON'T fetch here - let the caller decide when to refresh
+      // await fetchConfigurations()
       return result
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la mise à jour'
-      console.error('Error bulk updating configurations:', err)
       throw err
     } finally {
       loading.value = false
@@ -101,7 +98,6 @@ export const useFieldConfigStore = defineStore('fieldConfig', () => {
       return updated
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la mise à jour'
-      console.error('Error updating configuration:', err)
       throw err
     } finally {
       loading.value = false

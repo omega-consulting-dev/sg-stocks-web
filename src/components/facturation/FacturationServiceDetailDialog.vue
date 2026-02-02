@@ -253,6 +253,49 @@ const getStatusBadgeClass = (status: string) => {
           <h4 class="text-[14px] font-semibold text-[#292D32] font-inter mb-2">Notes:</h4>
           <p class="text-[13px] text-[#85878D] font-inter whitespace-pre-line">{{ facture.notes }}</p>
         </div>
+
+        <!-- Historique des paiements -->
+        <div v-if="facture.payments && facture.payments.length > 0" class="bg-white rounded-[20px] shadow-[0px_10px_60px_0px_rgba(226,236,249,0.5)] p-6 border border-[#EEEEEE]">
+          <h3 class="text-[18px] font-bold text-[#292D32] font-inter mb-4">Historique des paiements</h3>
+
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-[#0769CF] to-[#003FD8] text-white">
+                <tr>
+                  <th class="px-4 py-3 text-left text-sm font-semibold font-inter rounded-tl-lg">Date</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold font-inter">Mode de paiement</th>
+                  <th class="px-4 py-3 text-right text-sm font-semibold font-inter rounded-tr-lg">Montant</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="payment in facture.payments"
+                  :key="payment.id"
+                  class="border-b border-[#EEEEEE] hover:bg-[#F5F6FA] transition-colors"
+                >
+                  <td class="px-4 py-3 text-sm text-[#292D32] font-inter">{{ formatDate(payment.payment_date) }}</td>
+                  <td class="px-4 py-3 text-sm text-[#85878D] font-inter">
+                    <span v-if="payment.payment_method === 'cash'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Espèces
+                    </span>
+                    <span v-else-if="payment.payment_method === 'card'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Carte
+                    </span>
+                    <span v-else-if="payment.payment_method === 'transfer'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      Virement
+                    </span>
+                    <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      {{ payment.payment_method }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-right text-sm font-semibold text-[#0769CF] font-inter">
+                    {{ formatMoney(payment.amount) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- Footer Actions -->

@@ -270,6 +270,12 @@ const router = createRouter({
       meta: { requiresAuth: true, permissions: ['can_manage_cashbox'] }
     },
     {
+      path: '/mobile-money',
+      name: 'mobile-money',
+      component: () => import('@/pages/mobile-money/MobileMoneyView.vue'),
+      meta: { requiresAuth: true, permissions: ['can_manage_cashbox'] }
+    },
+    {
       path: '/reporting',
       name: 'reporting',
       component: () => import('@/pages/reporting/ReportingView.vue'),
@@ -317,7 +323,6 @@ router.beforeEach(async (to, from, next) => {
       next()
     } else {
       // Rediriger vers le dashboard avec un message d'erreur
-      console.warn('⚠️ Accès refusé: droits admin requis')
       next({ name: 'home' })
     }
   }

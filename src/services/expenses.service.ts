@@ -44,12 +44,10 @@ export const expensesService = {
    * Create a new expense
    */
   async createExpense(data: CreateExpenseRequest): Promise<Expense> {
-    console.log('Service received data:', data);
     // Toujours fournir un expense_number non vide (fallback horodaté si absent)
     const expenseNumber = data.expense_number && data.expense_number.trim() !== ''
       ? data.expense_number.trim()
       : `EXP-${Date.now()}`;
-    console.log('expense_number value:', expenseNumber);
 
     const formData = new FormData();
     formData.append('expense_number', expenseNumber);

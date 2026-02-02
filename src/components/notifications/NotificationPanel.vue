@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useNotificationStore, type Notification } from '@/stores/notificationStore'
 import { formatDistanceToNow } from 'date-fns'
@@ -85,7 +85,6 @@ const handleNotificationClick = async (notification: Notification) => {
   // Rediriger vers l'action si URL fournie
   if (notification.action_url) {
     // TODO: Implémenter la navigation
-    console.log('Navigate to:', notification.action_url)
   }
 }
 

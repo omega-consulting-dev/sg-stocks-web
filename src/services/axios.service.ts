@@ -121,7 +121,6 @@ Axios.interceptors.response.use(
 
         // Gestion des erreurs de réseau (pas de `err.response`)
         if (!err.response) {
-            console.error('Erreur réseau:', err.message)
             return Promise.reject(err)
         }
 
@@ -170,7 +169,6 @@ Axios.interceptors.response.use(
 
                 return Axios(originalRequest)
             } catch (refreshError) {
-                console.error('Erreur lors du refresh du token:', refreshError)
 
                 // Nettoyer la queue en cas d'erreur
                 processQueue(refreshError as AxiosError, null)
@@ -192,7 +190,6 @@ Axios.interceptors.response.use(
 
         switch (status) {
             case 403:
-                console.error('Accès interdit:', errorMessage)
                 // Afficher un toast pour les erreurs de permission
                 const toast = (await import('@/composables/useToast')).useToast()
                 toast.error(
@@ -201,13 +198,10 @@ Axios.interceptors.response.use(
                 )
                 break
             case 404:
-                console.error('Ressource non trouvée')
                 break
             case 500:
-                console.error('Erreur serveur interne')
                 break
             default:
-                console.error('Erreur API:', status, errorMessage)
         }
 
         return Promise.reject(err)

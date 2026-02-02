@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6">
     <!-- Breadcrumb -->
     <Breadcrumb>
@@ -30,6 +30,10 @@
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent class="rounded-lg" align="end">
+            <DropdownMenuItem @select="exportToPdf" class="gap-2 cursor-pointer">
+              <Sheet class="h-4 w-4 text-red-600" />
+              <span>Exporter en PDF</span>
+            </DropdownMenuItem>
             <DropdownMenuItem @select="exportToExcel" class="gap-2 cursor-pointer">
               <Sheet class="h-4 w-4 text-green-600" />
               <span>Exporter en Excel</span>
@@ -176,7 +180,7 @@
             />
           </div>
         </div>
-        
+
         <!-- Clear filters button (nouvelle ligne) -->
         <div class="mt-4">
           <Button
@@ -190,7 +194,6 @@
         </div>
       </CardContent>
     </Card>
-
 
 
     <!-- Loading indicator -->
@@ -272,7 +275,7 @@
                         @select="openPaymentDialog(loan)"
                       >
                         <CreditCard class="h-4 w-4" />
-                        Effectuer un paiement
+                        Effectuer un remboursement
                       </DropdownMenuItem>
 
                       <DropdownMenuItem @select="openHistoryDialog(loan)">
@@ -390,6 +393,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Plus, Upload, Sheet, RotateCcw, MoreVertical, Pencil, Check, X, CreditCard, Trash2, History } from 'lucide-vue-next';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const loansStore = useLoansStore();
 const fieldConfigStore = useFieldConfigStore();
@@ -470,7 +475,6 @@ async function deleteLoan(id: number) {
     try {
       await loansStore.deleteLoan(id);
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
     }
   }
 }
@@ -480,7 +484,7 @@ function applyFilters() {
     loan_type: selectedType.value === 'all' ? undefined : selectedType.value as any,
     status: selectedStatus.value === 'all' ? undefined : selectedStatus.value as any,
   };
-  
+
   // N'ajouter les dates que si elles sont renseignées
   if (dateFrom.value && dateFrom.value.trim() !== '') {
     filterData.dateFrom = dateFrom.value;
@@ -488,7 +492,7 @@ function applyFilters() {
   if (dateTo.value && dateTo.value.trim() !== '') {
     filterData.dateTo = dateTo.value;
   }
-  
+
   loansStore.fetchLoans(1, filterData);
 }
 
@@ -505,7 +509,152 @@ async function exportToExcel() {
   try {
     await loansStore.exportToExcel();
   } catch (error) {
-    console.error('Erreur lors de l\'export:', error);
+  }
+}
+
+async function exportToPdf() {
+  try {
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let yPos = 40;
+
+    // === EN-TÊTE PROFESSIONNEL ===
+    // Titre principal
+    doc.setFontSize(22);
+    doc.setTextColor(59, 53, 141);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RAPPORT DES EMPRUNTS', pageWidth / 2, yPos, { align: 'center' });
+
+    yPos += 25;
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`, pageWidth / 2, yPos, { align: 'center' });
+
+    yPos += 40;
+
+    // === TABLEAU DES EMPRUNTS ===
+    const columns = [
+      { header: 'N° Emprunt', dataKey: 'loan_number' },
+      { header: 'Type', dataKey: 'loan_type' },
+      { header: 'Prêteur', dataKey: 'lender' },
+      { header: 'Date Début', dataKey: 'start_date' },
+      { header: 'Date Fin', dataKey: 'end_date' },
+      { header: 'Montant Total', dataKey: 'total_amount' },
+      { header: 'Montant Payé', dataKey: 'paid_amount' },
+      { header: 'Solde Restant', dataKey: 'balance' }
+    ];
+
+    // Helper pour formater les montants pour PDF (sans entités HTML)
+    const formatAmountForPdf = (value: number | string): string => {
+      const num = typeof value === 'string' ? parseFloat(value) : Number(value);
+      if (isNaN(num) || num === 0) return '0 FCFA';
+
+      // Formater manuellement avec des espaces comme séparateurs
+      const rounded = Math.round(num);
+      const parts = rounded.toString().split('.');
+      const integerPart = parts[0];
+
+      // Ajouter des espaces tous les 3 chiffres
+      const formatted = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+      return formatted + ' FCFA';
+    };
+
+    const rows = loansStore.loans.map(loan => ({
+      loan_number: loan.loan_number || '',
+      loan_type: loan.loan_type_display || '',
+      lender: loan.lender_name || '',
+      start_date: loan.start_date ? formatDate(loan.start_date) : '',
+      end_date: loan.end_date ? formatDate(loan.end_date) : '',
+      total_amount: formatAmountForPdf(loan.total_amount),
+      paid_amount: formatAmountForPdf(loan.paid_amount),
+      balance: formatAmountForPdf(loan.balance_due)
+    }));
+
+    (autoTable as any)(doc, {
+      startY: yPos,
+      columns: columns,
+      body: rows,
+      theme: 'grid',
+      margin: { left: 30, right: 30 },
+      tableWidth: 'auto',
+      styles: {
+        fontSize: 8,
+        cellPadding: 5,
+        lineColor: [220, 220, 220],
+        lineWidth: 0.5,
+        textColor: [50, 50, 50],
+        overflow: 'linebreak',
+        cellWidth: 'wrap'
+      },
+      headStyles: {
+        fillColor: [59, 53, 141],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9,
+        halign: 'center'
+      },
+      columnStyles: {
+        loan_number: { cellWidth: 60, fontStyle: 'bold' },
+        loan_type: { cellWidth: 55 },
+        lender: { cellWidth: 70 },
+        start_date: { cellWidth: 55, halign: 'center' },
+        end_date: { cellWidth: 55, halign: 'center' },
+        total_amount: { cellWidth: 75, halign: 'right', fontStyle: 'bold' },
+        paid_amount: { cellWidth: 75, halign: 'right' },
+        balance: { cellWidth: 75, halign: 'right', textColor: [230, 126, 34], fontStyle: 'bold' }
+      },
+      alternateRowStyles: {
+        fillColor: [249, 250, 251]
+      },
+      didDrawPage: function(data: any) {
+        // === PIED DE PAGE ===
+        const pageNumber = (doc as any).internal.getCurrentPageInfo().pageNumber;
+        const totalPages = (doc as any).internal.getNumberOfPages();
+
+        // Ligne de séparation
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.line(40, pageHeight - 30, pageWidth - 40, pageHeight - 30);
+
+        // Numéro de page
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.setFont('helvetica', 'normal');
+        doc.text(
+          `Page ${pageNumber} / ${totalPages}`,
+          pageWidth / 2,
+          pageHeight - 15,
+          { align: 'center' }
+        );
+
+        // Informations supplémentaires
+        doc.text(
+          'SG Stock - Gestion des Emprunts',
+          40,
+          pageHeight - 15
+        );
+
+        doc.text(
+          `${loansStore.loans.length} emprunt(s)`,
+          pageWidth - 40,
+          pageHeight - 15,
+          { align: 'right' }
+        );
+      }
+    });
+
+    const filename = `emprunts_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
+  } catch (err) {
   }
 }
 

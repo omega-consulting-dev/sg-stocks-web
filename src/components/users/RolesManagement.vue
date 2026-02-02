@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-4 md:space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -139,6 +139,12 @@
                 Banque
               </span>
               <span
+                v-if="role.can_manage_mobile_money"
+                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+              >
+                MTN/Orange Money
+              </span>
+              <span
                 v-if="role.can_manage_loans"
                 class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400"
               >
@@ -268,6 +274,7 @@
               />
               <PermissionItem label="Gérer la caisse" :granted="selectedRole.can_manage_cashbox" />
               <PermissionItem label="Gérer la banque" :granted="selectedRole.can_manage_bank" />
+              <PermissionItem label="Gérer MTN/Orange Money" :granted="selectedRole.can_manage_mobile_money" />
               <PermissionItem label="Gérer les emprunts" :granted="selectedRole.can_manage_loans" />
               <PermissionItem label="Gérer les dépenses" :granted="selectedRole.can_manage_expenses" />
               <PermissionItem label="Voir les analytics" :granted="selectedRole.can_view_analytics" />
@@ -353,7 +360,6 @@ const handleDelete = async () => {
     // Rafraîchir la liste des rôles
     await usersStore.fetchRoles()
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
   }
 }
 

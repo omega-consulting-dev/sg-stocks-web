@@ -198,7 +198,6 @@ const viewBonDetails = async (bon: BonTransfert) => {
       selectedBon.value = bon
     }
   } catch (error) {
-    console.error('Erreur chargement détails:', error)
     selectedBon.value = bon
   }
   isBonDetailOpen.value = true
@@ -239,7 +238,6 @@ const confirmDeleteBon = async () => {
     // Recharger la liste
     await store.fetchTransfers({}, currentPage.value)
   } catch (error) {
-    console.error('Erreur lors de la suppression du bon:', error)
     alert(store.error || 'Erreur lors de la suppression du bon')
   }
 }
@@ -276,7 +274,6 @@ const handleCancelTransfer = async (bon: BonTransfert) => {
     // Message de succès
     alert(`✅ Transfert annulé avec succès !\n\nLes stocks ont été restaurés correctement.`)
   } catch (error: any) {
-    console.error('Erreur lors de l\'annulation:', error)
 
     // Afficher l'erreur détaillée si disponible
     if (error.response?.data?.detail) {
@@ -300,7 +297,6 @@ const exportBonToPdf = async () => {
       const response = await CompanySettingsService.getSettings()
       companyInfo = response.data
     } catch (error) {
-      console.warn('Impossible de récupérer les informations de l\'entreprise:', error)
     }
 
     const doc = new jsPDF()
@@ -409,7 +405,6 @@ const exportBonToPdf = async () => {
 
     doc.save(`bon-transfert-${bon.transfer_number}.pdf`)
   } catch (error) {
-    console.error('Erreur export PDF:', error)
     alert('Erreur lors de l\'export PDF')
   }
 }
@@ -453,8 +448,8 @@ const getAvailableStock = (productId: number): number => {
 
 // Filtrer les magasins de destination (exclure le magasin source)
 const availableDestinationStores = computed(() => {
-  if (!magasinSource.value) return storesStore.stores
-  return storesStore.stores.filter(store => store.id !== parseInt(magasinSource.value))
+  if (!magasinSource.value) return storesStore.activeStores
+  return storesStore.activeStores.filter(store => store.id !== parseInt(magasinSource.value))
 })
 
 // Charger les stocks du magasin source pour tous les produits
@@ -478,9 +473,7 @@ const loadSourceStoreStocks = async () => {
     })
 
     sourceStoreStocks.value = stocksMap
-    console.log('Stocks du magasin source chargés:', stocksMap)
   } catch (error) {
-    console.error('Erreur chargement stocks magasin source:', error)
     sourceStoreStocks.value.clear()
   }
 }
@@ -524,8 +517,6 @@ const generateTransferNumber = async () => {
     // Récupérer TOUS les transferts pour calculer le bon numéro (sans pagination)
     await store.fetchTransfers({ page_size: 1000 }, 1)
 
-    console.log('Tous les transferts:', store.transfers)
-
     // Utiliser le format TR + ANNÉE + numéro séquentiel (ex: TR202600001)
     const currentYear = new Date().getFullYear()
     const yearPrefix = `TR${currentYear}`
@@ -537,12 +528,7 @@ const generateTransferNumber = async () => {
 
     const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0
     transferNumber.value = `${yearPrefix}${(maxNumber + 1).toString().padStart(4, '0')}`
-
-    console.log('Transferts existants:', existingNumbers)
-    console.log('Numéro max:', maxNumber)
-    console.log('Nouveau numéro:', transferNumber.value)
   } catch (error) {
-    console.error('Erreur génération numéro:', error)
     const currentYear = new Date().getFullYear()
     transferNumber.value = `TR${currentYear}${Date.now().toString().slice(-4)}`
   }
@@ -696,7 +682,6 @@ const validateTransferForm = (): boolean => {
 const handleSubmitTransfer = async () => {
   // Empêcher les double-clics
   if (isSubmittingTransfer.value) {
-    console.log('Soumission déjà en cours, action ignorée')
     return
   }
 
@@ -736,25 +721,16 @@ const handleSubmitTransfer = async () => {
 
     // Créer le transfert en draft
     const newTransfer = await store.createTransfer(transferData)
-    console.log('Transfert créé:', newTransfer)
-    console.log('newTransfer.id:', newTransfer?.id)
-    console.log('Type de newTransfer.id:', typeof newTransfer?.id)
 
     // Valider immédiatement le transfert (cela créera les StockMovement de sortie)
     if (newTransfer && newTransfer.id) {
-      console.log('Tentative de validation du transfert ID:', newTransfer.id)
       try {
         await store.validateTransfer(newTransfer.id)
-        console.log('Transfert validé avec succès')
 
         // Recevoir automatiquement le transfert (cela créera les StockMovement d'entrée)
-        console.log('Réception automatique du transfert ID:', newTransfer.id)
         await store.receiveTransfer(newTransfer.id)
-        console.log('Transfert reçu avec succès')
 
       } catch (validationError: any) {
-        console.error('ERREUR lors de la validation/réception:', validationError)
-        console.error('Détails de l\'erreur:', validationError.response?.data)
 
         // Afficher l'erreur à l'utilisateur
         const errorMsg = validationError.response?.data?.error ||
@@ -770,7 +746,6 @@ const handleSubmitTransfer = async () => {
         return
       }
     } else {
-      console.error('PROBLÈME: Le transfert créé n\'a pas d\'ID!', newTransfer)
       errorMessage.value = 'Transfert créé mais impossible de le valider (pas d\'ID)'
       setTimeout(() => errorMessage.value = '', 10000)
       isSubmittingTransfer.value = false
@@ -785,7 +760,6 @@ const handleSubmitTransfer = async () => {
     await store.fetchTransfers({}, currentPage.value)
 
   } catch (error: any) {
-    console.error('Erreur soumission:', error)
     errorMessage.value = error.message || 'Erreur lors de l\'enregistrement'
     setTimeout(() => errorMessage.value = '', 5000)
   } finally {
@@ -827,7 +801,7 @@ const clearTransferError = (field: keyof typeof transferErrors.value) => {
 onMounted(async () => {
   await store.fetchTransfers({}, 1)
   if (productsStore.products.length === 0) await productsStore.fetchProducts()
-  if (storesStore.stores.length === 0) await storesStore.fetchStores()
+  if (storesStore.stores.length === 0) await storesStore.fetchAllStoresForTransfers()
 })
 
 const getStatusBadgeClass = (status: string) => {

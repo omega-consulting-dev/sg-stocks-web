@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+﻿import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { productFamiliesApi } from '@/services/api/productFamilies.api'
 import type {
@@ -71,7 +71,6 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
       families.value = data
     } catch (e) {
       error.value = 'Erreur lors du chargement des familles de produits'
-      console.error(e)
     } finally {
       loading.value = false
     }
@@ -86,7 +85,6 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
       return newFamily
     } catch (e) {
       error.value = 'Erreur lors de l\'ajout de la famille'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -105,7 +103,6 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
       return updatedFamily
     } catch (e) {
       error.value = 'Erreur lors de la modification de la famille'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -124,7 +121,6 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
       return true
     } catch (e) {
       error.value = 'Erreur lors de la suppression de la famille'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -148,7 +144,6 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
       window.URL.revokeObjectURL(url)
     } catch (e) {
       error.value = 'Erreur lors de l\'export Excel'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -168,7 +163,6 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
       window.URL.revokeObjectURL(url)
     } catch (e) {
       error.value = 'Erreur lors de l\'export PDF'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -185,7 +179,6 @@ export const useProductFamiliesStore = defineStore('productFamilies', () => {
       return result
     } catch (e) {
       error.value = 'Erreur lors de l\'import Excel'
-      console.error(e)
       throw e
     } finally {
       loading.value = false

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { User, Phone, Mail, MapPin, Building2, Star, CreditCard, FileText } from 'lucide-vue-next'
 import type { Supplier, SupplierDetail } from '@/stores/fournisseurs'
@@ -33,7 +33,6 @@ watch(() => props.open, async (newValue) => {
     try {
       fournisseurDetail.value = await store.fetchFournisseurById(props.fournisseur.id)
     } catch (e) {
-      console.error('Erreur lors du chargement des détails:', e)
     } finally {
       loadingDetail.value = false
     }

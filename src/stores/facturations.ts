@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+﻿import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { InvoiceServices } from '@/services'
 import type { Invoice } from '@/types/invoice.types'
@@ -99,7 +99,6 @@ export const useFacturationsStore = defineStore('facturations', () => {
       facturations.value = invoices.value.map(mapInvoiceToFacturation)
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Une erreur est survenue'
-      console.error('Erreur lors du chargement des facturations:', e)
     } finally {
       loading.value = false
     }

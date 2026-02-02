@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import {
   Dialog,
@@ -44,9 +44,11 @@ const formData = ref<CreateStockAdjustmentData>({
   store: 0,
   product: 0,
   quantity: 0,
-  movement_type: 'adjustment_in',
+  movement_type: 'adjustment',
   notes: ''
 })
+
+const adjustmentDirection = ref<'in' | 'out'>('in') // Direction de l'ajustement
 
 const isLoading = ref(false)
 const errors = ref<Record<string, string>>({})
@@ -77,10 +79,6 @@ const validateForm = (): boolean => {
     errors.value.quantity = 'La quantité doit être supérieure à 0'
   }
 
-  if (!formData.value.movement_type) {
-    errors.value.movement_type = 'Sélectionnez le type d\'ajustement'
-  }
-
   return Object.keys(errors.value).length === 0
 }
 
@@ -89,13 +87,18 @@ const handleSubmit = async () => {
 
   isLoading.value = true
   try {
-    await inventoryStore.createAdjustment(formData.value)
+    // Appliquer le signe de la quantité selon la direction
+    const adjustmentData = {
+      ...formData.value,
+      quantity: adjustmentDirection.value === 'in' ? formData.value.quantity : -formData.value.quantity
+    }
+
+    await inventoryStore.createAdjustment(adjustmentData)
 
     emit('saved')
     emit('update:open', false)
     resetForm()
   } catch (error: any) {
-    console.error('Error creating adjustment:', error)
     errors.value.submit = error.message || 'Erreur lors de la création de l\'ajustement'
   } finally {
     isLoading.value = false
@@ -107,9 +110,10 @@ const resetForm = () => {
     store: 0,
     product: 0,
     quantity: 0,
-    movement_type: 'adjustment_in',
+    movement_type: 'adjustment',
     notes: ''
   }
+  adjustmentDirection.value = 'in'
   errors.value = {}
 }
 
@@ -178,22 +182,19 @@ onMounted(async () => {
         <!-- Movement Type -->
         <div class="space-y-2">
           <Label for="movement_type">Type d'ajustement *</Label>
-          <SelectRoot v-model="formData.movement_type">
-            <SelectTrigger id="movement_type" :class="{ 'border-red-500': errors.movement_type }">
+          <SelectRoot v-model="adjustmentDirection">
+            <SelectTrigger id="movement_type">
               <SelectValue placeholder="Sélectionner..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="adjustment_in">
+              <SelectItem value="in">
                 Ajout de stock (+)
               </SelectItem>
-              <SelectItem value="adjustment_out">
+              <SelectItem value="out">
                 Retrait de stock (-)
               </SelectItem>
             </SelectContent>
           </SelectRoot>
-          <p v-if="errors.movement_type" class="text-sm text-red-500">
-            {{ errors.movement_type }}
-          </p>
         </div>
 
         <!-- Quantity -->

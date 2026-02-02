@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import type { CustomerDebt } from '@/stores/customerDebts'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -48,7 +48,6 @@ const loadDebts = async () => {
     // Filtrer uniquement les factures avec un solde dû
     debts.value = allInvoices.filter((inv: DebtInvoice) => inv.balance_due > 0)
   } catch (error) {
-    console.error('Erreur chargement dettes:', error)
   } finally {
     loading.value = false
   }

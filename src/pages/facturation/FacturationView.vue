@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useFacturationsStore } from '@/stores/facturations'
 import FacturationSearchBar from '@/components/facturation/FacturationSearchBar.vue'
@@ -85,22 +85,18 @@ function handleDateRangeChange(start: Date | undefined, end: Date | undefined) {
 }
 
 function handleExportPdf(id: number) {
-  console.log('Export PDF:', id)
   // TODO: Implement PDF export
 }
 
 function handleExportExcel(id: number) {
-  console.log('Export Excel:', id)
   // TODO: Implement Excel export for single invoice
 }
 
 function handleExportAll() {
-  console.log('Export all facturations')
   // TODO: Implement export all
 }
 
 function handleNew() {
-  console.log('New facturation')
   // TODO: Implement new facturation
 }
 </script>

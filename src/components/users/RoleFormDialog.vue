@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog :open="isOpen" @update:open="handleDialogChange">
     <DialogContent class="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0">
       <DialogHeader class="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
@@ -246,6 +246,16 @@
               @update="updatePermission"
             />
 
+            <!-- MTN/Orange Money -->
+            <PermissionCard
+              title="MTN/Orange Money"
+              icon="smartphone"
+              :permissions="[
+                { id: 'can_manage_mobile_money', label: 'Gérer MTN/Orange Money', checked: formData.can_manage_mobile_money }
+              ]"
+              @update="updatePermission"
+            />
+
             <!-- Emprunts -->
             <PermissionCard
               title="Emprunts"
@@ -397,6 +407,7 @@ const formData = reactive<{
   can_manage_suppliers: boolean
   can_manage_cashbox: boolean
   can_manage_bank: boolean
+  can_manage_mobile_money: boolean
   can_manage_loans: boolean
   can_manage_expenses: boolean
   can_view_analytics: boolean
@@ -420,6 +431,7 @@ const formData = reactive<{
   can_manage_suppliers: false,
   can_manage_cashbox: false,
   can_manage_bank: false,
+  can_manage_mobile_money: false,
   can_manage_loans: false,
   can_manage_expenses: false,
   can_view_analytics: false,
@@ -432,7 +444,6 @@ const loadRoleChoices = async () => {
     const response = await usersApi.getRoleChoices()
     roleChoices.value = response.data
   } catch (e) {
-    console.error('Erreur lors du chargement des choix de rôles:', e)
   }
 }
 
@@ -459,6 +470,7 @@ const resetForm = () => {
   formData.can_manage_suppliers = false
   formData.can_manage_cashbox = false
   formData.can_manage_bank = false
+  formData.can_manage_mobile_money = false
   formData.can_manage_loans = false
   formData.can_manage_expenses = false
   formData.can_view_analytics = false
@@ -469,7 +481,6 @@ const resetForm = () => {
 // Fonction pour charger les données du rôle dans le formulaire
 const loadRoleData = () => {
   if (props.role) {
-    console.log('🔄 Chargement du rôle:', props.role.display_name)
     formData.name = props.role.name || ''
     formData.display_name = props.role.display_name || ''
     formData.description = props.role.description || ''
@@ -488,6 +499,7 @@ const loadRoleData = () => {
     formData.can_manage_suppliers = props.role.can_manage_suppliers === true
     formData.can_manage_cashbox = props.role.can_manage_cashbox === true
     formData.can_manage_bank = props.role.can_manage_bank === true
+    formData.can_manage_mobile_money = props.role.can_manage_mobile_money === true
     formData.can_manage_loans = props.role.can_manage_loans === true
     formData.can_manage_expenses = props.role.can_manage_expenses === true
     formData.can_view_analytics = props.role.can_view_analytics === true
@@ -537,6 +549,7 @@ const updatePermission = (permissionId: string, value: boolean) => {
     case 'can_manage_suppliers': formData.can_manage_suppliers = value; break;
     case 'can_manage_cashbox': formData.can_manage_cashbox = value; break;
     case 'can_manage_bank': formData.can_manage_bank = value; break;
+    case 'can_manage_mobile_money': formData.can_manage_mobile_money = value; break;
     case 'can_manage_loans': formData.can_manage_loans = value; break;
     case 'can_manage_expenses': formData.can_manage_expenses = value; break;
     case 'can_view_analytics': formData.can_view_analytics = value; break;
@@ -573,17 +586,14 @@ const handleSubmit = async () => {
 
   try {
     if (isEditMode.value && props.role) {
-      console.log('📤 Données envoyées pour mise à jour rôle:', formData)
       await usersStore.updateRole(props.role.id, { ...formData })
     } else {
-      console.log('📤 Données envoyées pour création rôle:', formData)
       await usersStore.createRole({ ...formData })
     }
 
     emit('saved')
     closeDialog()
   } catch (e: any) {
-    console.error('❌ Erreur création/modification rôle:', e.response?.data)
     error.value = e.response?.data?.message || e.response?.data?.detail || JSON.stringify(e.response?.data) || "Une erreur s'est produite"
   } finally {
     loading.value = false

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,9 +70,6 @@ const handleSubmit = async () => {
       credit_limit: formData.value.credit_limit || 0,
       notes: formData.value.notes || ''
     }
-
-    console.log('Envoi des données client:', customerData)
-
     await customersStore.createCustomer(customerData)
 
     alert('Client créé avec succès!')
@@ -80,8 +77,6 @@ const handleSubmit = async () => {
     emit('update:open', false)
     emit('created')
   } catch (error: unknown) {
-    console.error('Erreur lors de la création du client:', error)
-
     let errorMessage = 'Erreur lors de la création du client'
 
     if (error && typeof error === 'object' && 'response' in error) {

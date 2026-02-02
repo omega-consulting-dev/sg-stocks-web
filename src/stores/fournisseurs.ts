@@ -55,7 +55,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       fournisseurs.value = data
     } catch (e) {
       error.value = 'Erreur lors du chargement des fournisseurs'
-      console.error(e)
     } finally {
       loading.value = false
     }
@@ -73,7 +72,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       return data
     } catch (e) {
       error.value = 'Erreur lors du chargement du fournisseur'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -103,7 +101,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       window.URL.revokeObjectURL(url)
     } catch (e) {
       error.value = "Erreur lors de l'export Excel"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -126,7 +123,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       window.URL.revokeObjectURL(url)
     } catch (e) {
       error.value = "Erreur lors de l'export PDF"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -146,7 +142,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       return result
     } catch (e) {
       error.value = "Erreur lors de l'import Excel"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -169,7 +164,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       window.URL.revokeObjectURL(url)
     } catch (e) {
       error.value = 'Erreur lors du téléchargement du template'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -200,7 +194,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       } else {
         error.value = 'Erreur lors de la création du fournisseur'
       }
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -239,7 +232,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       } else {
         error.value = 'Erreur lors de la mise à jour du fournisseur'
       }
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -262,7 +254,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       }
     } catch (e) {
       error.value = 'Erreur lors de la suppression du fournisseur'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -287,7 +278,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       }
     } catch (e) {
       error.value = "Erreur lors de l'activation du fournisseur"
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -312,7 +302,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       }
     } catch (e) {
       error.value = 'Erreur lors de la désactivation du fournisseur'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -333,7 +322,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       return data
     } catch (e) {
       error.value = 'Erreur lors du chargement des dettes fournisseurs'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -353,7 +341,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       return payment
     } catch (e) {
       error.value = 'Erreur lors de la création du paiement'
-      console.error(e)
       throw e
     } finally {
       loading.value = false
@@ -371,7 +358,6 @@ export const useFournisseursStore = defineStore('fournisseurs', () => {
       return payments
     } catch (e) {
       error.value = 'Erreur lors du chargement de l\'historique des paiements'
-      console.error(e)
       throw e
     } finally {
       loading.value = false

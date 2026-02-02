@@ -69,6 +69,32 @@ const handleClose = () => {
             </li>
           </ul>
         </div>
+        <div v-if="invoice.payments && invoice.payments.length > 0" class="border-t pt-4 mt-4">
+          <div class="font-semibold mb-2">Historique des paiements</div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b">
+                  <th class="text-left py-2">Date</th>
+                  <th class="text-left py-2">Mode de paiement</th>
+                  <th class="text-right py-2">Montant</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="payment in invoice.payments" :key="payment.id" class="border-b">
+                  <td class="py-2">{{ new Date(payment.payment_date).toLocaleDateString('fr-FR') }}</td>
+                  <td class="py-2">
+                    <span v-if="payment.payment_method === 'cash'">Espèces</span>
+                    <span v-else-if="payment.payment_method === 'card'">Carte</span>
+                    <span v-else-if="payment.payment_method === 'transfer'">Virement</span>
+                    <span v-else>{{ payment.payment_method }}</span>
+                  </td>
+                  <td class="py-2 text-right">{{ payment.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' }) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </template>
       <template v-else>
         <div class="py-12 text-center text-gray-400">Aucune donnée</div>

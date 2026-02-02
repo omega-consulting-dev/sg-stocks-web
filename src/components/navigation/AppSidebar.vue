@@ -22,6 +22,7 @@ import {
   Package,
   Receipt,
   Building2,
+  Smartphone,
 
 } from "lucide-vue-next"
 import NavMain from '@/components/navigation/MenuMain.vue'
@@ -134,6 +135,12 @@ const allMenus = [
     url: "/banque",
     icon: Building2,
     permissions: ['can_manage_bank']
+  },
+  {
+    title: "MTN/Orange",
+    url: "/mobile-money",
+    icon: Smartphone,
+    permissions: ['can_manage_cashbox']
   },
   {
     title: "Mouvement",

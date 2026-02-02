@@ -1,9 +1,9 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { Store as StoreIcon, MapPin, Phone, Mail, Building2 } from 'lucide-vue-next'
 import type { Store, StoreCreateData, StoreUpdateData } from '@/types/store.types'
 import { useStoresStore } from '@/stores/stores.store'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -111,7 +111,6 @@ watch(
             }
           }
         } catch (e) {
-          console.error('Erreur chargement:', e)
           formError.value = 'Erreur lors du chargement'
         } finally {
           loading.value = false
@@ -174,18 +173,26 @@ const handleSubmit = async () => {
       handleClose()
     }
   } catch (e) {
-    console.error('Erreur sauvegarde:', e)
-
     const error = e as { response?: { data?: Record<string, unknown> } }
 
     // Extraire les erreurs de validation par champ
     if (error.response?.data) {
       const errors = error.response.data
 
+      // Vérifier s'il y a un message d'erreur général (limitation de plan)
+      if (errors.detail && typeof errors.detail === 'string') {
+        formError.value = errors.detail
+        fieldErrors.value = {}
+      }
       // Si c'est un objet avec des erreurs par champ
-      if (typeof errors === 'object' && !Array.isArray(errors)) {
+      else if (typeof errors === 'object' && !Array.isArray(errors)) {
         fieldErrors.value = {}
         for (const [field, messages] of Object.entries(errors)) {
+          if (field === 'detail' && typeof messages === 'string') {
+            // Message de limitation de plan
+            formError.value = messages
+            continue
+          }
           if (Array.isArray(messages)) {
             fieldErrors.value[field] = messages[0]
           } else if (typeof messages === 'string') {
@@ -194,9 +201,9 @@ const handleSubmit = async () => {
         }
 
         // Si des erreurs de champs sont présentes, afficher un message général
-        if (Object.keys(fieldErrors.value).length > 0) {
+        if (Object.keys(fieldErrors.value).length > 0 && !formError.value) {
           formError.value = 'Veuillez corriger les erreurs dans le formulaire'
-        } else {
+        } else if (!formError.value) {
           formError.value = storesStore.error || 'Une erreur est survenue'
         }
       } else {
@@ -219,16 +226,19 @@ const handleClose = () => {
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent class="sm:max-w-[450px] p-0 gap-0 overflow-hidden">
       <!-- Header -->
-      <div class="flex items-center justify-between p-4 pb-3">
+      <DialogHeader class="p-4 pb-3">
         <div class="flex items-center gap-2">
           <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
             <StoreIcon class="w-5 h-5 text-muted-foreground" />
           </div>
-          <h2 class="text-lg font-semibold">
+          <DialogTitle class="text-lg font-semibold">
             {{ isEditMode ? 'Modifier Magasin' : 'Nouveau Magasin' }}
-          </h2>
+          </DialogTitle>
         </div>
-      </div>
+        <DialogDescription class="sr-only">
+          {{ isEditMode ? 'Formulaire de modification d\'un magasin' : 'Formulaire de création d\'un nouveau magasin' }}
+        </DialogDescription>
+      </DialogHeader>
 
       <!-- Form -->
       <form @submit.prevent="handleSubmit" class="px-4 pb-4 space-y-3">

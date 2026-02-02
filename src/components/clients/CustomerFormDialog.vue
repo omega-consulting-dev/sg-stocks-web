@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import {
   Dialog,
@@ -282,7 +282,6 @@ const handleSubmit = async () => {
     emit('saved')
     emit('update:open', false)
   } catch (error: unknown) {
-    console.error('Erreur lors de l\'enregistrement:', error)
     const err = error as { response?: { data?: { message?: string } } }
     errors.value.submit = err.response?.data?.message || 'Erreur lors de l\'enregistrement'
   } finally {

@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+﻿import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { customersApi, type Customer, type CreateCustomerData, type UpdateCustomerData, type CustomerFilters } from '@/services/api/customers.api'
 import { customerAccountsApi, type CustomerDebt, type CustomerPayment, type CreateCustomerPaymentDto } from '@/services/api/customer-accounts.api'
@@ -28,7 +28,6 @@ export const useCustomersStore = defineStore('customers', () => {
       totalCount.value = response.count
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Erreur lors du chargement des clients'
-      console.error('Error fetching customers:', err)
       throw err
     } finally {
       loading.value = false
@@ -48,7 +47,6 @@ export const useCustomersStore = defineStore('customers', () => {
       return customer
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Erreur lors du chargement du client'
-      console.error('Error fetching customer:', err)
       throw err
     } finally {
       loading.value = false
@@ -73,7 +71,6 @@ export const useCustomersStore = defineStore('customers', () => {
       return customer
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Erreur lors de la création du client'
-      console.error('Error creating customer:', err)
       throw err
     } finally {
       loading.value = false
@@ -103,7 +100,6 @@ export const useCustomersStore = defineStore('customers', () => {
       return customer
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Erreur lors de la mise à jour du client'
-      console.error('Error updating customer:', err)
       throw err
     } finally {
       loading.value = false
@@ -126,7 +122,6 @@ export const useCustomersStore = defineStore('customers', () => {
       }
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Erreur lors de la suppression du client'
-      console.error('Error deleting customer:', err)
       throw err
     } finally {
       loading.value = false
@@ -157,7 +152,6 @@ export const useCustomersStore = defineStore('customers', () => {
       document.body.removeChild(a)
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Erreur lors de l\'export Excel'
-      console.error('Error exporting Excel:', err)
       throw err
     } finally {
       loading.value = false
@@ -188,7 +182,6 @@ export const useCustomersStore = defineStore('customers', () => {
       debts.value = data
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Erreur lors du chargement des dettes'
-      console.error('Error fetching debts:', err)
       throw err
     } finally {
       loading.value = false
@@ -208,7 +201,6 @@ export const useCustomersStore = defineStore('customers', () => {
       return data
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Erreur lors du chargement de l\'historique'
-      console.error('Error fetching payment history:', err)
       throw err
     } finally {
       loading.value = false
@@ -229,7 +221,6 @@ export const useCustomersStore = defineStore('customers', () => {
       return result
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : 'Erreur lors de la création du paiement'
-      console.error('Error creating payment:', err)
       throw err
     } finally {
       loading.value = false

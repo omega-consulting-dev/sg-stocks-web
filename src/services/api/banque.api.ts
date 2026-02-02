@@ -23,7 +23,14 @@ export interface BankTransactionsResponse {
 export interface CreateWithdrawalData {
   amount: number
   description: string
-  store_id: number
+  store_id?: number
+  date?: string
+}
+
+export interface CreateDepositData {
+  amount: number
+  description: string
+  date?: string
 }
 
 export interface BankFilters {
@@ -49,6 +56,11 @@ export const getBankTransactions = async (filters?: BankFilters): Promise<BankTr
 
 export const createBankWithdrawal = async (data: CreateWithdrawalData): Promise<BankTransaction> => {
   const response = await Axios.post('/cashbox/bank-transactions/withdraw/', data)
+  return response.data
+}
+
+export const createBankDeposit = async (data: CreateDepositData): Promise<BankTransaction> => {
+  const response = await Axios.post('/cashbox/bank-transactions/deposit/', data)
   return response.data
 }
 

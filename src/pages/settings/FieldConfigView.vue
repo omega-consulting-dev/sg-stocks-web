@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFieldConfigStore } from '@/stores/field-config.store'
 import type { FieldConfiguration } from '@/services/api/field-config.api'
@@ -29,8 +29,9 @@ const activeConfigType = ref<'form' | 'table'>('form') // Type de config (form o
 const isSaving = ref(false)
 const hasChanges = ref(false)
 
-// Local reactive copy of configurations
+// Use a truly local copy that won't be affected by store updates
 const localConfigs = ref<FieldConfiguration[]>([])
+const isEditMode = ref(false)  // Track if we're in edit mode
 
 // Entities configuration
 const entities = [
@@ -108,156 +109,172 @@ const currentFormName = computed(() => {
 // Helper to check if current config is for a table
 const isTableConfig = computed(() => activeConfigType.value === 'table')
 
-// Watch for changes in store configurations and update local copy
-watch(() => fieldConfigStore.configurations, (newConfigs) => {
-  console.log('Watch triggered, newConfigs:', newConfigs)
-  if (Array.isArray(newConfigs) && newConfigs.length > 0) {
-    // Create a deep copy to ensure reactivity
-    localConfigs.value = JSON.parse(JSON.stringify(newConfigs))
-    console.log('localConfigs updated:', localConfigs.value.length, 'items')
-    console.log('Sample config FULL:', JSON.stringify(localConfigs.value[0], null, 2))
-    console.log('Product configs:', localConfigs.value.filter(c => c.form_name === 'product'))
-  }
-}, { immediate: true })
-
-// Group configurations by form
-const configsByForm = computed(() => {
-  const grouped: Record<string, FieldConfiguration[]> = {}
-  localConfigs.value.forEach(config => {
-    if (!grouped[config.form_name]) {
-      grouped[config.form_name] = []
-    }
-    grouped[config.form_name].push(config)
-  })
-  return grouped
+// Watch for entity changes to reset to 'form' tab
+watch(activeEntity, () => {
+  activeConfigType.value = 'form'
 })
 
-// Current form configurations
-const currentConfigs = computed(() => {
-  const configs = configsByForm.value[currentFormName.value] || []
-  console.log(`Configs pour ${currentFormName.value}:`, configs)
-  return configs
-})
-
+// Initialize local copy from store ONCE and never update it until save completes
 onMounted(async () => {
+  // CRITICAL: Don't reload if we already have data (component re-mounted during edit)
+  if (localConfigs.value.length > 0) {
+    console.log('⚠️ onMounted skipped - already have local data')
+    return
+  }
+
   try {
     await fieldConfigStore.fetchConfigurations()
-    console.log('Configurations chargées:', fieldConfigStore.configurations.length)
-    console.log('Configurations:', fieldConfigStore.configurations)
-
-    // Compter les configurations par entité
-    const customerConfigs = fieldConfigStore.configurations.filter(
-      (config: any) => config.form_name === 'customer'
-    )
-    const supplierConfigs = fieldConfigStore.configurations.filter(
-      (config: any) => config.form_name === 'supplier'
-    )
-    const loanConfigs = fieldConfigStore.configurations.filter(
-      (config: any) => config.form_name === 'loan'
-    )
-    const invoiceServiceConfigs = fieldConfigStore.configurations.filter(
-      (config: any) => config.form_name === 'invoice_service'
-    )
-
-    console.log('Customer configs count:', customerConfigs.length)
-    console.log('Supplier configs count:', supplierConfigs.length)
-    console.log('Loan configs count:', loanConfigs.length)
-    console.log('Invoice service configs count:', invoiceServiceConfigs.length)
-
-    // Nombre attendu de configurations
-    const expectedCounts = {
-      customer: 13,
-      supplier: 15,
-      loan: 11,
-      invoice_service: 9
-    }
-
-    // Si une entité manque ou est incomplète, forcer la mise à jour
-    const needsUpdate =
-      fieldConfigStore.configurations.length === 0 ||
-      customerConfigs.length < expectedCounts.customer ||
-      supplierConfigs.length < expectedCounts.supplier ||
-      loanConfigs.length < expectedCounts.loan ||
-      invoiceServiceConfigs.length < expectedCounts.invoice_service
-
-    if (needsUpdate) {
-      console.log('Configurations incomplètes, initialisation automatique avec force=true...')
-      await fieldConfigStore.initializeDefaults(true) // Force update
-      await fieldConfigStore.fetchConfigurations()
-      toast.success('Configurations mises à jour automatiquement!', 'Initialisation')
-    }
+    // Create deep copy that won't be affected by any store changes
+    localConfigs.value = JSON.parse(JSON.stringify(fieldConfigStore.configurations))
   } catch (error) {
-    console.error('Error loading configurations:', error)
+    console.error('Erreur lors du chargement:', error)
   }
 })
+
+// Current form configurations - filter from local copy
+const currentConfigs = computed(() => {
+  const formName = currentFormName.value
+  return localConfigs.value.filter(config => config.form_name === formName)
+})
+
+// Field name mappings between form and table (when names differ)
+const fieldMappings: Record<string, Record<string, string>> = {
+  // Product mappings
+  'product': {
+    'name': 'designation',
+    'reference': 'code',
+    'category': 'family',
+    'purchase_price': 'purchase_price',
+    'sale_price': 'sale_price',
+    'minimum_stock': 'minimum_stock'
+  },
+  'product_table': {
+    'designation': 'name',
+    'code': 'reference',
+    'family': 'category',
+    'purchase_price': 'purchase_price',
+    'sale_price': 'sale_price',
+    'minimum_stock': 'minimum_stock'
+  },
+  // Purchase mappings (Achats/Entrée Stock)
+  'purchase': {
+    'store': 'store_name',
+    'supplier': 'supplier_name',
+    'receipt_number': 'receipt_number',
+    'reference': 'reference',
+    'invoice_amount': 'invoice_amount',
+    'date': 'created_at'
+  },
+  'purchase_table': {
+    'store_name': 'store',
+    'supplier_name': 'supplier',
+    'receipt_number': 'receipt_number',
+    'reference': 'reference',
+    'invoice_amount': 'invoice_amount',
+    'created_at': 'date'
+  }
+}
 
 // Handle visibility change
 const onVisibilityChange = (config: FieldConfiguration) => {
-  console.log('onVisibilityChange BEFORE:', config.id, config.is_visible)
-  // Vue will update is_visible automatically via v-model
-  // We need to use nextTick to get the updated value
-  setTimeout(() => {
-    console.log('onVisibilityChange AFTER:', config.id, config.is_visible)
-    // If not visible, it can't be required
-    if (!config.is_visible) {
-      config.is_required = false
+  // Mark we're in edit mode
+  isEditMode.value = true
+
+  // The config object is from localConfigs, so the change is already applied by v-model
+  // Just need to handle the required constraint
+  if (!config.is_visible) {
+    config.is_required = false
+  }
+
+  // 🔗 SYNC: Synchronize with corresponding form/table config
+  // Determine if this is a form or table config
+  const isTableConfig = config.form_name.endsWith('_table')
+  const baseFormName = isTableConfig ? config.form_name.replace('_table', '') : config.form_name
+  const correspondingFormName = isTableConfig ? baseFormName : `${baseFormName}_table`
+
+  // Get the corresponding field name (might be different for products)
+  const fieldMapping = fieldMappings[config.form_name]
+  const correspondingFieldName = fieldMapping?.[config.field_name] || config.field_name
+
+  // Find and update the corresponding config
+  const correspondingConfig = localConfigs.value.find(
+    c => c.form_name === correspondingFormName && c.field_name === correspondingFieldName
+  )
+
+  if (correspondingConfig) {
+    correspondingConfig.is_visible = config.is_visible
+    if (!correspondingConfig.is_visible) {
+      correspondingConfig.is_required = false
     }
-    hasChanges.value = true
-    console.log('hasChanges set to:', hasChanges.value)
-  }, 0)
+  }
+
+  hasChanges.value = true
 }
 
 // Handle required change
 const onRequiredChange = (config: FieldConfiguration) => {
-  console.log('onRequiredChange BEFORE:', config.id, config.is_required)
-  setTimeout(() => {
-    console.log('onRequiredChange AFTER:', config.id, config.is_required)
-    // If required, it must be visible
-    if (config.is_required) {
-      config.is_visible = true
+  // Mark we're in edit mode
+  isEditMode.value = true
+
+  // If required, it must be visible
+  if (config.is_required) {
+    config.is_visible = true
+  }
+
+  // 🔗 SYNC: Synchronize with corresponding form/table config
+  const isTableConfig = config.form_name.endsWith('_table')
+  const baseFormName = isTableConfig ? config.form_name.replace('_table', '') : config.form_name
+  const correspondingFormName = isTableConfig ? baseFormName : `${baseFormName}_table`
+
+  // Get the corresponding field name (might be different for products)
+  const fieldMapping = fieldMappings[config.form_name]
+  const correspondingFieldName = fieldMapping?.[config.field_name] || config.field_name
+
+  // Find and update the corresponding config
+  const correspondingConfig = localConfigs.value.find(
+    c => c.form_name === correspondingFormName && c.field_name === correspondingFieldName
+  )
+
+  if (correspondingConfig) {
+    correspondingConfig.is_required = config.is_required
+    if (correspondingConfig.is_required) {
+      correspondingConfig.is_visible = true
     }
-    hasChanges.value = true
-    console.log('hasChanges set to:', hasChanges.value)
-  }, 0)
+  }
+
+  hasChanges.value = true
 }
 
 // Toggle visibility (keeping for backward compatibility if needed)
 const toggleVisibility = (configId: number) => {
-  console.log('toggleVisibility called for:', configId)
   const config = localConfigs.value.find(c => c.id === configId)
-  console.log('Found config:', config)
   if (config) {
     config.is_visible = !config.is_visible
-    console.log('New is_visible:', config.is_visible)
     // If not visible, it can't be required
     if (!config.is_visible) {
       config.is_required = false
     }
     hasChanges.value = true
-    console.log('hasChanges set to:', hasChanges.value)
   }
 }
 
 // Toggle required
 const toggleRequired = (configId: number) => {
-  console.log('toggleRequired called for:', configId)
   const config = localConfigs.value.find(c => c.id === configId)
-  console.log('Found config:', config)
   if (config) {
     config.is_required = !config.is_required
-    console.log('New is_required:', config.is_required)
     // If required, it must be visible
     if (config.is_required) {
       config.is_visible = true
     }
     hasChanges.value = true
-    console.log('hasChanges set to:', hasChanges.value)
   }
 }
 
 // Save changes
 const saveChanges = async () => {
   isSaving.value = true
+
   try {
     const updates = localConfigs.value.map(config => ({
       id: config.id,
@@ -267,10 +284,16 @@ const saveChanges = async () => {
     }))
 
     await fieldConfigStore.bulkUpdate(updates)
+
+    // Reload fresh data from server and update local copy
+    await fieldConfigStore.fetchConfigurations()
+    localConfigs.value = JSON.parse(JSON.stringify(fieldConfigStore.configurations))
+
+    isEditMode.value = false
     hasChanges.value = false
     toast.success('Configurations sauvegardées avec succès!', 'Succès')
   } catch (error) {
-    console.error('Error saving configurations:', error)
+    console.error('❌ Save error:', error)
     toast.error('Une erreur est survenue lors de la sauvegarde', 'Erreur')
   } finally {
     isSaving.value = false
@@ -288,7 +311,6 @@ const resetToDefaults = async () => {
     hasChanges.value = false
     toast.success('Configurations réinitialisées avec succès!', 'Succès')
   } catch (error) {
-    console.error('Error resetting configurations:', error)
     toast.error('Une erreur est survenue lors de la réinitialisation', 'Erreur')
   }
 }
@@ -350,7 +372,7 @@ const resetToDefaults = async () => {
     </div>
 
     <!-- Config Type Selection (Form / Table) -->
-    <Tabs v-model="activeConfigType" class="w-full">
+    <Tabs :value="activeConfigType" @update:value="(val) => activeConfigType = val as 'form' | 'table'" class="w-full">
       <TabsList class="grid w-full" :class="currentEntity?.hasForm && currentEntity?.hasTable ? 'grid-cols-2' : 'grid-cols-1'">
         <TabsTrigger
           v-if="currentEntity?.hasForm"

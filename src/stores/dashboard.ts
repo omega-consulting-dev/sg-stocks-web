@@ -31,6 +31,7 @@ export interface StockItem {
 export const useDashboardStore = defineStore('dashboard', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const selectedStoreId = ref<number | null>(null)
 
   // Dashboard data
   const overview = ref<DashboardOverview | null>(null)
@@ -150,66 +151,52 @@ export const useDashboardStore = defineStore('dashboard', () => {
   }
 
   // Fetch all dashboard data
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (storeId?: number | null) => {
     loading.value = true
     error.value = null
 
     try {
       // Fetch overview data
-      overview.value = await analyticsApi.getOverview()
+      overview.value = await analyticsApi.getOverview(storeId || undefined)
 
       // Fetch additional data with individual error handling
       const results = await Promise.allSettled([
-        analyticsApi.getSalesChart('week'),
+        analyticsApi.getSalesChart('week', storeId || undefined),
         analyticsApi.getTopProducts(10),
         analyticsApi.getTopCustomers(10),
-        analyticsApi.getCashFlow(30),
+        analyticsApi.getCashFlow(30, storeId || undefined),
         analyticsApi.getInventoryValue(),
-        analyticsApi.getFinancialSummary()
+        analyticsApi.getFinancialSummary(storeId || undefined)
       ])
 
       // Extract successful results
       if (results[0].status === 'fulfilled') {
         salesChart.value = results[0].value
-      } else {
-        console.error('Error fetching sales chart:', results[0].reason)
       }
 
       if (results[1].status === 'fulfilled') {
         topProducts.value = results[1].value
-        console.log('Top products loaded:', results[1].value)
-      } else {
-        console.error('Error fetching top products:', results[1].reason)
       }
 
       if (results[2].status === 'fulfilled') {
         topCustomers.value = results[2].value
-      } else {
-        console.error('Error fetching top customers:', results[2].reason)
         // Ne pas bloquer si top_customers échoue
       }
 
       if (results[3].status === 'fulfilled') {
         cashFlow.value = results[3].value
-      } else {
-        console.error('Error fetching cash flow:', results[3].reason)
       }
 
       if (results[4].status === 'fulfilled') {
         inventoryValue.value = results[4].value
-      } else {
-        console.error('Error fetching inventory value:', results[4].reason)
       }
 
       if (results[5].status === 'fulfilled') {
         financialSummary.value = results[5].value
-      } else {
-        console.error('Error fetching financial summary:', results[5].reason)
       }
 
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Une erreur est survenue'
-      console.error('Error fetching dashboard data:', err)
     } finally {
       loading.value = false
     }
@@ -220,7 +207,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
     try {
       salesChart.value = await analyticsApi.getSalesChart(period)
     } catch (err) {
-      console.error('Error fetching sales chart:', err)
     }
   }
 
@@ -228,6 +214,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     // State
     loading,
     error,
+    selectedStoreId,
     overview,
     salesChart,
     topProducts,

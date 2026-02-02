@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex-1 space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6 p-3 sm:p-4 md:p-5 lg:p-6">
     <!-- Breadcrumb -->
     <Breadcrumb class="mb-2">
@@ -210,7 +210,6 @@
         </div>
       </CardContent>
     </Card>
-
 
 
     <!-- Loading indicator -->
@@ -649,7 +648,6 @@ async function handleSaveExpense() {
     const storesStatsStore = useStoresStatsStore()
     await storesStatsStore.refreshStats()
   } catch (error) {
-    console.error('Erreur lors du rafraîchissement des stats stores:', error)
   }
 }
 
@@ -665,7 +663,6 @@ async function handleApproveExpense() {
       showApproveDialog.value = false
       selectedExpenseForAction.value = null
     } catch (error) {
-      console.error('Erreur lors de l\'approbation:', error)
     }
   }
 }
@@ -682,7 +679,6 @@ async function handleRejectExpense() {
       showRejectDialog.value = false
       selectedExpenseForAction.value = null
     } catch (error) {
-      console.error('Erreur lors du rejet:', error)
     }
   }
 }
@@ -706,7 +702,6 @@ async function handleMarkAsPaid(paymentMethod: string, paymentReference: string)
       selectedExpenseForPayment.value = null
       toast.success('Dépense marquée comme payée avec succès', 'Paiement enregistré')
     } catch (error: any) {
-      console.error('Erreur lors du marquage comme payé:', error)
       // Ne pas fermer le dialog pour que l'utilisateur voie l'erreur
       const errorMessage = error.response?.data?.error || error.response?.data?.detail || error.message || 'Une erreur est survenue lors du paiement'
       toast.error(errorMessage, 'Erreur de paiement')
@@ -726,7 +721,6 @@ async function handleDeleteExpense() {
       showDeleteDialog.value = false
       selectedExpenseForAction.value = null
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
     }
   }
 }
@@ -736,7 +730,6 @@ async function deleteExpense_OLD(id: number) {
     try {
       await expensesStore.deleteExpense(id)
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
     }
   }
 }
@@ -763,7 +756,6 @@ async function exportToExcel() {
   try {
     await expensesStore.exportToExcel()
   } catch (error) {
-    console.error('Erreur lors de l\'export:', error)
   }
 }
 

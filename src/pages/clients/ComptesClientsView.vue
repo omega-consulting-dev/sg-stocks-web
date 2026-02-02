@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useCustomersStore } from '@/stores/customers.store'
 import type { Customer } from '@/services/api/customers.api'
@@ -75,19 +75,16 @@ const handleAdd = () => {
 
 // Gestion de l'import
 const handleImport = () => {
-  console.log('Import clients - À implémenter')
   alert('Fonctionnalité d\'import à venir')
 }
 
 // Gestion de l'export PDF
 const handleExportPdf = () => {
-  console.log('Export PDF clients - À implémenter')
   alert('Fonctionnalité d\'export PDF à venir')
 }
 
 // Gestion de l'export Excel
 const handleExportExcel = () => {
-  console.log('Export Excel clients - À implémenter')
   alert('Fonctionnalité d\'export Excel à venir')
 }
 
@@ -116,7 +113,6 @@ const confirmDelete = async () => {
     isDeleteDialogOpen.value = false
     clientToDelete.value = null
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
   }
 }
 
@@ -141,7 +137,6 @@ const handleFormSubmit = async (data: Partial<Customer>) => {
     isFormOpen.value = false
     selectedClient.value = null
   } catch (error) {
-    console.error("Erreur lors de l'enregistrement:", error)
   }
 }
 </script>

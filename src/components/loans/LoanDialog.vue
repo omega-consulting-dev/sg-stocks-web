@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog :open="true" @update:open="handleClose">
     <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
@@ -329,7 +329,6 @@ watch(() => props.loan, async (loan) => {
     const response = await storesApi.getStores({ page_size: 100 });
     stores.value = response.results || [];
   } catch (error) {
-    console.error('Error loading stores:', error);
   }
 
   // Initialiser ou réinitialiser le formulaire
@@ -463,7 +462,6 @@ async function handleSubmit() {
     emit('save');
     handleClose();
   } catch (error) {
-    console.error('Error saving loan:', error);
   } finally {
     isSubmitting.value = false;
   }

@@ -324,7 +324,6 @@ const handleExportExcel = async () => {
   try {
     await store.exportExcel(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export Excel:', error)
     alert('Erreur lors de l\'export Excel')
   }
 }
@@ -350,7 +349,6 @@ const handleExportPdf = async () => {
   try {
     await store.exportPdf(apiFilters)
   } catch (error) {
-    console.error('Erreur lors de l\'export PDF:', error)
     alert('Erreur lors de l\'export PDF')
   }
 }

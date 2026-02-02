@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { Building2, User, Phone, Mail, MapPin, Hash, CreditCard, Globe } from 'lucide-vue-next'
 import type { Supplier, SupplierDetail, CreateSupplierDto, UpdateSupplierDto } from '@/stores/fournisseurs'
@@ -205,7 +205,6 @@ watch(
             notes: detail.notes || '',
           }
         } catch (e) {
-          console.error('Erreur chargement:', e)
           formError.value = 'Erreur lors du chargement'
         } finally {
           loading.value = false
@@ -356,7 +355,6 @@ const handleSubmit = async () => {
     }
   } catch (e) {
     formError.value = store.error || 'Une erreur est survenue'
-    console.error('Erreur sauvegarde:', e)
   } finally {
     loading.value = false
   }

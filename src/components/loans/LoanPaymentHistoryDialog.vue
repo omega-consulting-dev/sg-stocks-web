@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { loansApi } from '@/services/api/loans.api'
 import { formatCurrency, formatDate } from '@/lib/formatters'
@@ -52,7 +52,6 @@ const loadPayments = async () => {
     const response = await loansApi.getPaymentHistory(props.loan.id)
     payments.value = response.data
   } catch (error) {
-    console.error('Error loading payment history:', error)
   } finally {
     loading.value = false
   }

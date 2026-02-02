@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useProductFamiliesStore, type ProductFamily } from '@/stores/productFamilies'
 import { useProductsStore } from '@/stores/products'
@@ -97,10 +97,8 @@ const handleImport = () => {
     if (file) {
       try {
         const result = await store.importExcel(file)
-        console.log('Import réussi:', result)
         alert(`Import terminé: ${result.created} créées, ${result.updated} mises à jour`)
       } catch (error) {
-        console.error('Erreur lors de l\'import:', error)
         alert('Erreur lors de l\'import du fichier')
       }
     }
@@ -113,7 +111,6 @@ const handleExportPdf = async () => {
   try {
     await store.exportPdf()
   } catch (error) {
-    console.error('Erreur lors de l\'export PDF:', error)
     alert('Erreur lors de l\'export PDF')
   }
 }
@@ -123,7 +120,6 @@ const handleExportExcel = async () => {
   try {
     await store.exportExcel()
   } catch (error) {
-    console.error('Erreur lors de l\'export Excel:', error)
     alert('Erreur lors de l\'export Excel')
   }
 }
@@ -164,7 +160,6 @@ const confirmDelete = async () => {
     successMessage.value = 'Famille de produits supprimée avec succès !'
     isSuccessDialogOpen.value = true
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
     successMessage.value = 'Erreur lors de la suppression'
     isSuccessDialogOpen.value = true
   }
@@ -189,7 +184,6 @@ const handleFormSubmit = async (data: { name: string; description: string }) => 
       isSuccessDialogOpen.value = true
     }
   } catch (error) {
-    console.error('Erreur lors de l\'enregistrement:', error)
     successMessage.value = 'Erreur lors de l\'enregistrement'
     isSuccessDialogOpen.value = true
   }

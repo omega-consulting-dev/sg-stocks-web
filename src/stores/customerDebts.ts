@@ -57,7 +57,6 @@ export const useCustomerDebtsStore = defineStore('customerDebts', () => {
       debts.value = response.data
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement des dettes'
-      console.error('Erreur chargement dettes clients:', err)
     } finally {
       loading.value = false
     }
@@ -73,7 +72,6 @@ export const useCustomerDebtsStore = defineStore('customerDebts', () => {
         return a.payment_number.localeCompare(b.payment_number, undefined, { numeric: true })
       })
     } catch (err: any) {
-      console.error('Erreur chargement historique paiements:', err)
       throw err
     }
   }
@@ -86,7 +84,6 @@ export const useCustomerDebtsStore = defineStore('customerDebts', () => {
       const invoices = response.data.results || response.data
       return invoices.filter((inv: CustomerInvoice) => inv.balance_due > 0)
     } catch (err: any) {
-      console.error('Erreur chargement factures client:', err)
       throw err
     }
   }
@@ -101,13 +98,10 @@ export const useCustomerDebtsStore = defineStore('customerDebts', () => {
     notes?: string
   }) {
     try {
-      console.log('Store: Creating payment for customer', customerId, 'with data:', paymentData)
       const response = await Axios.post(
         `/customers/customers/${customerId}/create-payment/`,
         paymentData
       )
-
-      console.log('Payment created successfully:', response.data)
 
       // Attendre 1 seconde pour que le backend mette à jour les totaux
       await new Promise(resolve => setTimeout(resolve, 1000))
@@ -119,9 +113,6 @@ export const useCustomerDebtsStore = defineStore('customerDebts', () => {
 
       return response.data
     } catch (err: any) {
-      console.error('Erreur création paiement:', err)
-      console.error('Error response:', err.response?.data)
-      console.error('Error status:', err.response?.status)
       throw err
     }
   }

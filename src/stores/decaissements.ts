@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { decaissementsApi, type Decaissement, type DecaissementsFilters, type CreateDecaissementDto } from '@/services/api/decaissements.api'
 import { encaissementsApi } from '@/services/api/encaissements.api'
@@ -69,7 +69,6 @@ export const useDecaissementsStore = defineStore('decaissements', () => {
       const response = await encaissementsApi.getCaisseSolde(storeId)
       soldeCaisse.value = response.solde_actuel
     } catch (err: any) {
-      console.error('Erreur lors du chargement du solde:', err)
     }
   }
 

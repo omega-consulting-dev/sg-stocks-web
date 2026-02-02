@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { History, Calendar, CreditCard, User, FileText } from 'lucide-vue-next'
 import type { SupplierDebt, SupplierPayment } from '@/stores/fournisseurs'
@@ -42,7 +42,6 @@ async function loadPaymentHistory() {
   try {
     payments.value = await fournisseursStore.fetchSupplierPayments(props.supplier.id)
   } catch (error) {
-    console.error('Erreur lors du chargement de l\'historique:', error)
   } finally {
     loading.value = false
   }

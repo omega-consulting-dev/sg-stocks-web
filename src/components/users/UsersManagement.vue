@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-4 md:space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -414,7 +414,6 @@ onMounted(async () => {
     if (err.response?.status === 403) {
       accessDenied.value = true
     }
-    console.error('Erreur lors du chargement des données:', err)
   }
 })
 
@@ -458,9 +457,7 @@ const viewUser = async (user: User) => {
     await usersStore.fetchUserById(user.id)
     selectedUser.value = user
     // TODO: Ouvrir un dialog de détails avec les infos complètes
-    console.log('Détails utilisateur:', user)
   } catch (error) {
-    console.error('Erreur lors de la récupération des détails:', error)
   }
 }
 
@@ -484,7 +481,6 @@ const handleDelete = async () => {
     selectedUser.value = null
     await usersStore.fetchUsers()
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
   }
 }
 

@@ -26,7 +26,7 @@ const products = computed<PopularProduct[]>(() => {
     name: product.product__name,
     reference: product.product__reference,
     price: product.total_amount / product.total_quantity, // Prix moyen
-    sales: product.sales_count,
+    sales: product.total_quantity,  // Quantité totale vendue
     stock: product.current_stock  // Stock réel du/des store(s)
   }))
 })

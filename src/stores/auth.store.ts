@@ -11,7 +11,7 @@ import type { User, Role } from '@/types/user.types'
 export const useAuthStore = defineStore('auth', () => {
   // ========== État ==========
   const user = ref<User | null>(null)
-  const token = ref<string | null>(localStorage.getItem('token'))
+  const token = ref<string | null>(localStorage.getItem('access_token')) // Utiliser access_token au lieu de token
   const isAuthenticated = ref<boolean>(!!token.value)
 
   // ========== Computed - Rôles ==========
@@ -249,7 +249,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const setToken = (tokenValue: string) => {
     token.value = tokenValue
-    localStorage.setItem('token', tokenValue)
+    localStorage.setItem('access_token', tokenValue) // Utiliser access_token au lieu de token
     isAuthenticated.value = true
   }
 
@@ -259,7 +259,7 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = () => {
     user.value = null
     token.value = null
-    localStorage.removeItem('token')
+    localStorage.removeItem('access_token') // Utiliser access_token au lieu de token
     isAuthenticated.value = false
   }
 
@@ -273,7 +273,6 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.getCurrentUser()
       setUser(response)
     } catch (error) {
-      console.error('Erreur lors de la récupération de l\'utilisateur:', error)
       // En cas d'erreur (token expiré), on déconnecte
       logout()
     }

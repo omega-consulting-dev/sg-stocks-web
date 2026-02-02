@@ -76,7 +76,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       stockCurrentPage.value = page
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement des stocks'
-      console.error('Error fetching stock levels:', err)
       throw err
     } finally {
       loading.value = false
@@ -95,7 +94,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       return currentStock.value
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement du stock'
-      console.error('Error fetching product stock:', err)
       throw err
     } finally {
       loading.value = false
@@ -109,7 +107,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     try {
       stats.value = await inventoryApi.getStats(storeId)
     } catch (err: any) {
-      console.error('Error fetching stats:', err)
     }
   }
 
@@ -129,7 +126,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       movementsCurrentPage.value = page
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement des mouvements'
-      console.error('Error fetching movements:', err)
       throw err
     } finally {
       loading.value = false
@@ -152,16 +148,13 @@ export const useInventoryStore = defineStore('inventory', () => {
         s => s.product === data.product && s.store === data.store
       )
       if (stockIndex !== -1) {
-        const quantityChange = data.movement_type === 'adjustment_in'
-          ? data.quantity
-          : -data.quantity
-        stockLevels.value[stockIndex].quantity += quantityChange
+        // La quantité est déjà signée (positive pour in, négative pour out)
+        stockLevels.value[stockIndex].quantity += data.quantity
       }
 
       return newMovement
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la création de l\'ajustement'
-      console.error('Error creating adjustment:', err)
       throw err
     } finally {
       loading.value = false
@@ -184,7 +177,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       inventoriesCurrentPage.value = page
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement des inventaires'
-      console.error('Error fetching inventories:', err)
       throw err
     } finally {
       loading.value = false
@@ -203,7 +195,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       return currentInventory.value
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors du chargement de l\'inventaire'
-      console.error('Error fetching inventory:', err)
       throw err
     } finally {
       loading.value = false
@@ -224,7 +215,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       return newInventory
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la création de l\'inventaire'
-      console.error('Error creating inventory:', err)
       throw err
     } finally {
       loading.value = false
@@ -253,7 +243,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       return updatedInventory
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la modification de l\'inventaire'
-      console.error('Error updating inventory:', err)
       throw err
     } finally {
       loading.value = false
@@ -282,7 +271,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       return validatedInventory
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la validation de l\'inventaire'
-      console.error('Error validating inventory:', err)
       throw err
     } finally {
       loading.value = false
@@ -311,7 +299,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       return cancelledInventory
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de l\'annulation de l\'inventaire'
-      console.error('Error cancelling inventory:', err)
       throw err
     } finally {
       loading.value = false
@@ -336,7 +323,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erreur lors de la suppression de l\'inventaire'
-      console.error('Error deleting inventory:', err)
       throw err
     } finally {
       loading.value = false

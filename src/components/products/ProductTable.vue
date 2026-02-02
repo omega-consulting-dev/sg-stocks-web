@@ -32,9 +32,8 @@ const props = defineProps<{
 
 // Load field configurations on mount
 onMounted(async () => {
-  if (fieldConfigStore.configurations.length === 0) {
-    await fieldConfigStore.fetchConfigurations()
-  }
+  // Always fetch fresh configurations to ensure we have the latest
+  await fieldConfigStore.fetchConfigurations()
 })
 
 // Get column visibility configurations
@@ -78,12 +77,10 @@ const formatNumber = (value: number | null | undefined) => {
 }
 
 const handleEdit = (product: Product) => {
-  console.log('ProductTable handleEdit appelé avec:', product)
   emit('edit', product)
 }
 
 const handleDelete = (product: Product) => {
-  console.log('ProductTable handleDelete appelé avec:', product)
   emit('delete', product)
 }
 

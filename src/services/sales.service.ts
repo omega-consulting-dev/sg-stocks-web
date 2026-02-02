@@ -18,6 +18,7 @@ export interface SaleCreateData {
   sale_date: string
   notes?: string
   paid_amount?: number
+  payment_method?: 'cash' | 'card' | 'transfer'
   due_date?: string
   lines: SaleLineCreate[]
 }

@@ -114,7 +114,7 @@ export interface CreateStockAdjustmentData {
   store: number
   product: number
   quantity: number
-  movement_type: 'adjustment_in' | 'adjustment_out'
+  movement_type: 'adjustment'
   notes?: string
 }
 

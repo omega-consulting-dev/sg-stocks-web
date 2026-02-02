@@ -97,10 +97,8 @@ onMounted(async () => {
     familiesStore.fetchFamilies()
   }
 
-  // Charger les configurations de champs
-  if (fieldConfigStore.configurations.length === 0) {
-    await fieldConfigStore.fetchConfigurations()
-  }
+  // Always fetch fresh configurations to ensure we have the latest
+  await fieldConfigStore.fetchConfigurations()
 })
 
 watch(() => props.open, async (newValue) => {

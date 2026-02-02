@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Trash2, Store } from 'lucide-vue-next'
@@ -247,7 +247,6 @@ onMounted(async () => {
       await loadStoreStocks(selectedStore.value)
     }
   } catch (error: any) {
-    console.error('Erreur lors du chargement des données:', error)
     const errorMsg = error?.response?.data?.message || error?.message || 'Erreur inconnue'
     toast.error(`Erreur lors du chargement des données: ${errorMsg}`, 'Erreur')
   } finally {
@@ -355,7 +354,6 @@ const loadStoreStocks = async (storeId: string) => {
     const response = await inventoryApi.getStockLevels({ store: parseInt(storeId) })
     storeStocks.value = response.results
   } catch (error: any) {
-    console.error('Erreur lors du chargement des stocks:', error)
     storeStocks.value = []
     const errorMsg = error?.response?.data?.message || error?.message || 'Erreur inconnue'
     toast.error(`Erreur lors du chargement des stocks: ${errorMsg}`, 'Erreur de chargement')
@@ -378,15 +376,11 @@ watch(selectedStore, (newStoreId) => {
 
 // Modal functions
 const openModal = async () => {
-  console.log('openModal: Début')
   try {
-    console.log('openModal: Ouverture du modal...')
     isModalOpen.value = true
     modalStep.value = 1
     resetForm()
-    console.log('openModal: Modal ouvert, isModalOpen =', isModalOpen.value)
   } catch (error) {
-    console.error('Erreur lors de l\'ouverture du modal:', error)
     toast.error('Impossible d\'ouvrir le formulaire de facturation', 'Erreur')
   }
 }
@@ -435,7 +429,6 @@ const getOrCreateNoNameCustomer = async (): Promise<number | null> => {
 
     return newCustomer.id
   } catch (error: any) {
-    console.error('Erreur lors de la création du client No Name:', error)
     return null
   }
 }
@@ -541,8 +534,6 @@ const removeLine = (lineId: string) => {
 
 // Submit sale (create as draft)
 const submitSale = async () => {
-  console.log('submitSale - Validation des champs obligatoires...')
-
   // Réinitialiser les erreurs
   fieldErrors.value = {}
 
@@ -577,7 +568,6 @@ const submitSale = async () => {
         if (field.value === null || field.value === undefined || field.value === '') {
           fieldErrors.value[field.name] = `${field.label} est obligatoire`
           hasErrors = true
-          console.log(`Erreur: ${field.name} est obligatoire mais vide`)
         }
       }
       // Validation pour les dates
@@ -585,7 +575,6 @@ const submitSale = async () => {
         if (!field.value || field.value === '' || field.value === null) {
           fieldErrors.value[field.name] = `${field.label} est obligatoire`
           hasErrors = true
-          console.log(`Erreur: ${field.name} est obligatoire mais vide`)
         }
       }
       // Validation pour les champs texte et select
@@ -593,14 +582,12 @@ const submitSale = async () => {
         if (!field.value || (typeof field.value === 'string' && field.value.trim() === '')) {
           fieldErrors.value[field.name] = `${field.label} est obligatoire`
           hasErrors = true
-          console.log(`Erreur: ${field.name} est obligatoire mais vide`)
         }
       }
     }
   }
 
   if (hasErrors) {
-    console.log('Validation échouée - Erreurs:', fieldErrors.value)
     toast.warning('Veuillez remplir tous les champs obligatoires', 'Champs manquants')
     return
   }
@@ -637,8 +624,6 @@ const submitSale = async () => {
     toast.warning('Veuillez sélectionner une date d\'échéance pour cette vente à crédit', 'Date d\'échéance requise')
     return
   }
-
-  console.log('Validation réussie - Affichage du modal de confirmation')
   // Afficher le modal de confirmation avant de créer la vente
   showConfirmationModal.value = true
 }
@@ -703,6 +688,7 @@ const createNewSale = async () => {
       sale_date: formData.value.saleDate || new Date().toISOString().split('T')[0], // Utiliser la date sélectionnée ou aujourd'hui par défaut
       notes: formData.value.notes,
       paid_amount: formData.value.amountPaid,
+      payment_method: formData.value.paymentMethod as 'cash' | 'card' | 'transfer' | 'mobile_money',
       due_date: formData.value.dueDate || undefined, // Ajouter la date d'échéance si définie
       lines: lines.value.map(line => ({
         line_type: 'product',
@@ -717,9 +703,6 @@ const createNewSale = async () => {
         discount_percentage: 0
       }))
     }
-
-    console.log('Données de vente à envoyer:', saleData)
-
     const newSale = await salesStore.createSale(saleData)
 
     if (!newSale || !newSale.id) {
@@ -746,12 +729,6 @@ const createNewSale = async () => {
 
   } catch (error: unknown) {
     const axiosError = error as { config?: { url?: string; data?: string }; response?: { status?: number; data?: unknown }; message?: string }
-    console.error('Erreur lors de la création de la vente:', error)
-    console.error('URL appelée:', axiosError?.config?.url)
-    console.error('Données envoyées:', axiosError?.config?.data)
-    console.error('Statut:', axiosError?.response?.status)
-    console.error('Réponse:', axiosError?.response?.data)
-
     let errorMessage = 'Erreur inconnue'
     if (axiosError?.response?.data) {
       const backendErrors = axiosError.response.data as { detail?: string; error?: string; [key: string]: any }
@@ -827,6 +804,7 @@ const updateSale = async () => {
       sale_date: formData.value.saleDate || new Date().toISOString().split('T')[0],
       notes: formData.value.notes,
       paid_amount: formData.value.amountPaid,
+      payment_method: formData.value.paymentMethod as 'cash' | 'card' | 'transfer' | 'mobile_money',
       due_date: formData.value.dueDate || undefined,
       lines: lines.value.map(line => ({
         line_type: 'product',
@@ -854,8 +832,6 @@ const updateSale = async () => {
 
   } catch (error: unknown) {
     const axiosError = error as { config?: { url?: string; data?: string }; response?: { status?: number; data?: unknown }; message?: string }
-    console.error('Erreur lors de la modification de la vente:', error)
-
     let errorMessage = 'Erreur inconnue'
     if (axiosError?.response?.data) {
       const backendErrors = axiosError.response.data as { detail?: string; error?: string; [key: string]: any }
@@ -909,7 +885,6 @@ async function assignCustomerToSale() {
     await handleGenerateInvoice(saleWithoutCustomer.value)
 
   } catch (error: any) {
-    console.error('Erreur lors de l\'assignation du client:', error)
     toast.error('Erreur lors de l\'assignation du client', 'Erreur')
   } finally {
     isSubmitting.value = false
@@ -931,7 +906,6 @@ async function handleGenerateInvoice(id: number) {
 
     // Si invoice_id n'existe pas dans la liste, récupérer les détails complets
     if (!sale.invoice_id) {
-      console.log('invoice_id non trouvé dans la liste, récupération des détails...')
       const detailedSale = await salesStore.fetchSale(id)
       if (!detailedSale.invoice_id) {
         // Essayer de confirmer la vente pour générer la facture
@@ -953,8 +927,6 @@ async function handleGenerateInvoice(id: number) {
             return
           }
         } catch (generateError: any) {
-          console.error('Erreur lors de la génération de la facture:', generateError)
-
           // Vérifier si c'est un problème de client manquant
           if (generateError.message && generateError.message.includes('without a customer')) {
             // Proposer d'assigner un client directement
@@ -1009,14 +981,6 @@ async function handleGenerateInvoice(id: number) {
 
   } catch (err: unknown) {
     const error = err as { message?: string; response?: { status?: number; data?: unknown } }
-    console.error('Erreur lors du téléchargement de la facture:', error)
-    console.error('Détails de l\'erreur:', {
-      message: error.message,
-      response: error.response,
-      status: error.response?.status,
-      data: error.response?.data
-    })
-
     let errorMessage = 'Impossible de télécharger la facture.'
 
     if (error.response?.status === 404) {
@@ -1091,14 +1055,11 @@ async function handleEdit(id: number) {
     modalStep.value = 1
 
   } catch (error) {
-    console.error('❌ Erreur lors du chargement de la vente:', error)
     toast.error('Impossible de charger la vente', 'Erreur')
   }
 }
 
 function handleExportAll() {
-  console.log('Export all facturations produit to Excel')
-
   // Importer l'utilitaire Excel
   import('@/utils/excelExporter').then(({ ExcelExporter }) => {
     // Préparer les données pour Excel
@@ -1355,8 +1316,6 @@ async function handleNew() {
               </div>
 
 
-
-
               <SearchableSelect
                 v-model="selectedProduct"
                 :items="availableProducts"
@@ -1515,8 +1474,7 @@ async function handleNew() {
                     <SelectItem value="cash">Espèces</SelectItem>
                     <SelectItem value="card">Carte</SelectItem>
                     <SelectItem value="transfer">Virement</SelectItem>
-                    <SelectItem value="mobile">Mobile Money</SelectItem>
-                    <SelectItem value="check">Chèque</SelectItem>
+                    <SelectItem value="mobile_money">Mobile Money (MTN/Orange)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

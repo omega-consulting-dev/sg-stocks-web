@@ -57,7 +57,7 @@ const getTypeBadgeVariant = (type: string) => {
               <TableHead class="font-semibold text-slate-700">Date</TableHead>
               <TableHead class="font-semibold text-slate-700">Référence</TableHead>
               <TableHead class="text-right font-semibold text-slate-700">Montant</TableHead>
-              <TableHead class="font-semibold text-slate-700">Mode de paiement</TableHead>
+              <TableHead class="font-semibold text-slate-700">Nature de paiement</TableHead>
               <TableHead class="font-semibold text-slate-700">Description</TableHead>
               <TableHead class="text-center font-semibold text-slate-700">Actions</TableHead>
             </TableRow>

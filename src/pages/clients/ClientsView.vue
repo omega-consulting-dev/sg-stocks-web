@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useCustomersStore } from '@/stores/customers.store'
 import { usePermissions } from '@/composables/usePermissions'
@@ -81,7 +81,6 @@ const handleExportExcel = async () => {
   try {
     await store.exportExcel({ search: searchQuery.value })
   } catch (error) {
-    console.error('Erreur lors de l\'export Excel:', error)
     alert('Erreur lors de l\'export Excel')
   }
 }
@@ -124,7 +123,6 @@ const confirmDelete = async () => {
     isDeleteDialogOpen.value = false
     customerToDelete.value = null
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error)
     alert(store.error || 'Erreur lors de la suppression du client')
   }
 }

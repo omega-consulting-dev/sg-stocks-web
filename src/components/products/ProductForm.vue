@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
 import { FileText, Camera } from 'lucide-vue-next'
 import type { Product } from '@/stores/products'
@@ -124,33 +124,27 @@ onMounted(async () => {
     categoriesStore.fetchFamilies()
   }
 
-  // Charger les configurations de champs
-  if (fieldConfigStore.configurations.length === 0) {
-    await fieldConfigStore.fetchConfigurations()
-  }
+  // Always fetch fresh configurations to ensure we have the latest
+  await fieldConfigStore.fetchConfigurations()
 })
 
 watch(() => props.open, async (newValue) => {
-  console.log('ProductForm watch open:', newValue, 'product:', props.product)
   if (newValue) {
     if (props.product) {
-      console.log('Mode édition - Chargement des données du produit')
       isEditing.value = true
       formData.value = {
         reference: props.product.reference || '',
         name: props.product.name || '',
         category: props.product.category || 0,
-        purchase_price: props.product.purchase_price || 0,
-        selling_price: props.product.selling_price || 0,
-        minimum_stock: props.product.minimum_stock || 0,
-        optimal_stock: props.product.optimal_stock || 0,
+        purchase_price: Number(props.product.cost_price) || 0,
+        selling_price: Number(props.product.selling_price) || 0,
+        minimum_stock: Number(props.product.minimum_stock) || 0,
+        optimal_stock: Number(props.product.optimal_stock) || 0,
         description: props.product.description || '',
         barcode: props.product.barcode || '',
       }
       imagePreview.value = props.product.primary_image || ''
-      console.log('formData chargé:', formData.value)
     } else {
-      console.log('Mode création - Génération nouveau code')
       isEditing.value = false
       // Récupérer TOUTES les références (actifs + inactifs) pour générer un code unique
       const allReferences = await productsStore.fetchAllReferences()
@@ -178,32 +172,23 @@ const handleImageClick = () => {
 const handleImageChange = (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
-  console.log('📸 handleImageChange appelé, fichier:', file)
-
   if (file) {
-    console.log('✅ Fichier sélectionné:', file.name, file.type, file.size)
     imageFile.value = file
 
     // Vérifier que c'est bien une image
     if (!file.type.startsWith('image/')) {
-      console.error('❌ Le fichier n\'est pas une image')
       return
     }
 
     const reader = new FileReader()
     reader.onload = (e) => {
       const result = e.target?.result as string
-      console.log('✅ Image chargée, longueur:', result?.length)
-      console.log('🖼️ Début de l\'image:', result?.substring(0, 50))
       imagePreview.value = result
-      console.log('✅ imagePreview.value mis à jour, v-if devrait basculer')
     }
     reader.onerror = (error) => {
-      console.error('❌ Erreur de lecture du fichier:', error)
     }
     reader.readAsDataURL(file)
   } else {
-    console.log('⚠️ Aucun fichier sélectionné')
   }
 }
 
@@ -248,8 +233,8 @@ const handleSubmit = () => {
     name: formData.value.name,
     category: formData.value.category,
     reference: isFieldVisible('reference') ? formData.value.reference : '',
-    cost_price: isFieldVisible('purchase_price') ? (formData.value.purchase_price || 0) : 0,
-    selling_price: isFieldVisible('sale_price') ? formData.value.selling_price : 0,
+    cost_price: isFieldVisible('purchase_price') ? Number(formData.value.purchase_price) || 0 : 0,
+    selling_price: isFieldVisible('sale_price') ? Number(formData.value.selling_price) || 0 : 0,
   }
 
   // Ajouter les champs optionnels
@@ -260,14 +245,11 @@ const handleSubmit = () => {
     data.barcode = formData.value.barcode
   }
   if (isFieldVisible('minimum_stock')) {
-    data.minimum_stock = formData.value.minimum_stock
+    data.minimum_stock = Number(formData.value.minimum_stock) || 0
   }
 
   // optimal_stock n'est pas dans les configs, donc on l'ajoute toujours
-  data.optimal_stock = formData.value.optimal_stock
-
-  console.log('📦 Données envoyées au backend:', data)
-
+  data.optimal_stock = Number(formData.value.optimal_stock) || 0
   // Ajouter l'image si elle existe
   if (imageFile.value) {
     (data as any).image = imageFile.value

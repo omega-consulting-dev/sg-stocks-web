@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useFournisseursStore, type SupplierDebt } from '@/stores/fournisseurs'
 import { usePermissions } from '@/composables/usePermissions'
@@ -74,13 +74,11 @@ const handleSearch = (query: string) => {
 
 // Gestion de l'export PDF
 const handleExportPdf = () => {
-  console.log('Export PDF fournisseurs - À implémenter')
   alert('Fonctionnalité d\'export PDF à venir')
 }
 
 // Gestion de l'export Excel
 const handleExportExcel = () => {
-  console.log('Export Excel fournisseurs - À implémenter')
   alert('Fonctionnalité d\'export Excel à venir')
 }
 

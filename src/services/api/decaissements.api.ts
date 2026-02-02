@@ -99,13 +99,9 @@ export const decaissementsApi = {
         cashbox_session: sessionId
       }
 
-      console.log('Movement data being sent:', movementData)
-
       const response: AxiosResponse<any> = await Axios.post('/cashbox/movements/', movementData)
       return response.data
     } catch (error: any) {
-      console.error('Error creating decaissement:', error)
-      console.error('Error response:', error.response?.data)
       throw error
     }
   },
@@ -181,8 +177,6 @@ export const decaissementsApi = {
       const response: AxiosResponse<any> = await Axios.patch(`/cashbox/movements/${id}/`, movementData)
       return response.data
     } catch (error: any) {
-      console.error('Error updating decaissement:', error)
-      console.error('Error response:', error.response?.data)
       throw error
     }
   },
@@ -191,8 +185,6 @@ export const decaissementsApi = {
     try {
       await Axios.delete(`/cashbox/movements/${id}/`)
     } catch (error: any) {
-      console.error('Error deleting decaissement:', error)
-      console.error('Error response:', error.response?.data)
       throw error
     }
   },

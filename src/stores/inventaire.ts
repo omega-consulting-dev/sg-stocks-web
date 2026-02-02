@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { inventoryApi, type StockLevel, type StockFilters } from '@/services/api/inventory.api'
 import { encaissementsApi } from '@/services/api/encaissements.api'
@@ -49,16 +49,13 @@ export const useInventaireStore = defineStore('inventaire', () => {
   const fetchStocks = async (filters?: StockFilters, page: number = 1) => {
     loading.value = true
     error.value = null
-    console.log('fetchStocks appelé avec filters:', filters, 'page:', page)
     try {
       const response = await inventoryApi.getStockLevels(filters, page)
-      console.log('Réponse API stocks:', response)
       stocks.value = response.results
       currentPage.value = page
       totalCount.value = response.count
       totalPages.value = Math.ceil(response.count / 20)
     } catch (err) {
-      console.error('Erreur lors de la récupération des stocks:', err)
       error.value = 'Erreur lors de la récupération des stocks'
     } finally {
       loading.value = false
@@ -70,7 +67,6 @@ export const useInventaireStore = defineStore('inventaire', () => {
       const response = await encaissementsApi.getStores()
       stores.value = response as Store[]
     } catch (err) {
-      console.error('Erreur lors de la récupération des magasins:', err)
     }
   }
 
@@ -79,7 +75,6 @@ export const useInventaireStore = defineStore('inventaire', () => {
       const response = await productsApi.fetchAll({}, false)
       products.value = response
     } catch (err) {
-      console.error('Erreur lors de la récupération des produits:', err)
     }
   }
 
@@ -99,7 +94,6 @@ export const useInventaireStore = defineStore('inventaire', () => {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('Erreur lors de l\'export Excel:', err)
       error.value = 'Erreur lors de l\'export Excel'
       throw err
     } finally {
