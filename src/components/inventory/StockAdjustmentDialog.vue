@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
-  SelectRoot,
+  Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
@@ -138,7 +138,7 @@ onMounted(async () => {
         <!-- Store Selection -->
         <div class="space-y-2">
           <Label for="store">Magasin *</Label>
-          <SelectRoot v-model="formData.store">
+          <Select v-model="formData.store">
             <SelectTrigger id="store" :class="{ 'border-red-500': errors.store }">
               <SelectValue placeholder="Sélectionner un magasin..." />
             </SelectTrigger>
@@ -151,7 +151,7 @@ onMounted(async () => {
                 {{ store.name }}
               </SelectItem>
             </SelectContent>
-          </SelectRoot>
+          </Select>
           <p v-if="errors.store" class="text-sm text-red-500">
             {{ errors.store }}
           </p>
@@ -160,7 +160,7 @@ onMounted(async () => {
         <!-- Product Selection -->
         <div class="space-y-2">
           <Label for="product">Produit *</Label>
-          <SelectRoot v-model="formData.product">
+          <Select v-model="formData.product">
             <SelectTrigger id="product" :class="{ 'border-red-500': errors.product }">
               <SelectValue placeholder="Sélectionner un produit..." />
             </SelectTrigger>
@@ -173,7 +173,7 @@ onMounted(async () => {
                 {{ product.name }} - {{ product.reference }}
               </SelectItem>
             </SelectContent>
-          </SelectRoot>
+          </Select>
           <p v-if="errors.product" class="text-sm text-red-500">
             {{ errors.product }}
           </p>
@@ -182,7 +182,7 @@ onMounted(async () => {
         <!-- Movement Type -->
         <div class="space-y-2">
           <Label for="movement_type">Type d'ajustement *</Label>
-          <SelectRoot v-model="adjustmentDirection">
+          <Select v-model="adjustmentDirection">
             <SelectTrigger id="movement_type">
               <SelectValue placeholder="Sélectionner..." />
             </SelectTrigger>
@@ -194,7 +194,7 @@ onMounted(async () => {
                 Retrait de stock (-)
               </SelectItem>
             </SelectContent>
-          </SelectRoot>
+          </Select>
         </div>
 
         <!-- Quantity -->
