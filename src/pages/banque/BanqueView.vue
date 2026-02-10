@@ -395,9 +395,9 @@ const handleWithdrawal = async () => {
       description: withdrawalForm.value.description || 'Retrait bancaire',
       date: withdrawalForm.value.date
     })
-    
+
     toast.success('Retrait bancaire enregistré avec succès', 'Succès')
-    
+
     showWithdrawalDialog.value = false
     await fetchTransactions()
   } catch (error) {
@@ -421,9 +421,9 @@ const handleDeposit = async () => {
       description: depositForm.value.description || 'Dépôt bancaire',
       date: depositForm.value.date
     })
-    
+
     toast.success('Dépôt bancaire enregistré avec succès', 'Succès')
-    
+
     showDepositDialog.value = false
     await fetchTransactions()
   } catch (error) {
