@@ -158,7 +158,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import axios from '@/config/axios'
+import axios from '@/services/axios.service'
 
 interface Issue {
   product: string
