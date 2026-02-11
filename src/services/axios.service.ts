@@ -21,19 +21,30 @@ interface FailedRequest {
 
 /**
  * Extrait le nom du tenant depuis le hostname
- * Ex: santa.localhost:5174 → "santa"
- *     localhost:5174 → null (super admin)
+ * Ex: omega.app.sg-stocks.com → "omega"
+ *     app.sg-stocks.com → null (pas de tenant)
+ *     santa.localhost → "santa"
+ *     localhost → null (super admin)
  */
 function getTenantFromHostname(): string | null {
     const hostname = window.location.hostname;
     const parts = hostname.split('.');
 
-    // Si on a un sous-domaine (ex: santa.localhost)
-    if (parts.length > 1 && parts[0] !== 'www') {
-        return parts[0];
+    // Pour production : vérifier si c'est un sous-domaine de app.sg-stocks.com
+    // Ex: omega.app.sg-stocks.com → ["omega", "app", "sg-stocks", "com"]
+    if (parts.length >= 4) {
+        // Si c'est *.app.sg-stocks.com (4+ parties avec "app" en position 1)
+        if (parts[1] === 'app' && parts[2] === 'sg-stocks' && parts[0] !== 'www') {
+            return parts[0]; // "omega"
+        }
     }
 
-    // Pas de sous-domaine (localhost ou IP) → super admin
+    // Pour développement local : santa.localhost → ["santa", "localhost"]
+    if (parts.length === 2 && parts[1] === 'localhost' && parts[0] !== 'www') {
+        return parts[0]; // "santa"
+    }
+
+    // Pas de tenant (app.sg-stocks.com, localhost, admin.sg-stocks.com, etc.)
     return null;
 }
 
@@ -45,12 +56,15 @@ function getBaseURL(): string {
     const port = import.meta.env.VITE_API_PORT || '8000';
     const baseDomain = import.meta.env.VITE_API_BASE_DOMAIN || 'localhost';
 
+    // Ne pas inclure le port si c'est 80 (HTTP) ou 443 (HTTPS)
+    const portSuffix = (port === '80' || port === '443') ? '' : `:${port}`;
+
     if (tenant) {
-        // Tenant spécifique : http://santa.localhost:8000/api/v1/
-        return `http://${tenant}.${baseDomain}:${port}/api/v1`;
+        // Tenant spécifique : http://omega.api.sg-stocks.com/api/v1/
+        return `http://${tenant}.${baseDomain}${portSuffix}/api/v1`;
     } else {
-        // Super admin : http://localhost:8000/api/v1/
-        return `http://${baseDomain}:${port}/api/v1`;
+        // Super admin : http://api.sg-stocks.com/api/v1/
+        return `http://${baseDomain}${portSuffix}/api/v1`;
     }
 }
 
