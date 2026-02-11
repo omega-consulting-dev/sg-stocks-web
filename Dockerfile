@@ -14,8 +14,11 @@ RUN npm ci --production=false
 # Copier le code source
 COPY . .
 
-# Build de production
-RUN npm run build
+# Vérifier la présence de .env.production
+RUN ls -la .env* || echo "Aucun fichier .env trouvé"
+
+# Build de production avec mode explicite
+RUN NODE_ENV=production npm run build -- --mode production
 
 # Stage de production avec Nginx
 FROM nginx:alpine
