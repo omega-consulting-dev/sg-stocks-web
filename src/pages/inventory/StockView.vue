@@ -48,7 +48,7 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <Label for="store_filter">Magasin</Label>
-            <SelectRoot v-model="filters.store">
+            <Select v-model="filters.store">
               <SelectTrigger id="store_filter">
                 <SelectValue placeholder="Tous les magasins" />
               </SelectTrigger>
@@ -62,7 +62,7 @@
                   {{ store.name }}
                 </SelectItem>
               </SelectContent>
-            </SelectRoot>
+            </Select>
           </div>
 
           <div>
@@ -194,7 +194,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  SelectRoot,
+  Select,
   SelectTrigger,
   SelectValue,
   SelectContent,

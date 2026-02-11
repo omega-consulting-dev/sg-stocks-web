@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
-  SelectRoot,
+  Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
@@ -114,7 +114,7 @@ onMounted(async () => {
           <Label for="store">Magasin *</Label>
 
           <!-- Admin: Sélecteur complet -->
-          <SelectRoot v-if="shouldShowStoreSelector" v-model="formData.store">
+          <Select v-if="shouldShowStoreSelector" v-model="formData.store">
             <SelectTrigger id="store" :class="{ 'border-red-500': errors.store }">
               <SelectValue placeholder="Sélectionner..." />
             </SelectTrigger>
@@ -127,7 +127,7 @@ onMounted(async () => {
                 {{ store.name }}
               </SelectItem>
             </SelectContent>
-          </SelectRoot>
+          </Select>
 
           <!-- Utilisateur restreint: Badge informatif -->
           <div v-else class="flex items-center gap-2 h-10 px-3 bg-blue-50 border border-blue-200 rounded-md">
