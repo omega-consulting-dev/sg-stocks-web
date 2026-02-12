@@ -3,6 +3,11 @@ FROM node:20-alpine as build
 
 WORKDIR /app
 
+# Arguments de build pour les variables d'environnement Vite
+ARG VITE_API_PORT
+ARG VITE_API_BASE_DOMAIN
+ARG VITE_USE_HTTPS
+
 # Copier les fichiers de configuration
 COPY package*.json ./
 COPY tsconfig*.json ./
@@ -17,7 +22,11 @@ COPY . .
 # Vérifier la présence de .env.production
 RUN ls -la .env* || echo "Aucun fichier .env trouvé"
 
-# Build de production avec mode explicite
+# Build de production avec variables d'environnement explicites
+ENV VITE_API_PORT=${VITE_API_PORT}
+ENV VITE_API_BASE_DOMAIN=${VITE_API_BASE_DOMAIN}
+ENV VITE_USE_HTTPS=${VITE_USE_HTTPS}
+
 RUN NODE_ENV=production npm run build -- --mode production
 
 # Stage de production avec Nginx
