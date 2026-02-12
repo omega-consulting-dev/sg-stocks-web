@@ -23,11 +23,11 @@ COPY . .
 RUN ls -la .env* || echo "Aucun fichier .env trouvé"
 
 # Build de production avec variables d'environnement explicites
-ENV VITE_API_PORT=${VITE_API_PORT}
-ENV VITE_API_BASE_DOMAIN=${VITE_API_BASE_DOMAIN}
-ENV VITE_USE_HTTPS=${VITE_USE_HTTPS}
-
-RUN NODE_ENV=production npm run build -- --mode production
+# Les passer directement à la commande build pour que Vite les voie
+RUN VITE_API_PORT=${VITE_API_PORT} \
+    VITE_API_BASE_DOMAIN=${VITE_API_BASE_DOMAIN} \
+    VITE_USE_HTTPS=${VITE_USE_HTTPS} \
+    NODE_ENV=production npm run build -- --mode production
 
 # Stage de production avec Nginx
 FROM nginx:alpine
