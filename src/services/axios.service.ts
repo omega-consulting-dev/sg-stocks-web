@@ -55,16 +55,18 @@ function getBaseURL(): string {
     const tenant = getTenantFromHostname();
     const port = import.meta.env.VITE_API_PORT || '8000';
     const baseDomain = import.meta.env.VITE_API_BASE_DOMAIN || 'localhost';
+    const useHttps = import.meta.env.VITE_USE_HTTPS === 'true' || port === '443';
+    const protocol = useHttps ? 'https' : 'http';
 
     // Ne pas inclure le port si c'est 80 (HTTP) ou 443 (HTTPS)
     const portSuffix = (port === '80' || port === '443') ? '' : `:${port}`;
 
     if (tenant) {
-        // Tenant spécifique : http://omega.api.sg-stocks.com/api/v1/
-        return `http://${tenant}.${baseDomain}${portSuffix}/api/v1`;
+        // Tenant spécifique : https://omega.api.sg-stocks.com/api/v1/
+        return `${protocol}://${tenant}.${baseDomain}${portSuffix}/api/v1`;
     } else {
-        // Super admin : http://api.sg-stocks.com/api/v1/
-        return `http://${baseDomain}${portSuffix}/api/v1`;
+        // Super admin : https://api.sg-stocks.com/api/v1/
+        return `${protocol}://${baseDomain}${portSuffix}/api/v1`;
     }
 }
 

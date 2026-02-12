@@ -9,7 +9,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig(({ mode }) => {
   // Charger explicitement les variables d'environnement
   const env = loadEnv(mode, process.cwd(), '')
-  
+
   return {
     plugins: [vue(), vueDevTools(), tailwindcss()],
     resolve: {
