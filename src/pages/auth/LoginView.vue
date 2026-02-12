@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import logoSvg from '@/assets/logo.svg'
+import rectangleImage from '@/assets/Rectangle-1.png'
 
 const router = useRouter()
 const route = useRoute()
@@ -152,7 +153,7 @@ const handleSubmit = async () => {
         <!-- Image de fond (bureau professionnel) -->
         <div
           class="absolute inset-0 opacity-40 mix-blend-overlay z-0"
-          style="background-image: url('src/assets/Rectangle-1.png'); background-size: cover; background-position: center; filter: blur(2px);"
+          :style="{ backgroundImage: `url(${rectangleImage})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }"
         ></div>
 
         <!-- Overlay semi-transparent -->
