@@ -21,8 +21,11 @@ interface FailedRequest {
 
 /**
  * Extrait le nom du tenant depuis le hostname
- * Ex: omega.app.sg-stocks.com → "omega"
- *     app.sg-stocks.com → null (pas de tenant)
+ * Ex: omega.sg-stocks.com → "omega"
+ *     alpha.sg-stocks.com → "alpha"
+ *     sg-stocks.com → null (site vitrine)
+ *     api.sg-stocks.com → null (API publique)
+ *     admin.sg-stocks.com → null (super admin)
  *     santa.localhost → "santa"
  *     localhost → null (super admin)
  */
@@ -30,12 +33,13 @@ function getTenantFromHostname(): string | null {
     const hostname = window.location.hostname;
     const parts = hostname.split('.');
 
-    // Pour production : vérifier si c'est un sous-domaine de app.sg-stocks.com
-    // Ex: omega.app.sg-stocks.com → ["omega", "app", "sg-stocks", "com"]
-    if (parts.length >= 4) {
-        // Si c'est *.app.sg-stocks.com (4+ parties avec "app" en position 1)
-        if (parts[1] === 'app' && parts[2] === 'sg-stocks' && parts[0] !== 'www') {
-            return parts[0]; // "omega"
+    // Pour production : vérifier si c'est un sous-domaine de sg-stocks.com
+    // Ex: omega.sg-stocks.com → ["omega", "sg-stocks", "com"]
+    if (parts.length === 3 && parts[1] === 'sg-stocks' && parts[2] === 'com') {
+        const subdomain = parts[0];
+        // Exclure les sous-domaines réservés (admin, api, www, site vitrine)
+        if (subdomain !== 'www' && subdomain !== 'admin' && subdomain !== 'api') {
+            return subdomain; // "omega", "alpha", etc.
         }
     }
 
@@ -44,15 +48,15 @@ function getTenantFromHostname(): string | null {
         return parts[0]; // "santa"
     }
 
-    // Pas de tenant (app.sg-stocks.com, localhost, admin.sg-stocks.com, etc.)
+    // Pas de tenant (sg-stocks.com, localhost, admin.sg-stocks.com, api.sg-stocks.com, etc.)
     return null;
 }
 
 /**
- * Construit la baseURL dynamiquement en fonction du tenant
+ * Construit la baseURL dynamiquement
+ * Tous les tenants appellent api.sg-stocks.com et s'identifient via header X-Tenant
  */
 function getBaseURL(): string {
-    const tenant = getTenantFromHostname();
     const port = import.meta.env.VITE_API_PORT || '8000';
     const baseDomain = import.meta.env.VITE_API_BASE_DOMAIN || 'localhost';
     const useHttps = import.meta.env.VITE_USE_HTTPS === 'true' || port === '443';
@@ -61,13 +65,9 @@ function getBaseURL(): string {
     // Ne pas inclure le port si c'est 80 (HTTP) ou 443 (HTTPS)
     const portSuffix = (port === '80' || port === '443') ? '' : `:${port}`;
 
-    if (tenant) {
-        // Tenant spécifique : https://omega.api.sg-stocks.com/api/v1/
-        return `${protocol}://${tenant}.${baseDomain}${portSuffix}/api/v1`;
-    } else {
-        // Super admin : https://api.sg-stocks.com/api/v1/
-        return `${protocol}://${baseDomain}${portSuffix}/api/v1`;
-    }
+    // Tous les tenants utilisent la même URL API : https://api.sg-stocks.com/api/v1/
+    // Le tenant est identifié via le header X-Tenant
+    return `${protocol}://${baseDomain}${portSuffix}/api/v1`;
 }
 
 // Création de l'instance Axios SANS baseURL statique
